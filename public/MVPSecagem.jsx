@@ -635,9 +635,9 @@ const checklistCortadeiraM2 = [
   { id:"cs2_10", secao:"Cortadeira", item:"Peso Layboy",
     ref:"F:2959 / C:2600", unit:"kg", tipo:"duplo_valor" },
   { id:"cs2_11", secao:"Cortadeira", item:"Velocidade",
-    ref:"200",       unit:"m/min",  tipo:"valor" },
+    ref:"≥150",       unit:"m/min",  tipo:"valor_direto", velMin:150 },
   { id:"cs2_12", secao:"Cortadeira", item:"Passe Faca Circulares",
-    ref:"F:15 / C:16",    unit:"%",      tipo:"duplo_valor" },
+    ref:"F:5 / C:5",    unit:"%",      tipo:"duplo_valor" },
   { id:"cs2_13", secao:"Cortadeira", item:"Rolo Medidor",
     ref:"0,35",      unit:"%",      tipo:"valor",
     alertaExato:"0,35", descExato:"Padrão fixo — NOK se diferente de 0,35%" },
@@ -652,7 +652,7 @@ const checklistCortadeiraM2 = [
     ref:"0,7",       unit:"%",      tipo:"valor",
     alertaExato:"0,7",  descExato:"Padrão fixo — NOK se diferente de 0,7%" },
   { id:"cs2_18", secao:"Cortadeira", item:"Sobreposição",
-    ref:"15",        unit:"%",      tipo:"valor" },
+    ref:"F:15 / C:15", unit:"%",      tipo:"duplo_valor" },
   { id:"cs2_19", secao:"Cortadeira", item:"Kickout",
     ref:"F:6 / C:8",      unit:"%",      tipo:"duplo_valor" },
   { id:"cs2_20", secao:"Cortadeira", item:"Nível Reservatório UH",
@@ -682,8 +682,8 @@ const checklistCortadeiraM2 = [
   // FAQUINHAS — 11 facas ─────────────────────────────────────────────────────
   // Faixas: 1,5–2,5 = Normal 🟢 | 2,5–3,5 = Atenção 🟡 | 3,5–4,0 = Crítico 🔴
   { id:"cs2_31", secao:"Faquinhas",  item:"Pressão das Faquinhas (1 a 11)",
-    ref:"2,0/2,0/3,0/3,0/3,0/3,0/2,0/2,0/2,0/2,0/3,0", unit:"bar", tipo:"faquinhas",
-    refs:["2,0","2,0","3,0","3,0","3,0","3,0","2,0","2,0","2,0","2,0","3,0"],
+    ref:"1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5", unit:"bar", tipo:"faquinhas",
+    refs:["1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5"],
     faixas:[[1.5,2.5,"Normal","green"],[2.5,3.5,"Atenção","yellow"],[3.5,4.0,"Crítico","red"]] },
   // EXTRA ────────────────────────────────────────────────────────────────────
   { id:"cs2_32", secao:"Extra",      item:"Atuadores reparados disponíveis na área",
@@ -721,9 +721,9 @@ const checklistCortadeiraM3 = [
   { id:"cs3_10", secao:"Cortadeira", item:"Peso Layboy",
     ref:"F:2898 / C:2800", unit:"kg", tipo:"duplo_valor" },
   { id:"cs3_11", secao:"Cortadeira", item:"Velocidade",
-    ref:"191",       unit:"m/min",  tipo:"valor" },
+    ref:"≥150",       unit:"m/min",  tipo:"valor_direto", velMin:150 },
   { id:"cs3_12", secao:"Cortadeira", item:"Passe Faca Circulares",
-    ref:"F:17 / C:10",    unit:"%",      tipo:"duplo_valor" },
+    ref:"F:5 / C:5",    unit:"%",      tipo:"duplo_valor" },
   { id:"cs3_13", secao:"Cortadeira", item:"Rolo Medidor",
     ref:"0,35",      unit:"%",      tipo:"valor",
     alertaExato:"0,35", descExato:"Padrão fixo — NOK se diferente de 0,35%" },
@@ -738,7 +738,7 @@ const checklistCortadeiraM3 = [
     ref:"0,7",       unit:"%",      tipo:"valor",
     alertaExato:"0,7",  descExato:"Padrão fixo — NOK se diferente de 0,7%" },
   { id:"cs3_18", secao:"Cortadeira", item:"Sobreposição",
-    ref:"17",        unit:"%",      tipo:"valor" },
+    ref:"F:17 / C:17", unit:"%",      tipo:"duplo_valor" },
   { id:"cs3_19", secao:"Cortadeira", item:"Kickout",
     ref:"F:8 / C:5",      unit:"%",      tipo:"duplo_valor" },
   { id:"cs3_20", secao:"Cortadeira", item:"Nível Reservatório UH",
@@ -767,8 +767,8 @@ const checklistCortadeiraM3 = [
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   // FAQUINHAS — 11 facas ─────────────────────────────────────────────────────
   { id:"cs3_31", secao:"Faquinhas",  item:"Pressão das Faquinhas (1 a 11)",
-    ref:"1,5/1,5/1,5/2,0/1,5/2,0/2,0/2,0/2,0/2,0/1,5", unit:"bar", tipo:"faquinhas",
-    refs:["1,5","1,5","1,5","2,0","1,5","2,0","2,0","2,0","2,0","2,0","1,5"],
+    ref:"1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5", unit:"bar", tipo:"faquinhas",
+    refs:["1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5"],
     faixas:[[1.5,2.5,"Normal","green"],[2.5,3.5,"Atenção","yellow"],[3.5,4.0,"Crítico","red"]] },
   // EXTRA ────────────────────────────────────────────────────────────────────
   { id:"cs3_32", secao:"Extra",      item:"Atuadores reparados disponíveis na área",
@@ -1924,7 +1924,14 @@ function ChecklistTela({ onSalvar, historico=[] }) {
     const entry=[...historico]
       .filter(h=>h.tipoId===tid&&(h.maquina===maq||h.maquina==="M2/M3"))
       .sort((a,b)=>b.id-a.id)[0];
-    if(!entry?.items)return{};
+    if(!entry)return{};
+    // Prioriza o objeto valores completo (inclui duplo_valor _f/_c); fallback p/ items
+    if(entry.valores&&typeof entry.valores==="object"){
+      const out={};
+      Object.entries(entry.valores).forEach(([k,v])=>{if(v&&v!=="ok"&&v!=="nok"&&v!=="sim"&&v!=="nao")out[k]=v;});
+      return out;
+    }
+    if(!entry.items)return{};
     return entry.items.reduce((acc,i)=>{if(i.resp&&i.resp!=="ok"&&i.resp!=="nok"&&i.resp!=="sim"&&i.resp!=="nao")acc[i.id]=i.resp;return acc;},{});
   };
   const isItemNok=(item,val)=>{
@@ -1939,16 +1946,30 @@ function ChecklistTela({ onSalvar, historico=[] }) {
   const setVal=(id,v)=>{setValores(p=>({...p,[id]:v}));setSalvo(false);};
   const addFotoItem=(id,src)=>setFotos(p=>({...p,[id]:[...(p[id]||[]),src]}));
   const removeFotoItem=(id,idx)=>setFotos(p=>({...p,[id]:p[id].filter((_,i)=>i!==idx)}));
-  const preenchidos=items.filter(i=>valores[i.id]!==undefined&&valores[i.id]!=="").length;
+  const ehCortadeira = tipoId==="cortadeira";
+  // Verifica se um item está preenchido (trata duplo_valor e velMin)
+  const itemPreenchido=(i)=>{
+    if(i.tipo==="duplo_valor"){
+      const f=valores[i.id+"_f"], c=valores[i.id+"_c"];
+      return f!==undefined&&f!==""&&c!==undefined&&c!==""; // só verde com os dois
+    }
+    const v=valores[i.id];
+    if(v===undefined||v==="")return false;
+    if((i.tipo==="valor_direto"||i.velMin!==undefined)&&v!=="ok"){ const n=parseFloat(String(v).replace(",",".")); return !isNaN(n)&&(i.velMin===undefined||n>=i.velMin); }
+    return true;
+  };
+  const preenchidos=items.filter(itemPreenchido).length;
   const noks=items.filter(i=>isItemNok(i,valores[i.id])).length;
   const total=items.length;
   const totalFotos=Object.values(fotos).reduce((a,f)=>a+f.length,0);
 
-  // Valida campo de valor contra alertaMin/alertaExato
+  // Valida campo de valor contra alertaMin/alertaExato/velMin
   const getValorStatus=(item)=>{
     const v=valores[item.id];
     if(!v||v==="")return null;
+    if(v==="ok")return "ok"; // apertou OK = está no padrão = verde
     const num=parseFloat(v.replace(",","."));
+    if(item.velMin!==undefined&&!isNaN(num))return num>=item.velMin?"ok":null; // ≥min=verde, abaixo=não preenchido
     if(item.alertaMin!==undefined&&!isNaN(num)&&num<item.alertaMin)return"alert";
     if(item.alertaMax!==undefined&&!isNaN(num)&&num>item.alertaMax)return"alert";
     if(item.alertaExato!==undefined&&v.replace(",",".")!==item.alertaExato.replace(",","."))return"nok";
@@ -2167,7 +2188,7 @@ function ChecklistTela({ onSalvar, historico=[] }) {
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:6}}>
               {itensDaSecao.map((item,i)=>{
-                const preen=valores[item.id]!==undefined&&valores[item.id]!=="";
+                const preen=itemPreenchido(item);
                 const isNok=isItemNok(item,valores[item.id]);
                 const isCritico=valores[item.id]==="critico";
                 const isAtencao=valores[item.id]==="atencao";
@@ -2333,6 +2354,21 @@ function ChecklistTela({ onSalvar, historico=[] }) {
                           }} style={{padding:"5px 11px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",transition:"all .15s",border:`1px solid ${C.border}`,background:C.tagBg,color:C.textMuted}}>NOK</button>
                         )}
                       </>)}
+                      {item.tipo==="valor_direto"&&(()=>{
+                        const v=valores[item.id]||"";
+                        const n=parseFloat(String(v).replace(",","."));
+                        const okVerde=!isNaN(n)&&(item.velMin===undefined||n>=item.velMin);
+                        return (
+                          <div style={{display:"flex",alignItems:"center",gap:4}}>
+                            <input inputMode="decimal" placeholder={item.ref}
+                              value={v} onChange={e=>setVal(item.id,e.target.value)}
+                              style={{...inputStyle,width:72,textAlign:"center",padding:"5px 6px",fontSize:13,fontWeight:800,
+                                borderColor:okVerde?C.accentLight+"88":v?C.warningLight+"66":C.border,
+                                color:okVerde?C.accentLight:v?C.warningLight:C.text}}/>
+                            <span style={{color:C.textDim,fontSize:10}}>{item.unit}</span>
+                          </div>
+                        );
+                      })()}
                       {item.tipo==="duplo_valor"&&(
                         <div style={{display:"flex",gap:4,alignItems:"center"}}>
                           <div style={{textAlign:"center"}}>
