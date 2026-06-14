@@ -868,6 +868,7 @@ const CATALOGO = [
 
 // ─── Storage helpers (Firestore + localStorage offline-safe) ──────────────────
 import { COL, doc, setDoc, getDoc, onSnapshot } from "./firebase";
+import { TelaAuth, usePerfilAtivo, FUNCOES } from "./auth";
 
 // Leitura imediata do aparelho (não trava a tela esperando a nuvem)
 const storageGet = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
@@ -3173,7 +3174,7 @@ function HistoricoTela({ historico, areaAtiva }) {
 }
 
 // ─── ConfiguracoesTela ───────────────────────────────────────────────────────
-function ConfiguracoesTela() {
+function ConfiguracoesTela({ perfil, onLogout }) {
   const [cfg,setCfg]=useState(()=>storageGet('op_config')||{});
   const [salvo,setSalvo]=useState(false);
   const set=(k,v)=>{setCfg(p=>({...p,[k]:v}));setSalvo(false);};
@@ -3215,6 +3216,17 @@ function ConfiguracoesTela() {
         boxShadow:salvo?"none":"0 0 10px rgba(0,230,118,0.5),0 0 30px rgba(0,230,118,0.3)"}}>
         {salvo?"✓ Configuração salva!":"Salvar Configurações"}
       </button>
+      {perfil&&(
+        <div style={{marginTop:24,background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16}}>
+          <div style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>Sessão ativa</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+            <span style={{color:C.white,fontSize:14,fontWeight:700}}>{perfil.nome}</span>
+            <span style={{color:C.accent,fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{perfil.matricula}</span>
+          </div>
+          <div style={{color:C.textDim,fontSize:11,marginBottom:14}}>{FUNCOES[perfil.funcao]?.label||perfil.funcao}</div>
+          <button onClick={onLogout} style={{width:"100%",padding:11,borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,background:C.tagBg,border:`1px solid ${C.dangerLight}55`,color:C.dangerLight}}>Sair da conta</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -4051,6 +4063,7 @@ function CleanersTela(){
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
+  const { perfil, setPerfil, logout } = usePerfilAtivo();
   const [tela,setTela]=useState("dashboard");
   const [historico,setHistorico]=useState(()=>storageGet("historico_h2")||[]);
   const [areaAtiva,setAreaAtiva]=useState("pu");
@@ -4084,21 +4097,23 @@ export default function App() {
     });
     return ()=>unsub();
   },[]);
+  const veHistorico = perfil && FUNCOES[perfil.funcao]?.veHistorico;
   const nav=[
     {id:"dashboard",label:"Início",icon:"⬡"},
     {id:"checklist",label:"Check-list",icon:"✓"},
     {id:"equipamentos",label:"Equipam.",icon:"⚙"},
     {id:"historico",label:"Histórico",icon:"📋"},
     {id:"configuracoes",label:"Config.",icon:"⚙️"},
-  ];
+  ].filter(n=>n.id!=="historico"||veHistorico);
   const renderTela=()=>{
     if(tela==="dashboard")return <Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias}/>;
     if(tela==="checklist")return <ChecklistTela onSalvar={salvarChecklist} historico={historico}/>;
     if(tela==="equipamentos")return <EquipamentosTela eqState={eqState} setEqState={setEqState} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} historico={historico} setTela={setTela}/>;
-    if(tela==="historico")return <HistoricoTela historico={historico} areaAtiva={areaAtiva}/>;
-    if(tela==="configuracoes")return <ConfiguracoesTela/>;
+    if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias}/>;
+    if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout}/>;
     if(tela==="rotas")return <RotasTela historico={historico} onVoltar={()=>setTela("dashboard")}/>;
   };
+  if(!perfil) return <TelaAuth onEntrar={setPerfil}/>;
   return (
     <div style={{background:C.bg,minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text}}>
       <style>{`
