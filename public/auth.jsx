@@ -45,6 +45,16 @@ async function hashPin(pin) {
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
+// ─── Valida o PIN de uma matrícula (usado em ações sensíveis, ex: reset) ──────
+export async function validarPin(matricula, pin) {
+  try {
+    const snap = await getDoc(doc(UCOL, String(matricula)));
+    if(!snap.exists()) return false;
+    const h = await hashPin(pin);
+    return h === snap.data().pinHash;
+  } catch { return false; }
+}
+
 // ─── Hook: lê o perfil salvo na sessão ────────────────────────────────────────
 export function usePerfilAtivo() {
   const [perfil, setPerfil] = useState(()=>{
