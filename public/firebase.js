@@ -1,4 +1,4 @@
-// ─── Firebase — Conexão da Secagem H2 ────────────────────────────────────────
+/// ─── Firebase — Conexão da Secagem H2 ────────────────────────────────────────
 // Projeto: app-secagem (modo TESTE — uso interno, sem aprovação TI ainda)
 import { initializeApp } from "firebase/app";
 import {
