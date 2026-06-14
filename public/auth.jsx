@@ -99,9 +99,9 @@ export function TelaAuth({ onEntrar }) {
         <div style={{position:"absolute",inset:0,backgroundImage:`url('${IMG}')`,backgroundSize:"cover",backgroundPosition:"center",filter:"saturate(0.85) brightness(0.7)"}}/>
         {/* Overlay escuro pra fundir com o fundo */}
         <div style={{position:"absolute",inset:0,background:`linear-gradient(180deg, rgba(4,17,29,0.55) 0%, rgba(4,17,29,0.35) 45%, rgba(4,17,29,0.85) 85%, ${C.bg} 100%)`}}/>
-        {/* Logo centralizada no topo */}
-        <div style={{position:"absolute",top:26,left:0,right:0,display:"flex",justifyContent:"center"}}>
-          <LogoSuzano size={48}/>
+        {/* Logo centralizada, mais para baixo (com espaço da linha) */}
+        <div style={{position:"absolute",bottom:30,left:0,right:0,display:"flex",justifyContent:"center"}}>
+          <LogoSuzano size={72}/>
         </div>
         {/* Faixa LED — espelha o semáforo, pulsa em tempo real */}
         <div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:`linear-gradient(90deg, transparent 0%, ${corLed} 50%, transparent 100%)`,boxShadow:`0 0 16px 2px ${corLed}, 0 0 40px 4px ${corLed}88`,animation:"ledPulseAuth 2s ease-in-out infinite"}}/>
@@ -170,7 +170,7 @@ function FormLogin({ onEntrar }) {
   return (
     <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:20}}>
       <Campo label="Matrícula">
-        <input value={matricula} onChange={e=>setMatricula(e.target.value.replace(/\D/g,""))} inputMode="numeric" placeholder="Ex: 242365" style={inputStyle}/>
+        <input value={matricula} onChange={e=>setMatricula(e.target.value.replace(/\D/g,""))} inputMode="numeric" placeholder="Ex: 000000" style={inputStyle}/>
       </Campo>
       <Campo label="PIN (4 dígitos)">
         <input value={pin} onChange={e=>setPin(e.target.value.replace(/\D/g,"").slice(0,4))} inputMode="numeric" type="password" placeholder="••••" style={{...inputStyle,letterSpacing:"0.3em",fontSize:18}}/>
@@ -232,7 +232,7 @@ function FormCadastro({ onPronto }) {
         <input value={nome} onChange={e=>setNome(e.target.value)} placeholder="Seu nome" style={inputStyle}/>
       </Campo>
       <Campo label="Matrícula">
-        <input value={matricula} onChange={e=>setMatricula(e.target.value.replace(/\D/g,""))} inputMode="numeric" placeholder="Ex: 242365" style={inputStyle}/>
+        <input value={matricula} onChange={e=>setMatricula(e.target.value.replace(/\D/g,""))} inputMode="numeric" placeholder="Ex: 000000" style={inputStyle}/>
       </Campo>
       <Campo label="E-mail corporativo">
         <input value={email} onChange={e=>setEmail(e.target.value)} inputMode="email" placeholder="nome@suzano.com.br" style={inputStyle}/>
