@@ -1878,12 +1878,13 @@ function VerificacoesWFT({ respostas, setResp, fotos, addFoto, remFoto }) {
 }
 
 // ─── ChecklistTela ────────────────────────────────────────────────────────────
-function ChecklistTela({ onSalvar, historico=[] }) {
+function ChecklistTela({ onSalvar, historico=[], perfil }) {
   const hoje=new Date().toISOString().slice(0,10);
   const [areaFiltro,setAreaFiltro]=useState(()=>{const a=storageGet("op_config")?.area;return a||"pu";});
   const [tipoId,setTipoId]=useState(()=>{const a=storageGet("op_config")?.area||"pu";return CATALOGO.find(c=>c.area===a)?.id||"rotina";});
   const [selectorAberto,setSelectorAberto]=useState(false);
-  const catalogo_area=CATALOGO.filter(c=>c.area===areaFiltro);
+  const ehDev=perfil?.funcao==="dev";
+  const catalogo_area=CATALOGO.filter(c=>c.area===areaFiltro).filter(c=>c.id!=="rota_enf"||ehDev);
   const tipo=CATALOGO.find(c=>c.id===tipoId)||catalogo_area[0];
   const [maquina,setMaquina]=useState("M2");
   const turno=getAutoTurno();
@@ -2773,51 +2774,68 @@ function turnoDoHorario(hhmm) {
   const h = parseInt((hhmm||"00:00").split(":")[0],10);
   return h < 8 ? 0 : h < 16 ? 1 : 2;
 }
-function calcularEficiencia(historico, mesAno) {
-  // mesAno: "2026-06" (ano-mês). Se omitido, usa o mês atual.
+function calcularEficiencia(historico, mesAno, filtroMaq) {
+  // mesAno: "2026-06". filtroMaq: "ambas" | "M2" | "M3" (default "ambas").
+  const maqF = filtroMaq || "ambas";
   const BASE = new Date("2026-06-09T00:00:00");
   const agora = new Date();
   const letras = ["A","B","C","D","E"];
   const [anoF, mesF] = (mesAno || `${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,"0")}`).split("-").map(Number);
-  // Limites do mês selecionado
   const inicioMes = new Date(anoF, mesF-1, 1, 0,0,0);
-  const fimMes = new Date(anoF, mesF, 1, 0,0,0); // primeiro dia do mês seguinte
-  const limiteSup = agora < fimMes ? agora : fimMes; // não conta futuro
+  const fimMes = new Date(anoF, mesF, 1, 0,0,0);
+  const limiteSup = agora < fimMes ? agora : fimMes;
+  // Esperado por turno, por máquina (conforme a tabela):
+  //   PU rotina: M2=1, M3=1   |   CS cortadeira: M2=1, M3=1
+  //   ENF qualidade: M2=4 (L4,L5 ×2), M3=6 (L6,L7,L8 ×2)
   const AREAS = {
-    pu:  { label:"P. Úmida",    tipos:{rotina:1} },
-    cs:  { label:"Cortadeira",  tipos:{cortadeira:1} },
-    enf: { label:"Enfardamento",tipos:{rota_enf:1, enf_qualidade:2} },
+    pu:  { label:"P. Úmida",     tipos:["rotina"],     esp:{M2:1, M3:1} },
+    cs:  { label:"Cortadeira",   tipos:["cortadeira"], esp:{M2:1, M3:1} },
+    enf: { label:"Enfardamento", tipos:["enf_qualidade"], esp:{M2:4, M3:6} },
   };
+  // Quais máquinas somar conforme o filtro
+  const maquinas = maqF==="ambas" ? ["M2","M3"] : [maqF];
+  // Linhas → máquina (pra identificar lançamentos do enfardamento por linha)
+  const LINHAS_M2=["L4","L5"], LINHAS_M3=["L6","L7","L8"];
+  const maquinaDoLancamento=(h)=>{
+    if(h.linha) return LINHAS_M2.includes(h.linha)?"M2":LINHAS_M3.includes(h.linha)?"M3":null;
+    if(h.maquina==="M2"||h.maquina==="M3") return h.maquina;
+    return null;
+  };
+
   const cont = {};
   letras.forEach(l=>{ cont[l]={lancamentos:0}; Object.keys(AREAS).forEach(a=>{ cont[l][a]={esperado:0,feito:0}; }); });
 
-  // 1) Denominador: turnos escalados DENTRO do mês (a partir da BASE)
+  // 1) Denominador: turnos escalados no mês × esperado por máquina (filtrado)
   const umDia = 1000*60*60*24;
   let cursor = inicioMes < BASE ? new Date(BASE) : new Date(inicioMes);
   cursor.setHours(0,0,0,0);
   for(; cursor < limiteSup; cursor = new Date(cursor.getTime()+umDia)){
     for(let t=0; t<3; t++){
       const inicioTurno = new Date(cursor); inicioTurno.setHours(t*8,0,0,0);
-      if(inicioTurno < BASE) continue;          // antes da escala existir
-      if(inicioTurno >= limiteSup) continue;    // futuro ou fora do mês
-      if(inicioTurno < inicioMes) continue;     // antes do mês
+      if(inicioTurno < BASE) continue;
+      if(inicioTurno >= limiteSup) continue;
+      if(inicioTurno < inicioMes) continue;
       const letra = letraDoTurno(cursor, t);
       if(!cont[letra]) continue;
       Object.entries(AREAS).forEach(([a,def])=>{
-        const pesoTotal = Object.values(def.tipos).reduce((s,p)=>s+p,0);
-        cont[letra][a].esperado += pesoTotal;
+        maquinas.forEach(m=>{ cont[letra][a].esperado += (def.esp[m]||0); });
       });
     }
   }
-  // 2) Numerador: lançamentos do mês
+  // 2) Numerador: lançamentos do mês, filtrados por máquina
   historico.forEach(h=>{
     if(!h.letra || !h.data || !cont[h.letra]) return;
     const [hy,hm] = h.data.split("-").map(Number);
-    if(hy!==anoF || hm!==mesF) return; // só o mês selecionado
-    cont[h.letra].lancamentos += 1;
+    if(hy!==anoF || hm!==mesF) return;
+    const maqL = maquinaDoLancamento(h);
+    if(maqF!=="ambas" && maqL!==maqF) return; // fora da máquina filtrada
+    // Acha a área do tipo lançado
     for(const [a,def] of Object.entries(AREAS)){
-      if(def.tipos[h.tipoId]!==undefined){
-        cont[h.letra][a].feito += def.tipos[h.tipoId];
+      if(def.tipos.includes(h.tipoId)){
+        // Enfardamento qualidade conta peso 2 por lançamento (lançado 2× por linha)
+        const peso = h.tipoId==="enf_qualidade" ? 2 : 1;
+        cont[h.letra][a].feito += peso;
+        cont[h.letra].lancamentos += 1;
         break;
       }
     }
@@ -2886,14 +2904,17 @@ function GraficoEficiencia({ historico }) {
   const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
   const hoje=new Date();
   const [visao,setVisao]=useState("geral"); // geral | pu | cs | enf
+  const [maqFiltro,setMaqFiltro]=useState("ambas"); // ambas | M2 | M3
+  const [letraFiltro,setLetraFiltro]=useState("todas"); // todas | A..E
   const [ano,setAno]=useState(hoje.getFullYear());
   const [mes,setMes]=useState(hoje.getMonth()); // 0-11
   const mesAno=`${ano}-${String(mes+1).padStart(2,"0")}`;
-  const { resultado, AREAS } = calcularEficiencia(historico, mesAno);
+  const { resultado, AREAS } = calcularEficiencia(historico, mesAno, maqFiltro);
   const corEfic=(e)=>e===null?C.textDim:e>=80?C.accentLight:e>=50?C.warningLight:C.dangerLight;
   const opcoes=[{id:"geral",label:"Todos"},...Object.entries(AREAS).map(([id,d])=>({id,label:d.label}))];
   const valorDe=(r)=> visao==="geral" ? r.geral : r.areas[visao];
-  const dados=resultado.map(r=>({letra:r.letra, efic:valorDe(r), lanc:r.lancamentos}));
+  const dadosTodos=resultado.map(r=>({letra:r.letra, efic:valorDe(r), lanc:r.lancamentos}));
+  const dados=letraFiltro==="todas"?dadosTodos:dadosTodos.filter(d=>d.letra===letraFiltro);
   const algumDado=dados.some(d=>d.efic!==null);
   const totalLanc=dados.reduce((s,d)=>s+d.lanc,0);
   // Navegação de mês
@@ -2924,9 +2945,21 @@ function GraficoEficiencia({ historico }) {
       <p style={{color:C.textDim,fontSize:10,margin:"0 0 14px",lineHeight:1.4}}>Turnos lançados ÷ turnos escalados no mês. Cada letra avaliada só pelos turnos dela.</p>
 
       {/* Seletor de área */}
-      <div style={{display:"flex",gap:5,marginBottom:16,flexWrap:"wrap"}}>
+      <div style={{display:"flex",gap:5,marginBottom:8,flexWrap:"wrap"}}>
         {opcoes.map(o=>(
           <button key={o.id} onClick={()=>setVisao(o.id)} style={{flex:"1 1 auto",padding:"7px 10px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${visao===o.id?C.accent:C.border}`,background:visao===o.id?`linear-gradient(135deg,${C.accentDark},${C.accent}44)`:C.tagBg,color:visao===o.id?C.white:C.textMuted,whiteSpace:"nowrap",transition:"all .15s"}}>{o.label}</button>
+        ))}
+      </div>
+      {/* Seletor de máquina */}
+      <div style={{display:"flex",gap:5,marginBottom:8}}>
+        {[{id:"ambas",l:"Ambas"},{id:"M2",l:"Máq. 2"},{id:"M3",l:"Máq. 3"}].map(m=>(
+          <button key={m.id} onClick={()=>setMaqFiltro(m.id)} style={{flex:1,padding:"6px 8px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${maqFiltro===m.id?C.blueLight:C.border}`,background:maqFiltro===m.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,color:maqFiltro===m.id?C.white:C.textMuted,transition:"all .15s"}}>{m.l}</button>
+        ))}
+      </div>
+      {/* Seletor de letra */}
+      <div style={{display:"flex",gap:5,marginBottom:16}}>
+        {[{id:"todas",l:"Todas"},{id:"A",l:"A"},{id:"B",l:"B"},{id:"C",l:"C"},{id:"D",l:"D"},{id:"E",l:"E"}].map(l=>(
+          <button key={l.id} onClick={()=>setLetraFiltro(l.id)} style={{flex:1,padding:"6px 4px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:11,border:`1.5px solid ${letraFiltro===l.id?C.accent:C.border}`,background:letraFiltro===l.id?C.accentDark:C.tagBg,color:letraFiltro===l.id?C.white:C.textMuted,transition:"all .15s"}}>{l.l}</button>
         ))}
       </div>
 
@@ -3290,10 +3323,10 @@ function HistoricoTela({ historico, areaAtiva }) {
       })()}
 
       <div style={{marginBottom:10}}>
-        <label style={{color:C.textDim,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>Buscar por data (opcional)</label>
+        <label style={{color:C.textDim,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>📅 Buscar por data</label>
         <div style={{display:"flex",gap:6}}>
-          <input type="date" value={buscaData} onChange={e=>setBuscaData(e.target.value)} style={{...inputStyle,flex:1}}/>
-          {buscaData&&<button onClick={()=>setBuscaData("")} style={{padding:"0 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,whiteSpace:"nowrap"}}>Limpar</button>}
+          <input type="date" value={buscaData} onChange={e=>setBuscaData(e.target.value)} style={{...inputStyle,flex:1,colorScheme:"dark",color:buscaData?C.accentLight:C.textMuted,fontWeight:buscaData?700:400,borderColor:buscaData?C.accentLight:C.border,fontFamily:"monospace",fontSize:14,cursor:"pointer"}}/>
+          {buscaData&&<button onClick={()=>setBuscaData("")} style={{padding:"0 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,background:C.danger+"22",border:`1px solid ${C.dangerLight}55`,color:C.dangerLight,whiteSpace:"nowrap"}}>✕ Limpar</button>}
         </div>
       </div>
       <div style={{display:"flex",gap:8,marginBottom:10}}>
@@ -4279,7 +4312,7 @@ export default function App() {
   ].filter(n=>n.id!=="historico"||veHistorico);
   const renderTela=()=>{
     if(tela==="dashboard")return <Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias}/>;
-    if(tela==="checklist")return <ChecklistTela onSalvar={salvarChecklist} historico={historico}/>;
+    if(tela==="checklist")return <ChecklistTela onSalvar={salvarChecklist} historico={historico} perfil={perfil}/>;
     if(tela==="equipamentos")return <EquipamentosTela eqState={eqState} setEqState={setEqState} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} historico={historico} setTela={setTela}/>;
     if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias}/>;
     if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout}/>;
