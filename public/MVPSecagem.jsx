@@ -4056,6 +4056,7 @@ export default function App() {
   const totalNotas=todos.reduce((a,e)=>a+e.notas.length,0);
   const notasComum=eqState.comum.reduce((a,e)=>a+e.notas.length,0);
   const salvarChecklist=(registro)=>{const novo=[...historico,registro];setHistorico(novo);storageSet("historico_h2",novo);};
+  React.useEffect(()=>{cloudGet("historico_h2").then(data=>{if(data&&Array.isArray(data)&&data.length>0)setHistorico(data);});},[]);
   const nav=[
     {id:"dashboard",label:"Início",icon:"⬡"},
     {id:"checklist",label:"Check-list",icon:"✓"},
