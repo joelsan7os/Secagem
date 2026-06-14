@@ -3228,6 +3228,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
   const [regDesc,setRegDesc]=useState("");
   const [showHistN,setShowHistN]=useState(false);
   const [chamados,setChamados]=useState(()=>storageGet("chamados_h2")||[]);
+  React.useEffect(()=>{cloudGet("chamados_h2").then(data=>{if(data&&Array.isArray(data))setChamados(data);});},[]);
   const [filtro,setFiltro]=useState("aberto");
   const [showChamadosHist,setShowChamadosHist]=useState(false);
   const [buscarEq,setBuscarEq]=useState("");
@@ -3626,6 +3627,7 @@ function RotasTela({ historico, onVoltar }) {
   const turno=getAutoTurno();
   const letra=calcularLetra();
   const [justificativas,setJustificativas]=useState(()=>storageGet("justificativas_h2")||[]);
+  React.useEffect(()=>{cloudGet("justificativas_h2").then(data=>{if(data&&Array.isArray(data))setJustificativas(data);});},[]);
   const [areaAtiva,setAreaAtiva]=useState("pu");
   const [modalAberto,setModalAberto]=useState(null); // {rotaId, area, todas}
   const [motivoSel,setMotivoSel]=useState("");
@@ -3781,6 +3783,10 @@ const ESTOQUE_ITENS=[{id:"garrafa",label:"Garrafa"},{id:"valvula",label:"Válvul
 function CleanersTela(){
   const [dados,setDados]=useState(()=>storageGet("cleaners_h2")||{M2:{},M3:{}});
   const [est,setEst]=useState(()=>storageGet("cleaners_estoque_h2")||{});
+  React.useEffect(()=>{
+    cloudGet("cleaners_h2").then(data=>{if(data)setDados(data);});
+    cloudGet("cleaners_estoque_h2").then(data=>{if(data)setEst(data);});
+  },[]);
   const [maq,setMaq]=useState("M2");
   const [subAba,setSubAba]=useState("op");
   const [modalG,setModalG]=useState(null);
@@ -4056,7 +4062,10 @@ export default function App() {
   const totalNotas=todos.reduce((a,e)=>a+e.notas.length,0);
   const notasComum=eqState.comum.reduce((a,e)=>a+e.notas.length,0);
   const salvarChecklist=(registro)=>{const novo=[...historico,registro];setHistorico(novo);storageSet("historico_h2",novo);};
-  React.useEffect(()=>{cloudGet("historico_h2").then(data=>{if(data&&Array.isArray(data)&&data.length>0)setHistorico(data);});},[]);
+  React.useEffect(()=>{
+    cloudGet("historico_h2").then(data=>{if(data&&Array.isArray(data)&&data.length>0)setHistorico(data);});
+    cloudGet("ocorrencias_h2").then(data=>{if(data)setOcorrencias(data);});
+  },[]);
   const nav=[
     {id:"dashboard",label:"Início",icon:"⬡"},
     {id:"checklist",label:"Check-list",icon:"✓"},
@@ -4165,7 +4174,7 @@ export default function App() {
                         ))}
                       </div>
                     </div>
-                    <button onClick={()=>{setOcorrencias(p=>modalMaq==="Ambas"?{M2:null,M3:null}:{...p,[modalMaq]:null});setModalSinal(false);setModalCor(null);setModalMaq("Ambas");}} style={{width:"100%",padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:C.success,border:"none",color:"#fff"}}>✓ Confirmar — Operação Normal</button>
+                    <button onClick={()=>{const novo=modalMaq==="Ambas"?{M2:null,M3:null}:{...ocorrencias,[modalMaq]:null};setOcorrencias(novo);storageSet("ocorrencias_h2",novo);setModalSinal(false);setModalCor(null);setModalMaq("Ambas");}} style={{width:"100%",padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:C.success,border:"none",color:"#fff"}}>✓ Confirmar — Operação Normal</button>
                   </>
                 ):(
                   <>
@@ -4183,7 +4192,7 @@ export default function App() {
                         ))}
                       </div>
                     </div>
-                    <button disabled={!modalMotivo||(modalMotivo==="Outro"&&!modalOutro.trim())} onClick={()=>{const agora=new Date();const h=`${String(agora.getHours()).padStart(2,"0")}:${String(agora.getMinutes()).padStart(2,"0")}`;const val={cor:modalCor,nivel:modalCor,motivo:modalMotivo,outro:modalOutro,hora:h,maquina:modalMaq};setOcorrencias(p=>modalMaq==="Ambas"?{M2:val,M3:val}:{...p,[modalMaq]:val});setModalSinal(false);setModalCor(null);setModalMotivo("");setModalOutro("");setModalMaq("Ambas");}} style={{width:"100%",padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:modalCor==="amarelo"?C.warning:C.danger,border:"none",color:"#fff",opacity:!modalMotivo||(modalMotivo==="Outro"&&!modalOutro.trim())?0.4:1}}>Confirmar ocorrência</button>
+                    <button disabled={!modalMotivo||(modalMotivo==="Outro"&&!modalOutro.trim())} onClick={()=>{const agora=new Date();const h=`${String(agora.getHours()).padStart(2,"0")}:${String(agora.getMinutes()).padStart(2,"0")}`;const val={cor:modalCor,nivel:modalCor,motivo:modalMotivo,outro:modalOutro,hora:h,maquina:modalMaq};const novo=modalMaq==="Ambas"?{M2:val,M3:val}:{...ocorrencias,[modalMaq]:val};setOcorrencias(novo);storageSet("ocorrencias_h2",novo);setModalSinal(false);setModalCor(null);setModalMotivo("");setModalOutro("");setModalMaq("Ambas");}} style={{width:"100%",padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:modalCor==="amarelo"?C.warning:C.danger,border:"none",color:"#fff",opacity:!modalMotivo||(modalMotivo==="Outro"&&!modalOutro.trim())?0.4:1}}>Confirmar ocorrência</button>
                   </>
                 )}
               </>
