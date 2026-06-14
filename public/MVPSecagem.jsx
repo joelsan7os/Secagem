@@ -3172,7 +3172,7 @@ function HistoricoTela({ historico, areaAtiva }) {
   });
   const porArea=porMaquina.filter(h=>areaDoTipo(h.tipoId)===filtroArea);
   const tiposDisponiveis=[{id:"TODOS",label:"Todos os check-lists"},...CATALOGO.filter(c=>c.area===filtroArea).map(c=>({id:c.id,label:c.label})).filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i)];
-  const filtrados=(filtroTipo==="TODOS"?porArea:porArea.filter(h=>h.tipoId===filtroTipo)).sort((a,b)=>b.id-a.id);
+  const filtrados=(filtroTipo==="TODOS"?porArea:porArea.filter(h=>h.tipoId===filtroTipo)).filter(h=>!buscaData||h.data===buscaData).sort((a,b)=>b.id-a.id);
   const AREAS_HIST=[{id:"pu",label:"Parte Úmida"},{id:"cs",label:"P. Seca/Cortad."},{id:"enf",label:"Enfardamento"}];
   const [fotoAmp,setFotoAmp]=useState(null);
   const reg=sel!=null?historico.find(h=>h.id===sel):null;
@@ -3252,78 +3252,15 @@ function HistoricoTela({ historico, areaAtiva }) {
       </div>
       <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"8px 0 12px"}}/>
       <div style={{display:"flex",gap:6,marginBottom:14}}>
-        {[{id:"reg",l:"📋 REGISTROS"},{id:"ana",l:"🔍 BUSCAR"}].map(a=>(
+        {[{id:"reg",l:"📋 REGISTROS"},{id:"ana",l:"📊 EFICIÊNCIA"}].map(a=>(
           <button key={a.id} onClick={()=>setAbaHist(a.id)} style={{flex:1,padding:"8px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11,letterSpacing:"0.05em",background:abaHist===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${abaHist===a.id?"rgba(255,255,255,0.55)":C.border}`,color:abaHist===a.id?"#fff":C.textMuted,boxShadow:abaHist===a.id?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>{a.l}</button>
         ))}
       </div>
-      {abaHist==="ana"?(()=>{
-        const fmt=d=>{if(!d)return"—";const[y,m,day]=d.split("-");return`${day}/${m}/${y}`;};
-        const hoje=new Date();
-        const ymd=dt=>dt.toISOString().slice(0,10);
-        const atalho=dias=>{const d=new Date();d.setDate(d.getDate()-dias);setBuscaData(ymd(d));};
-        const areaDoTipoB=id=>CATALOGO.find(c=>c.id===id)?.area||"pu";
-        const isMaqB=h=>h.linha?(filtroMaq==="M2"?LINHAS_M2.includes(h.linha):LINHAS_M3.includes(h.linha)):(h.maquina===filtroMaq||h.maquina==="M2/M3");
-        const resultados=buscaData?[...historico].filter(h=>h.data===buscaData&&areaDoTipoB(h.tipoId)===filtroArea&&isMaqB(h)&&(filtroTipo==="TODOS"||h.tipoId===filtroTipo)).sort((a,b)=>b.id-a.id):[];
-        return(
-          <div>
-            <GraficoEficiencia historico={historico}/>
-            <label style={{color:C.textDim,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>Buscar por data</label>
-            <input type="date" value={buscaData} onChange={e=>setBuscaData(e.target.value)} max={ymd(hoje)} style={{...inputStyle,width:"100%",marginBottom:8}}/>
-            <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-              {[{l:"Hoje",d:0},{l:"Ontem",d:1},{l:"7 dias",d:7},{l:"30 dias",d:30}].map(a=>(
-                <button key={a.l} onClick={()=>atalho(a.d)} style={{flex:"1 1 0",padding:"7px 4px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,whiteSpace:"nowrap"}}>{a.l}</button>
-              ))}
-            </div>
-            <div style={{display:"flex",gap:6,marginBottom:8}}>
-              {[{id:"pu",l:"P. ÚMIDA"},{id:"cs",l:"CORTADEIRA"},{id:"enf",l:"ENFARD."}].map(a=>(
-                <button key={a.id} onClick={()=>{setFiltroArea(a.id);setFiltroTipo("TODOS");}} style={{flex:1,padding:"7px 4px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:10,background:filtroArea===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`1.5px solid ${filtroArea===a.id?"rgba(255,255,255,0.55)":C.border}`,color:filtroArea===a.id?"#fff":C.textMuted}}>{a.l}</button>
-              ))}
-            </div>
-            <div style={{display:"flex",gap:6,marginBottom:8}}>
-              {["M2","M3"].map(m=>(
-                <button key={m} onClick={()=>setFiltroMaq(m)} style={{flex:1,padding:"7px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:11,background:filtroMaq===m?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`1.5px solid ${filtroMaq===m?"rgba(255,255,255,0.55)":C.border}`,color:filtroMaq===m?"#fff":C.textMuted}}>Máq. {m.replace("M","")}</button>
-              ))}
-            </div>
-            <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-              {[{id:"TODOS",l:"Todos"},...CATALOGO.filter(c=>c.area===filtroArea).map(c=>({id:c.id,l:c.label}))].map(t=>(
-                <button key={t.id} onClick={()=>setFiltroTipo(t.id)} style={{padding:"6px 10px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:10,background:filtroTipo===t.id?C.blue:C.tagBg,border:`1px solid ${filtroTipo===t.id?C.accentLight:C.border}`,color:filtroTipo===t.id?"#fff":C.textMuted}}>{t.l}</button>
-              ))}
-            </div>
-            {!buscaData?(
-              <div style={{textAlign:"center",color:C.textMuted,padding:"30px 0",fontSize:12}}>Selecione uma data para ver os checklists lançados.</div>
-            ):resultados.length===0?(
-              <div style={{textAlign:"center",color:C.textMuted,padding:"30px 0",fontSize:12}}>Nenhum checklist lançado em {fmt(buscaData)}.</div>
-            ):(
-              <>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                  <span style={{color:C.text,fontSize:12,fontWeight:800}}>{fmt(buscaData)}</span>
-                  <span style={{color:C.textDim,fontSize:10,fontFamily:"monospace"}}>{resultados.length} registro{resultados.length!==1?"s":""}</span>
-                  <div style={{flex:1,height:1,background:`linear-gradient(90deg,${C.border},transparent)`}}/>
-                </div>
-                {resultados.map(h=>(
-                  <div key={h.id} onClick={()=>setSel(h.id)} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${h.noks>0?C.warningLight:C.accentLight}`,borderRadius:9,padding:"10px 12px",marginBottom:5,cursor:"pointer"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div style={{display:"flex",gap:7,alignItems:"center",minWidth:0}}>
-                        <span style={{color:C.text,fontSize:12,fontWeight:600}}>{h.tipoLabel}</span>
-                        <span style={{color:"#5090FF",fontSize:9,fontWeight:800}}>{h.linha||h.maquina}</span>
-                      </div>
-                      <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                        {h.noks>0&&<span style={{color:C.warningLight,fontSize:9,fontWeight:800}}>⚠{h.noks}</span>}
-                        <span style={{color:C.textDim,fontSize:9,fontFamily:"monospace"}}>{h.hora||""}</span>
-                      </div>
-                    </div>
-                    <div style={{display:"flex",gap:10,marginTop:3}}>
-                      <span style={{color:C.textDim,fontSize:9}}>👤 {h.opPU||h.opArea||"—"}</span>
-                      {h.letra&&<span style={{color:C.textDim,fontSize:9}}>Letra {h.letra}</span>}
-                      {h.turno&&<span style={{color:C.textDim,fontSize:9}}>{h.turno}</span>}
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        );
-      })():(
+      {abaHist==="ana"?(
+        <div>
+          <GraficoEficiencia historico={historico}/>
+        </div>
+      ):(
       <>
       {(()=>{
         /* ── Últimos Lançamentos ── */
@@ -3352,6 +3289,13 @@ function HistoricoTela({ historico, areaAtiva }) {
         );
       })()}
 
+      <div style={{marginBottom:10}}>
+        <label style={{color:C.textDim,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>Buscar por data (opcional)</label>
+        <div style={{display:"flex",gap:6}}>
+          <input type="date" value={buscaData} onChange={e=>setBuscaData(e.target.value)} style={{...inputStyle,flex:1}}/>
+          {buscaData&&<button onClick={()=>setBuscaData("")} style={{padding:"0 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,whiteSpace:"nowrap"}}>Limpar</button>}
+        </div>
+      </div>
       <div style={{display:"flex",gap:8,marginBottom:10}}>
         {["M2","M3"].map(m=>(<button key={m} onClick={()=>{setFiltroMaq(m);setFiltroTipo("TODOS");}} style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:filtroMaq===m?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${filtroMaq===m?"rgba(255,255,255,0.55)":C.border}`,color:filtroMaq===m?"#fff":C.textMuted,boxShadow:filtroMaq===m?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4),0 0 40px rgba(80,144,255,0.2)":"none"}}>Máquina {m.replace("M","")}<div style={{fontSize:9,fontWeight:400,marginTop:2,opacity:.7}}>{m==="M2"?"L4 · L5":"L6 · L7 · L8"}</div></button>))}
       </div>
