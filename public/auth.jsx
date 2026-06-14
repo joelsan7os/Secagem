@@ -5,7 +5,8 @@
 import { useState, useEffect } from "react";
 import { db, COL, doc, setDoc, getDoc, onSnapshot } from "./firebase";
 import { collection } from "firebase/firestore";
-import fabricaImg from "./F9B281E2-D4B4-4501-A2FD-1B173F8ED708.png";
+import fabricaImg from "./IMG_0318.jpeg";
+import { LOGO_SUZANO } from "./logo";
 
 const UCOL = collection(db, "usuarios_h2");
 
@@ -65,17 +66,9 @@ export function usePerfilAtivo() {
   return { perfil, setPerfil, logout };
 }
 
-// ─── Logo Suzano (folha + texto) ──────────────────────────────────────────────
-function LogoSuzano({ size=46 }) {
-  return (
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-      <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-        <path d="M24 4C24 4 8 14 8 28a16 16 0 0 0 32 0C40 14 24 4 24 4Z" fill="#00E676" opacity="0.95"/>
-        <path d="M24 10c0 8-7 13-7 19" stroke="#04111D" strokeWidth="2.5" strokeLinecap="round" opacity="0.55"/>
-      </svg>
-      <span style={{fontSize:size*0.52,fontWeight:800,color:"#5090FF",letterSpacing:"-0.02em",lineHeight:1,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>suzano</span>
-    </div>
-  );
+// ─── Logo Suzano oficial (mesma do app) ───────────────────────────────────────
+function LogoSuzano({ size=52 }) {
+  return <img src={LOGO_SUZANO} alt="Suzano" style={{height:size,width:"auto",filter:`drop-shadow(0 2px 12px rgba(0,230,118,0.3))`}}/>;
 }
 
 // ─── Tela principal de autenticação ───────────────────────────────────────────
@@ -102,7 +95,7 @@ export function TelaAuth({ onEntrar }) {
   return (
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center"}}>
       {/* Topo com foto de fundo + logo */}
-      <div style={{position:"relative",width:"100%",height:300,overflow:"hidden",flexShrink:0}}>
+      <div style={{position:"relative",width:"100%",height:240,overflow:"hidden",flexShrink:0}}>
         <div style={{position:"absolute",inset:0,backgroundImage:`url('${IMG}')`,backgroundSize:"cover",backgroundPosition:"center",filter:"saturate(0.85) brightness(0.7)"}}/>
         {/* Overlay escuro pra fundir com o fundo */}
         <div style={{position:"absolute",inset:0,background:`linear-gradient(180deg, rgba(4,17,29,0.55) 0%, rgba(4,17,29,0.35) 45%, rgba(4,17,29,0.85) 85%, ${C.bg} 100%)`}}/>
