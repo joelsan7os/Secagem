@@ -925,7 +925,7 @@ const dotColor    = (s) => s==="OP"?C.accentLight:s==="ALERTA"?C.warningLight:C.
 const subColor    = (s) => s==="Comum"?C.warningLight:s==="M2"?C.blueLight:C.accentLight;
 const subLabel    = (s) => s==="Comum"?"⚡ COMUM":s;
 const iconArea    = {"Formação":"🔲","Prensa":"⚙","UH / Lub.":"🛢","Prime Press":"💨","Vácuo":"〇","Bombas":"💧","Quebras":"♻","Torre HD":"🏗","Torre Quebras":"🏗","Torre Água Branca":"🏗","Efluentes":"🚰","Utilidades":"🔧","Cortadeira":"✂️","Secador":"🔥","Enfardamento":"📦"};
-const iconSecao   = {Pichasso:"💧",Telas:"🔲",Feltros:"🟫",Prensas:"⚙",Rolos:"🔄","P. Úmida":"💧","P. Seca":"🔥",Secador:"🔥",Cortadeira:"✂️",Layboy:"📦",Faquinhas:"🔪",Extra:"📝"};
+const iconSecao   = {Pichasso:"💧",Telas:"🔲",Feltros:"🟫",Prensas:"⚙",Rolos:"🔄","P. Úmida":"💧","P. Seca":"🔹",Layboy:"📦",Faquinhas:"🔪",Extra:"📝"};
 
 const Badge = ({ children, color }) => {
   const map = {
@@ -1947,8 +1947,9 @@ function ChecklistTela({ onSalvar, historico=[] }) {
   const addFotoItem=(id,src)=>setFotos(p=>({...p,[id]:[...(p[id]||[]),src]}));
   const removeFotoItem=(id,idx)=>setFotos(p=>({...p,[id]:p[id].filter((_,i)=>i!==idx)}));
   const ehCortadeira = tipoId==="cortadeira";
-  // Verifica se um item está preenchido (trata duplo_valor e velMin)
+  // Verifica se um item está preenchido (trata duplo_valor, valor_direto, faquinhas)
   const itemPreenchido=(i)=>{
+    if(i.tipo==="faquinhas")return true; // grupo de conferência: já validado por padrão
     if(i.tipo==="duplo_valor"){
       const f=valores[i.id+"_f"], c=valores[i.id+"_c"];
       return f!==undefined&&f!==""&&c!==undefined&&c!==""; // só verde com os dois
@@ -2226,7 +2227,7 @@ function ChecklistTela({ onSalvar, historico=[] }) {
                             const dec=step<1?1:0;
                             const rawVal=valores[key]||"";
                             const numVal=parseFloat((rawVal||"").replace(",","."))||refNum;
-                            const st=getFaixaStatus(rawVal,item.faixas);
+                            const st=getFaixaStatus(rawVal||ref,item.faixas);
                             const cor=corFaixa(st);
                             const adj=(d)=>{
                               const n=Math.min(max,Math.max(min,parseFloat((numVal+d).toFixed(dec))));
@@ -2772,30 +2773,35 @@ function turnoDoHorario(hhmm) {
   const h = parseInt((hhmm||"00:00").split(":")[0],10);
   return h < 8 ? 0 : h < 16 ? 1 : 2;
 }
-function calcularEficiencia(historico) {
+function calcularEficiencia(historico, mesAno) {
+  // mesAno: "2026-06" (ano-mês). Se omitido, usa o mês atual.
   const BASE = new Date("2026-06-09T00:00:00");
   const agora = new Date();
   const letras = ["A","B","C","D","E"];
-  // Esperado por área (peso): PU=1, CS=1, ENF=1 rota + 2 qualidade = 3
+  const [anoF, mesF] = (mesAno || `${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,"0")}`).split("-").map(Number);
+  // Limites do mês selecionado
+  const inicioMes = new Date(anoF, mesF-1, 1, 0,0,0);
+  const fimMes = new Date(anoF, mesF, 1, 0,0,0); // primeiro dia do mês seguinte
+  const limiteSup = agora < fimMes ? agora : fimMes; // não conta futuro
   const AREAS = {
     pu:  { label:"P. Úmida",    tipos:{rotina:1} },
     cs:  { label:"Cortadeira",  tipos:{cortadeira:1} },
     enf: { label:"Enfardamento",tipos:{rota_enf:1, enf_qualidade:2} },
   };
-  // Inicializa contadores: esperado e realizado por letra/área
   const cont = {};
-  letras.forEach(l=>{ cont[l]={}; Object.keys(AREAS).forEach(a=>{ cont[l][a]={esperado:0,feito:0}; }); });
+  letras.forEach(l=>{ cont[l]={lancamentos:0}; Object.keys(AREAS).forEach(a=>{ cont[l][a]={esperado:0,feito:0}; }); });
 
-  // 1) Denominador: percorre cada turno desde a BASE até agora
+  // 1) Denominador: turnos escalados DENTRO do mês (a partir da BASE)
   const umDia = 1000*60*60*24;
-  const totalDias = Math.floor((agora - BASE) / umDia);
-  for(let d=0; d<=totalDias; d++){
-    const dia = new Date(BASE.getTime() + d*umDia);
+  let cursor = inicioMes < BASE ? new Date(BASE) : new Date(inicioMes);
+  cursor.setHours(0,0,0,0);
+  for(; cursor < limiteSup; cursor = new Date(cursor.getTime()+umDia)){
     for(let t=0; t<3; t++){
-      // Não conta turnos no futuro
-      const inicioTurno = new Date(dia); inicioTurno.setHours(t*8,0,0,0);
-      if(inicioTurno > agora) continue;
-      const letra = letraDoTurno(dia, t);
+      const inicioTurno = new Date(cursor); inicioTurno.setHours(t*8,0,0,0);
+      if(inicioTurno < BASE) continue;          // antes da escala existir
+      if(inicioTurno >= limiteSup) continue;    // futuro ou fora do mês
+      if(inicioTurno < inicioMes) continue;     // antes do mês
+      const letra = letraDoTurno(cursor, t);
       if(!cont[letra]) continue;
       Object.entries(AREAS).forEach(([a,def])=>{
         const pesoTotal = Object.values(def.tipos).reduce((s,p)=>s+p,0);
@@ -2803,20 +2809,20 @@ function calcularEficiencia(historico) {
       });
     }
   }
-  // 2) Numerador: percorre o histórico real e credita o que foi lançado
+  // 2) Numerador: lançamentos do mês
   historico.forEach(h=>{
     if(!h.letra || !h.data || !cont[h.letra]) return;
-    const turnoIdx = turnoDoHorario(h.hora);
-    // Identifica área e peso do tipo lançado
+    const [hy,hm] = h.data.split("-").map(Number);
+    if(hy!==anoF || hm!==mesF) return; // só o mês selecionado
+    cont[h.letra].lancamentos += 1;
     for(const [a,def] of Object.entries(AREAS)){
       if(def.tipos[h.tipoId]!==undefined){
-        // Credita o peso, sem ultrapassar o esperado daquele turno
         cont[h.letra][a].feito += def.tipos[h.tipoId];
         break;
       }
     }
   });
-  // 3) Calcula percentuais (cap em 100%)
+  // 3) Percentuais (cap 100%)
   const pct = (feito,esp)=> esp>0 ? Math.min(100, Math.round(feito/esp*100)) : null;
   const resultado = letras.map(l=>{
     const areas = {};
@@ -2826,7 +2832,7 @@ function calcularEficiencia(historico) {
       areas[a]=pct(feito,esperado);
       somaFeito+=feito; somaEsp+=esperado;
     });
-    return { letra:l, geral:pct(somaFeito,somaEsp), areas };
+    return { letra:l, geral:pct(somaFeito,somaEsp), areas, lancamentos:cont[l].lancamentos };
   });
   return { resultado, AREAS };
 }
@@ -2877,52 +2883,108 @@ function GraficoLetrasAntigo({ historico }) {
 
 // ─── GraficoEficiencia — Eficiência de Lançamento por Letra ───────────────────
 function GraficoEficiencia({ historico }) {
+  const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const hoje=new Date();
   const [visao,setVisao]=useState("geral"); // geral | pu | cs | enf
-  const { resultado, AREAS } = calcularEficiencia(historico);
+  const [ano,setAno]=useState(hoje.getFullYear());
+  const [mes,setMes]=useState(hoje.getMonth()); // 0-11
+  const mesAno=`${ano}-${String(mes+1).padStart(2,"0")}`;
+  const { resultado, AREAS } = calcularEficiencia(historico, mesAno);
   const corEfic=(e)=>e===null?C.textDim:e>=80?C.accentLight:e>=50?C.warningLight:C.dangerLight;
-  const opcoes=[{id:"geral",label:"Geral"},...Object.entries(AREAS).map(([id,d])=>({id,label:d.label}))];
+  const opcoes=[{id:"geral",label:"Todos"},...Object.entries(AREAS).map(([id,d])=>({id,label:d.label}))];
   const valorDe=(r)=> visao==="geral" ? r.geral : r.areas[visao];
-  const dados=resultado.map(r=>({letra:r.letra, efic:valorDe(r)}));
+  const dados=resultado.map(r=>({letra:r.letra, efic:valorDe(r), lanc:r.lancamentos}));
   const algumDado=dados.some(d=>d.efic!==null);
+  const totalLanc=dados.reduce((s,d)=>s+d.lanc,0);
+  // Navegação de mês
+  const mesAnterior=()=>{ if(mes===0){setMes(11);setAno(ano-1);}else setMes(mes-1); };
+  const mesProximo=()=>{
+    const ehMesAtual = ano===hoje.getFullYear() && mes===hoje.getMonth();
+    if(ehMesAtual) return; // não avança pro futuro
+    if(mes===11){setMes(0);setAno(ano+1);}else setMes(mes+1);
+  };
+  const ehMesAtual = ano===hoje.getFullYear() && mes===hoje.getMonth();
 
   return (
-    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:16}}>
-      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-        <span style={{fontSize:14}}>📊</span>
-        <span style={{color:C.white,fontWeight:800,fontSize:13}}>Eficiência de Lançamento</span>
+    <div style={{background:`linear-gradient(160deg,${C.card} 0%,${C.surface} 100%)`,border:`1px solid ${C.border}`,borderRadius:14,padding:18,marginBottom:16,boxShadow:"0 4px 24px rgba(0,0,0,0.35)"}}>
+      {/* Linha colorida no topo */}
+      <div style={{height:3,background:`linear-gradient(90deg,${C.accent},${C.blueLight},${C.accent})`,borderRadius:3,marginBottom:14,boxShadow:`0 0 8px ${C.accent}66`}}/>
+      {/* Título + navegação de mês */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+        <div style={{display:"flex",alignItems:"center",gap:7}}>
+          <span style={{fontSize:15}}>📊</span>
+          <span style={{color:C.white,fontWeight:800,fontSize:14,letterSpacing:"0.02em"}}>Eficiência de Lançamento</span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <button onClick={mesAnterior} style={{width:26,height:26,borderRadius:7,cursor:"pointer",border:`1px solid ${C.border}`,background:C.tagBg,color:C.accent,fontSize:14,fontWeight:800,lineHeight:1,padding:0}}>‹</button>
+          <span style={{color:C.white,fontSize:12,fontWeight:700,fontFamily:"monospace",minWidth:96,textAlign:"center"}}>{MESES[mes]} {ano}</span>
+          <button onClick={mesProximo} disabled={ehMesAtual} style={{width:26,height:26,borderRadius:7,cursor:ehMesAtual?"not-allowed":"pointer",border:`1px solid ${C.border}`,background:C.tagBg,color:ehMesAtual?C.textDim:C.accent,fontSize:14,fontWeight:800,lineHeight:1,padding:0,opacity:ehMesAtual?0.4:1}}>›</button>
+        </div>
       </div>
-      <p style={{color:C.textDim,fontSize:10,margin:"0 0 12px",lineHeight:1.4}}>Turnos lançados ÷ turnos escalados. Qualidade do Enfardamento pesa 2×.</p>
-      {/* Seletor de visão */}
-      <div style={{display:"flex",gap:5,marginBottom:14,flexWrap:"wrap"}}>
+      <p style={{color:C.textDim,fontSize:10,margin:"0 0 14px",lineHeight:1.4}}>Turnos lançados ÷ turnos escalados no mês. Cada letra avaliada só pelos turnos dela.</p>
+
+      {/* Seletor de área */}
+      <div style={{display:"flex",gap:5,marginBottom:16,flexWrap:"wrap"}}>
         {opcoes.map(o=>(
-          <button key={o.id} onClick={()=>setVisao(o.id)} style={{flex:"1 1 auto",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${visao===o.id?C.accent:C.border}`,background:visao===o.id?C.accentDark:C.tagBg,color:visao===o.id?C.white:C.textMuted,whiteSpace:"nowrap"}}>{o.label}</button>
+          <button key={o.id} onClick={()=>setVisao(o.id)} style={{flex:"1 1 auto",padding:"7px 10px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${visao===o.id?C.accent:C.border}`,background:visao===o.id?`linear-gradient(135deg,${C.accentDark},${C.accent}44)`:C.tagBg,color:visao===o.id?C.white:C.textMuted,whiteSpace:"nowrap",transition:"all .15s"}}>{o.label}</button>
         ))}
       </div>
-      {/* Legenda */}
-      <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginBottom:10}}>
-        {[[C.accentLight,"≥80%"],[C.warningLight,"50-79%"],[C.dangerLight,"<50%"]].map(([clr,lbl])=>(
-          <div key={lbl} style={{display:"flex",alignItems:"center",gap:3}}>
-            <div style={{width:8,height:8,borderRadius:2,background:clr}}/><span style={{color:C.textMuted,fontSize:9}}>{lbl}</span>
+
+      {/* Gráfico de barras */}
+      <div style={{position:"relative",paddingLeft:30,marginBottom:8}}>
+        {/* Linhas de grade horizontais com rótulos */}
+        {[100,75,50,25,0].map(g=>(
+          <div key={g} style={{position:"absolute",left:0,right:0,top:`${(100-g)/100*170}px`,height:1,background:g===0?C.border:"rgba(255,255,255,0.04)",display:"flex",alignItems:"center"}}>
+            <span style={{position:"absolute",left:0,transform:"translateY(-50%)",color:C.textDim,fontSize:8,fontFamily:"monospace",width:26,textAlign:"right"}}>{g}%</span>
+          </div>
+        ))}
+        {/* Barras */}
+        <div style={{display:"flex",gap:10,alignItems:"flex-end",height:170,position:"relative"}}>
+          {dados.map(d=>{
+            const barH=d.efic===null?3:Math.max(6,Math.round((d.efic/100)*170));
+            const cor=corEfic(d.efic);
+            return (
+              <div key={d.letra} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",height:"100%"}}>
+                {d.efic!==null&&<div style={{color:cor,fontSize:14,fontWeight:900,lineHeight:1,marginBottom:5,textShadow:`0 0 8px ${cor}55`}}>{d.efic}%</div>}
+                <div style={{width:"72%",maxWidth:46,height:barH,borderRadius:"6px 6px 0 0",background:d.efic===null?C.tagBg:`linear-gradient(180deg,${cor} 0%,${cor}cc 60%,${cor}88 100%)`,border:d.efic!==null?`1px solid ${cor}`:`1px solid ${C.border}`,boxShadow:d.efic!==null?`0 0 12px ${cor}44,inset 0 1px 2px rgba(255,255,255,0.3)`:"none",transition:"height .5s cubic-bezier(.4,0,.2,1)"}}/>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {/* Letras embaixo das barras */}
+      <div style={{display:"flex",gap:10,paddingLeft:30,marginBottom:14}}>
+        {dados.map(d=>(
+          <div key={d.letra} style={{flex:1,display:"flex",justifyContent:"center"}}>
+            <div style={{width:32,height:32,borderRadius:9,background:d.efic!==null?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,display:"flex",alignItems:"center",justifyContent:"center",color:d.efic!==null?"#fff":C.textDim,fontSize:15,fontWeight:900,boxShadow:d.efic!==null?`0 2px 8px ${C.blueLight}44`:"none"}}>{d.letra}</div>
           </div>
         ))}
       </div>
-      {/* Barras */}
-      <div style={{display:"flex",gap:8,alignItems:"flex-end",height:110}}>
-        {dados.map(d=>{
-          const barH=d.efic===null?4:Math.max(10,Math.round((d.efic/100)*84));
-          const cor=corEfic(d.efic);
-          return (
-            <div key={d.letra} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-              <div style={{textAlign:"center",minHeight:18}}>
-                <div style={{color:cor,fontSize:13,fontWeight:800,lineHeight:1}}>{d.efic!==null?`${d.efic}%`:"—"}</div>
-              </div>
-              <div style={{width:"100%",height:barH,borderRadius:"5px 5px 0 0",background:d.efic===null?C.tagBg:`linear-gradient(180deg,${cor} 0%,${cor}bb 100%)`,border:d.efic!==null?`1px solid ${cor}66`:`1px solid ${C.border}`,boxShadow:d.efic!==null?`0 0 8px ${cor}33`:"none",transition:"height .4s ease"}}/>
-              <div style={{width:30,height:30,borderRadius:8,background:d.efic!==null?C.blue:C.tagBg,display:"flex",alignItems:"center",justifyContent:"center",color:d.efic!==null?"#fff":C.textDim,fontSize:14,fontWeight:800}}>{d.letra}</div>
-            </div>
-          );
-        })}
+
+      {/* Legenda de cor */}
+      <div style={{display:"flex",gap:12,justifyContent:"center",marginBottom:14}}>
+        {[[C.accentLight,"≥80%"],[C.warningLight,"50-79%"],[C.dangerLight,"<50%"]].map(([clr,lbl])=>(
+          <div key={lbl} style={{display:"flex",alignItems:"center",gap:4}}>
+            <div style={{width:9,height:9,borderRadius:2,background:clr,boxShadow:`0 0 4px ${clr}88`}}/><span style={{color:C.textMuted,fontSize:9}}>{lbl}</span>
+          </div>
+        ))}
       </div>
-      {!algumDado&&<p style={{color:C.textDim,fontSize:11,textAlign:"center",marginTop:12}}>Sem lançamentos suficientes para calcular ainda.</p>}
+
+      {/* Lista de lançamentos por letra */}
+      <div style={{borderTop:`1px solid ${C.border}`,paddingTop:12}}>
+        <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Lançamentos no mês {visao!=="geral"?`· ${AREAS[visao].label}`:""}</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {dados.map(d=>(
+            <div key={d.letra} style={{flex:"1 1 auto",display:"flex",alignItems:"center",gap:6,background:C.tagBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"6px 10px",minWidth:72}}>
+              <span style={{color:C.white,fontWeight:800,fontSize:13}}>{d.letra}</span>
+              <span style={{color:C.accent,fontWeight:700,fontSize:13,fontFamily:"monospace"}}>{d.lanc}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{color:C.textDim,fontSize:10,textAlign:"right",marginTop:8}}>Total: <span style={{color:C.textMuted,fontWeight:700}}>{totalLanc}</span> lançamentos</div>
+      </div>
+
+      {!algumDado&&<p style={{color:C.textDim,fontSize:11,textAlign:"center",marginTop:12}}>Sem lançamentos em {MESES[mes]} {ano}.</p>}
     </div>
   );
 }
