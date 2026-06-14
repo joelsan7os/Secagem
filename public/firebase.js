@@ -1,4 +1,4 @@
-/// ─── Firebase — Conexão da Secagem H2 ────────────────────────────────────────
+// ─── Firebase — Conexão da Secagem H2 ────────────────────────────────────────
 // Projeto: app-secagem (modo TESTE — uso interno, sem aprovação TI ainda)
 import { initializeApp } from "firebase/app";
 import {
@@ -9,6 +9,7 @@ import {
   doc,
   setDoc,
   getDoc,
+  onSnapshot,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -33,4 +34,4 @@ const db = initializeFirestore(app, {
 // Coleção única onde cada chave do app vira um documento
 const COL = collection(db, "secagem_h2");
 
-export { db, COL, doc, setDoc, getDoc };
+export { db, COL, doc, setDoc, getDoc, onSnapshot };
