@@ -867,8 +867,9 @@ const CATALOGO = [
 
 
 // ─── Storage helpers (Firestore + localStorage offline-safe) ──────────────────
-import { COL, doc, setDoc, getDoc, onSnapshot } from "./firebase";
-import { TelaAuth, usePerfilAtivo, FUNCOES } from "./auth";
+import { COL, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "./firebase";
+import { TelaAuth, usePerfilAtivo, FUNCOES, validarPin } from "./auth";
+import { PainelAdmin } from "./admin";
 
 // Leitura imediata do aparelho (não trava a tela esperando a nuvem)
 const storageGet = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
@@ -3379,11 +3380,32 @@ function HistoricoTela({ historico, areaAtiva }) {
 }
 
 // ─── ConfiguracoesTela ───────────────────────────────────────────────────────
-function ConfiguracoesTela({ perfil, onLogout }) {
+function ConfiguracoesTela({ perfil, onLogout, onAbrirAdmin }) {
   const [cfg,setCfg]=useState(()=>storageGet('op_config')||{});
   const [salvo,setSalvo]=useState(false);
   const set=(k,v)=>{setCfg(p=>({...p,[k]:v}));setSalvo(false);};
   const salvar=()=>{storageSet('op_config',cfg);setSalvo(true);setTimeout(()=>setSalvo(false),2500);};
+  const ehDev=perfil?.funcao==="dev";
+  const [resetAberto,setResetAberto]=useState(false);
+  const [resetPin,setResetPin]=useState("");
+  const [resetErro,setResetErro]=useState("");
+  const [resetando,setResetando]=useState(false);
+  const [resetOk,setResetOk]=useState(false);
+  const CHAVES_RESET=["historico_h2","ocorrencias_h2","eqstate_h2","chamados_h2","cleaners_h2","cleaners_estoque_h2","cleaners_hist_h2","justificativas_h2","notas_hist_h2"];
+  const executarReset=async()=>{
+    setResetErro("");
+    if(resetPin.length!==4){setResetErro("Digite seu PIN de 4 dígitos.");return;}
+    setResetando(true);
+    const ok=await validarPin(perfil.matricula,resetPin);
+    if(!ok){setResetErro("PIN incorreto. Reset cancelado.");setResetando(false);return;}
+    // Apaga local + nuvem
+    for(const k of CHAVES_RESET){
+      try{localStorage.removeItem(k);}catch{}
+      try{await deleteDoc(doc(COL,k));}catch{}
+    }
+    setResetando(false);setResetOk(true);
+    setTimeout(()=>{try{location.reload();}catch{}},1500);
+  };
   const AREAS_CFG=[{id:"pu",label:"Parte Úmida"},{id:"cs",label:"Parte Seca / Cortadeira"},{id:"enf",label:"Enfardamento"}];
   return (
     <div>
@@ -3430,6 +3452,32 @@ function ConfiguracoesTela({ perfil, onLogout }) {
           </div>
           <div style={{color:C.textDim,fontSize:11,marginBottom:14}}>{FUNCOES[perfil.funcao]?.label||perfil.funcao}</div>
           <button onClick={onLogout} style={{width:"100%",padding:11,borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,background:C.tagBg,border:`1px solid ${C.dangerLight}55`,color:C.dangerLight}}>Sair da conta</button>
+        </div>
+      )}
+
+      {ehDev&&(
+        <div style={{marginTop:16,background:C.card,border:`1px solid ${C.dangerLight}33`,borderRadius:12,padding:16}}>
+          <div style={{color:C.dangerLight,fontSize:10,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6,fontWeight:800}}>⚠ Zona do desenvolvedor</div>
+          <button onClick={onAbrirAdmin} style={{width:"100%",padding:12,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,background:`linear-gradient(135deg,${C.blue},${C.blueLight})`,border:"none",color:"#fff",marginBottom:14,boxShadow:`0 2px 10px ${C.blueLight}44`}}>👥 Abrir Painel de Usuários</button>
+          <p style={{color:C.textMuted,fontSize:11,lineHeight:1.5,margin:"0 0 12px"}}>Apaga todos os dados operacionais (histórico, semáforo, equipamentos, chamados, cleaners, justificativas) do dispositivo e da nuvem. Logins e automação são mantidos. Não pode ser desfeito.</p>
+          {!resetAberto?(
+            <button onClick={()=>setResetAberto(true)} style={{width:"100%",padding:11,borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,background:C.danger+"22",border:`1px solid ${C.dangerLight}55`,color:C.dangerLight}}>🗑 Resetar dados operacionais</button>
+          ):resetOk?(
+            <div style={{textAlign:"center",padding:"8px 0"}}>
+              <div style={{fontSize:28,marginBottom:4}}>✅</div>
+              <p style={{color:C.accent,fontWeight:800,fontSize:13,margin:0}}>Dados apagados! Recarregando...</p>
+            </div>
+          ):(
+            <div>
+              <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:6}}>Confirme com seu PIN</label>
+              <input value={resetPin} onChange={e=>setResetPin(e.target.value.replace(/\D/g,"").slice(0,4))} inputMode="numeric" type="password" placeholder="••••" style={{...inputStyle,letterSpacing:"0.3em",fontSize:18,textAlign:"center",marginBottom:10}}/>
+              {resetErro&&<p style={{color:C.dangerLight,fontSize:12,margin:"0 0 10px"}}>{resetErro}</p>}
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>{setResetAberto(false);setResetPin("");setResetErro("");}} disabled={resetando} style={{flex:1,padding:11,borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted}}>Cancelar</button>
+                <button onClick={executarReset} disabled={resetando} style={{flex:1,padding:11,borderRadius:9,cursor:resetando?"wait":"pointer",fontWeight:800,fontSize:13,background:C.danger,border:"none",color:"#fff",opacity:resetando?0.6:1}}>{resetando?"Apagando...":"Confirmar reset"}</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -4269,6 +4317,7 @@ function CleanersTela(){
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const { perfil, setPerfil, logout } = usePerfilAtivo();
+  const [adminAberto,setAdminAberto]=useState(false);
   const [tela,setTela]=useState("dashboard");
   const [historico,setHistorico]=useState(()=>storageGet("historico_h2")||[]);
   const [areaAtiva,setAreaAtiva]=useState("pu");
@@ -4315,10 +4364,11 @@ export default function App() {
     if(tela==="checklist")return <ChecklistTela onSalvar={salvarChecklist} historico={historico} perfil={perfil}/>;
     if(tela==="equipamentos")return <EquipamentosTela eqState={eqState} setEqState={setEqState} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} historico={historico} setTela={setTela}/>;
     if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias}/>;
-    if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout}/>;
+    if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout} onAbrirAdmin={()=>setAdminAberto(true)}/>;
     if(tela==="rotas")return <RotasTela historico={historico} onVoltar={()=>setTela("dashboard")}/>;
   };
   if(!perfil) return <TelaAuth onEntrar={setPerfil}/>;
+  if(adminAberto && perfil.funcao==="dev") return <PainelAdmin onVoltar={()=>setAdminAberto(false)}/>;
   return (
     <div style={{background:C.bg,minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text}}>
       <style>{`
