@@ -867,7 +867,7 @@ const CATALOGO = [
 
 
 // ─── Storage helpers (Firestore + localStorage offline-safe) ──────────────────
-import { COL, doc, setDoc, getDoc } from "./firebase";
+import { COL, doc, setDoc, getDoc, onSnapshot } from "./firebase";
 
 // Leitura imediata do aparelho (não trava a tela esperando a nuvem)
 const storageGet = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
@@ -1437,6 +1437,9 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
   const [opPainelLocal,setOpPainelLocal]=useState(()=>storageGet("op_config")?.operadorPainel||opPainel||"");
   const matriculaEnf=storageGet("op_config")?.matricula||"";
   const [respostas,setRespostas]=useState({});
+  const [fotos,setFotos]=useState({});
+  const addFotoEnf=(id,src)=>{setFotos(p=>({...p,[id]:[...(p[id]||[]),src]}));setSalvo(false);};
+  const remFotoEnf=(id,idx)=>{setFotos(p=>({...p,[id]:(p[id]||[]).filter((_,i)=>i!==idx)}));setSalvo(false);};
   const [obs,setObs]=useState("");
   const [salvo,setSalvo]=useState(false);
   const items=checklistEnfardamento;
@@ -1446,7 +1449,7 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
   const alertas=items.filter(i=>i.alertOpcoes?.includes(respostas[i.id])).length;
   const linhaInfo=LINHAS.find(l=>l.id===linha);
   const handleSalvar=()=>{
-    const registro={id:Date.now(),tipoId:"enf_qualidade",tipoLabel:"Check List Qualidade",maquina:linhaInfo?.maquina||"M2",linha,turno,hora,letra,data:hoje,opPU:opArea,matricula:matriculaEnf,opPainel:opPainelLocal,noks:alertas,total:items.length,items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:respostas[i.id]||"",fotos:[]})),obs};
+    const registro={id:Date.now(),tipoId:"enf_qualidade",tipoLabel:"Check List Qualidade",maquina:linhaInfo?.maquina||"M2",linha,turno,hora,letra,data:hoje,opPU:opArea,matricula:matriculaEnf,opPainel:opPainelLocal,noks:alertas,total:items.length,items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:respostas[i.id]||"",fotos:fotos[i.id]||[]})),obs};
     onSalvar(registro);setSalvo(true);
   };
   return (
@@ -1545,6 +1548,10 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
                         </button>
                       );
                     })}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,marginLeft:30}}>
+                    <BotaoFoto compact fotos={fotos[item.id]||[]} onAdd={src=>addFotoEnf(item.id,src)} onRemove={idx=>remFotoEnf(item.id,idx)}/>
+                    {(fotos[item.id]||[]).length>0&&<span style={{color:C.accentLight,fontSize:10,fontWeight:700}}>📷 {(fotos[item.id]||[]).length}</span>}
                   </div>
                   {isAlerta&&<div style={{marginTop:10,background:"#2A080833",border:`1px solid ${C.dangerLight}44`,borderRadius:8,padding:"8px 12px",marginLeft:30}}><p style={{color:C.dangerLight,fontSize:11,fontWeight:700,margin:0}}>⚠ Ação necessária — verifique e registre nas observações</p></div>}
                 </div>
@@ -4062,9 +4069,20 @@ export default function App() {
   const totalNotas=todos.reduce((a,e)=>a+e.notas.length,0);
   const notasComum=eqState.comum.reduce((a,e)=>a+e.notas.length,0);
   const salvarChecklist=(registro)=>{const novo=[...historico,registro];setHistorico(novo);storageSet("historico_h2",novo);};
+  const eqCarregado=useRef(false);
   React.useEffect(()=>{
     cloudGet("historico_h2").then(data=>{if(data&&Array.isArray(data)&&data.length>0)setHistorico(data);});
-    cloudGet("ocorrencias_h2").then(data=>{if(data)setOcorrencias(data);});
+    cloudGet("eqstate_h2").then(data=>{if(data&&data.comum)setEqState(data);eqCarregado.current=true;});
+  },[]);
+  React.useEffect(()=>{
+    if(!eqCarregado.current)return;
+    storageSet("eqstate_h2",eqState);
+  },[eqState]);
+  React.useEffect(()=>{
+    const unsub=onSnapshot(doc(COL,"ocorrencias_h2"),(snap)=>{
+      if(snap.exists()){const d=snap.data().val;if(d)setOcorrencias(d);}
+    });
+    return ()=>unsub();
   },[]);
   const nav=[
     {id:"dashboard",label:"Início",icon:"⬡"},
