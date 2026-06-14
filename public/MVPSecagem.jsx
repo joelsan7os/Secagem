@@ -2718,8 +2718,85 @@ function ManualTela() {
   );
 }
 
+// ─── Cálculo de Eficiência de Lançamento ──────────────────────────────────────
+// Mede: turnos em que a letra LANÇOU ÷ turnos em que ela DEVERIA lançar.
+// Baseado na escala (calcularLetra). Denominador = turnos escalados desde a BASE.
+// Áreas: PU (rotina), CS (cortadeira), ENF (rota_enf + enf_qualidade×2 peso).
+function letraDoTurno(dataObj, turnoIdx) {
+  // Replica calcularLetra() para uma data/turno arbitrário
+  const SEQUENCIA = ["E","D","A","B","C"];
+  const BASE = new Date("2026-06-09T00:00:00");
+  const diasPassados = Math.floor((dataObj - BASE) / (1000*60*60*24));
+  const blocoAtual = ((Math.floor(diasPassados / 2) % 5) + 5) % 5;
+  const indice = ((blocoAtual - turnoIdx) % 5 + 5) % 5;
+  return SEQUENCIA[indice];
+}
+function turnoDoHorario(hhmm) {
+  // "HH:MM" -> 0,1,2
+  const h = parseInt((hhmm||"00:00").split(":")[0],10);
+  return h < 8 ? 0 : h < 16 ? 1 : 2;
+}
+function calcularEficiencia(historico) {
+  const BASE = new Date("2026-06-09T00:00:00");
+  const agora = new Date();
+  const letras = ["A","B","C","D","E"];
+  // Esperado por área (peso): PU=1, CS=1, ENF=1 rota + 2 qualidade = 3
+  const AREAS = {
+    pu:  { label:"P. Úmida",    tipos:{rotina:1} },
+    cs:  { label:"Cortadeira",  tipos:{cortadeira:1} },
+    enf: { label:"Enfardamento",tipos:{rota_enf:1, enf_qualidade:2} },
+  };
+  // Inicializa contadores: esperado e realizado por letra/área
+  const cont = {};
+  letras.forEach(l=>{ cont[l]={}; Object.keys(AREAS).forEach(a=>{ cont[l][a]={esperado:0,feito:0}; }); });
+
+  // 1) Denominador: percorre cada turno desde a BASE até agora
+  const umDia = 1000*60*60*24;
+  const totalDias = Math.floor((agora - BASE) / umDia);
+  for(let d=0; d<=totalDias; d++){
+    const dia = new Date(BASE.getTime() + d*umDia);
+    for(let t=0; t<3; t++){
+      // Não conta turnos no futuro
+      const inicioTurno = new Date(dia); inicioTurno.setHours(t*8,0,0,0);
+      if(inicioTurno > agora) continue;
+      const letra = letraDoTurno(dia, t);
+      if(!cont[letra]) continue;
+      Object.entries(AREAS).forEach(([a,def])=>{
+        const pesoTotal = Object.values(def.tipos).reduce((s,p)=>s+p,0);
+        cont[letra][a].esperado += pesoTotal;
+      });
+    }
+  }
+  // 2) Numerador: percorre o histórico real e credita o que foi lançado
+  historico.forEach(h=>{
+    if(!h.letra || !h.data || !cont[h.letra]) return;
+    const turnoIdx = turnoDoHorario(h.hora);
+    // Identifica área e peso do tipo lançado
+    for(const [a,def] of Object.entries(AREAS)){
+      if(def.tipos[h.tipoId]!==undefined){
+        // Credita o peso, sem ultrapassar o esperado daquele turno
+        cont[h.letra][a].feito += def.tipos[h.tipoId];
+        break;
+      }
+    }
+  });
+  // 3) Calcula percentuais (cap em 100%)
+  const pct = (feito,esp)=> esp>0 ? Math.min(100, Math.round(feito/esp*100)) : null;
+  const resultado = letras.map(l=>{
+    const areas = {};
+    let somaFeito=0, somaEsp=0;
+    Object.keys(AREAS).forEach(a=>{
+      const {esperado,feito}=cont[l][a];
+      areas[a]=pct(feito,esperado);
+      somaFeito+=feito; somaEsp+=esperado;
+    });
+    return { letra:l, geral:pct(somaFeito,somaEsp), areas };
+  });
+  return { resultado, AREAS };
+}
+
 // ─── GraficoLetras ───────────────────────────────────────────────────────────
-function GraficoLetras({ historico }) {
+function GraficoLetrasAntigo({ historico }) {
   const letras=["A","B","C","D","E"];
   const dadosRaw=letras.map(l=>{
     const todos=historico.filter(h=>h.letra===l);
@@ -2758,6 +2835,58 @@ function GraficoLetras({ historico }) {
       </div>
       <div style={{height:1,background:C.border,margin:"0 0 8px"}}/>
       <div style={{color:C.textDim,fontSize:10,textAlign:"center"}}>Total de check-lists salvos no dispositivo</div>
+    </div>
+  );
+}
+
+// ─── GraficoEficiencia — Eficiência de Lançamento por Letra ───────────────────
+function GraficoEficiencia({ historico }) {
+  const [visao,setVisao]=useState("geral"); // geral | pu | cs | enf
+  const { resultado, AREAS } = calcularEficiencia(historico);
+  const corEfic=(e)=>e===null?C.textDim:e>=80?C.accentLight:e>=50?C.warningLight:C.dangerLight;
+  const opcoes=[{id:"geral",label:"Geral"},...Object.entries(AREAS).map(([id,d])=>({id,label:d.label}))];
+  const valorDe=(r)=> visao==="geral" ? r.geral : r.areas[visao];
+  const dados=resultado.map(r=>({letra:r.letra, efic:valorDe(r)}));
+  const algumDado=dados.some(d=>d.efic!==null);
+
+  return (
+    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:16}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+        <span style={{fontSize:14}}>📊</span>
+        <span style={{color:C.white,fontWeight:800,fontSize:13}}>Eficiência de Lançamento</span>
+      </div>
+      <p style={{color:C.textDim,fontSize:10,margin:"0 0 12px",lineHeight:1.4}}>Turnos lançados ÷ turnos escalados. Qualidade do Enfardamento pesa 2×.</p>
+      {/* Seletor de visão */}
+      <div style={{display:"flex",gap:5,marginBottom:14,flexWrap:"wrap"}}>
+        {opcoes.map(o=>(
+          <button key={o.id} onClick={()=>setVisao(o.id)} style={{flex:"1 1 auto",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${visao===o.id?C.accent:C.border}`,background:visao===o.id?C.accentDark:C.tagBg,color:visao===o.id?C.white:C.textMuted,whiteSpace:"nowrap"}}>{o.label}</button>
+        ))}
+      </div>
+      {/* Legenda */}
+      <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginBottom:10}}>
+        {[[C.accentLight,"≥80%"],[C.warningLight,"50-79%"],[C.dangerLight,"<50%"]].map(([clr,lbl])=>(
+          <div key={lbl} style={{display:"flex",alignItems:"center",gap:3}}>
+            <div style={{width:8,height:8,borderRadius:2,background:clr}}/><span style={{color:C.textMuted,fontSize:9}}>{lbl}</span>
+          </div>
+        ))}
+      </div>
+      {/* Barras */}
+      <div style={{display:"flex",gap:8,alignItems:"flex-end",height:110}}>
+        {dados.map(d=>{
+          const barH=d.efic===null?4:Math.max(10,Math.round((d.efic/100)*84));
+          const cor=corEfic(d.efic);
+          return (
+            <div key={d.letra} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+              <div style={{textAlign:"center",minHeight:18}}>
+                <div style={{color:cor,fontSize:13,fontWeight:800,lineHeight:1}}>{d.efic!==null?`${d.efic}%`:"—"}</div>
+              </div>
+              <div style={{width:"100%",height:barH,borderRadius:"5px 5px 0 0",background:d.efic===null?C.tagBg:`linear-gradient(180deg,${cor} 0%,${cor}bb 100%)`,border:d.efic!==null?`1px solid ${cor}66`:`1px solid ${C.border}`,boxShadow:d.efic!==null?`0 0 8px ${cor}33`:"none",transition:"height .4s ease"}}/>
+              <div style={{width:30,height:30,borderRadius:8,background:d.efic!==null?C.blue:C.tagBg,display:"flex",alignItems:"center",justifyContent:"center",color:d.efic!==null?"#fff":C.textDim,fontSize:14,fontWeight:800}}>{d.letra}</div>
+            </div>
+          );
+        })}
+      </div>
+      {!algumDado&&<p style={{color:C.textDim,fontSize:11,textAlign:"center",marginTop:12}}>Sem lançamentos suficientes para calcular ainda.</p>}
     </div>
   );
 }
@@ -3039,6 +3168,7 @@ function HistoricoTela({ historico, areaAtiva }) {
         const resultados=buscaData?[...historico].filter(h=>h.data===buscaData&&areaDoTipoB(h.tipoId)===filtroArea&&isMaqB(h)&&(filtroTipo==="TODOS"||h.tipoId===filtroTipo)).sort((a,b)=>b.id-a.id):[];
         return(
           <div>
+            <GraficoEficiencia historico={historico}/>
             <label style={{color:C.textDim,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>Buscar por data</label>
             <input type="date" value={buscaData} onChange={e=>setBuscaData(e.target.value)} max={ymd(hoje)} style={{...inputStyle,width:"100%",marginBottom:8}}/>
             <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
