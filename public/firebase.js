@@ -9,7 +9,9 @@ import {
   doc,
   setDoc,
   getDoc,
+  getDocs,
   onSnapshot,
+  deleteDoc,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -34,4 +36,4 @@ const db = initializeFirestore(app, {
 // Coleção única onde cada chave do app vira um documento
 const COL = collection(db, "secagem_h2");
 
-export { db, COL, doc, setDoc, getDoc, onSnapshot };
+export { db, COL, doc, setDoc, getDoc, getDocs, onSnapshot, deleteDoc };
