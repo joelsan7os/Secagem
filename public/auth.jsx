@@ -3,8 +3,9 @@
 // Usuários ficam na coleção "usuarios_h2", indexados por matrícula.
 // PIN guardado como hash SHA-256 (nunca em texto puro).
 import { useState, useEffect } from "react";
-import { db, doc, setDoc, getDoc } from "./firebase";
+import { db, COL, doc, setDoc, getDoc, onSnapshot } from "./firebase";
 import { collection } from "firebase/firestore";
+import fabricaImg from "./F9B281E2-D4B4-4501-A2FD-1B173F8ED708.png";
 
 const UCOL = collection(db, "usuarios_h2");
 
@@ -64,24 +65,82 @@ export function usePerfilAtivo() {
   return { perfil, setPerfil, logout };
 }
 
+// ─── Logo Suzano (folha + texto) ──────────────────────────────────────────────
+function LogoSuzano({ size=46 }) {
+  return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+      <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+        <path d="M24 4C24 4 8 14 8 28a16 16 0 0 0 32 0C40 14 24 4 24 4Z" fill="#00E676" opacity="0.95"/>
+        <path d="M24 10c0 8-7 13-7 19" stroke="#04111D" strokeWidth="2.5" strokeLinecap="round" opacity="0.55"/>
+      </svg>
+      <span style={{fontSize:size*0.52,fontWeight:800,color:"#5090FF",letterSpacing:"-0.02em",lineHeight:1,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>suzano</span>
+    </div>
+  );
+}
+
 // ─── Tela principal de autenticação ───────────────────────────────────────────
 export function TelaAuth({ onEntrar }) {
   const [modo, setModo] = useState("login"); // login | cadastro
+  const IMG = fabricaImg;
+  // ── LED espelha o semáforo real (ocorrencias_h2) em tempo real ──
+  const [semaforo, setSemaforo] = useState(null);
+  useEffect(()=>{
+    const unsub = onSnapshot(doc(COL,"ocorrencias_h2"), (snap)=>{
+      setSemaforo(snap.exists()? snap.data().val : null);
+    }, ()=>{});
+    return ()=>unsub();
+  },[]);
+  // Pior cor entre M2 e M3 (vermelho > amarelo > verde)
+  const corLed = (()=>{
+    const niveis = [semaforo?.M2, semaforo?.M3].map(o=>{
+      const n = o?.cor || o?.nivel;
+      return n==="vermelho"?2 : n==="amarelo"?1 : 0;
+    });
+    const pior = Math.max(0, ...niveis);
+    return pior===2 ? "#FF5252" : pior===1 ? "#FFC107" : C.accent;
+  })();
   return (
-    <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 18px"}}>
-      <div style={{width:"100%",maxWidth:380}}>
-        {/* Cabeçalho */}
-        <div style={{textAlign:"center",marginBottom:26}}>
-          <div style={{fontSize:13,letterSpacing:"0.22em",color:C.accent,fontWeight:800,fontFamily:"monospace",textTransform:"uppercase"}}>Secagem · H2</div>
-          <div style={{color:C.textDim,fontSize:11,marginTop:4,fontFamily:"monospace"}}>Três Lagoas · M2 · M3</div>
+    <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center"}}>
+      {/* Topo com foto de fundo + logo */}
+      <div style={{position:"relative",width:"100%",height:300,overflow:"hidden",flexShrink:0}}>
+        <div style={{position:"absolute",inset:0,backgroundImage:`url('${IMG}')`,backgroundSize:"cover",backgroundPosition:"center",filter:"saturate(0.85) brightness(0.7)"}}/>
+        {/* Overlay escuro pra fundir com o fundo */}
+        <div style={{position:"absolute",inset:0,background:`linear-gradient(180deg, rgba(4,17,29,0.55) 0%, rgba(4,17,29,0.35) 45%, rgba(4,17,29,0.85) 85%, ${C.bg} 100%)`}}/>
+        {/* Logo centralizada no topo */}
+        <div style={{position:"absolute",top:26,left:0,right:0,display:"flex",justifyContent:"center"}}>
+          <LogoSuzano size={48}/>
         </div>
+        {/* Faixa LED — espelha o semáforo, pulsa em tempo real */}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:`linear-gradient(90deg, transparent 0%, ${corLed} 50%, transparent 100%)`,boxShadow:`0 0 16px 2px ${corLed}, 0 0 40px 4px ${corLed}88`,animation:"ledPulseAuth 2s ease-in-out infinite"}}/>
+        <style>{`@keyframes ledPulseAuth{0%,100%{opacity:1}50%{opacity:0.45}}`}</style>
+      </div>
+
+      {/* Conteúdo */}
+      <div style={{width:"100%",maxWidth:400,padding:"0 20px 30px",marginTop:-8}}>
+        {/* Título */}
+        <div style={{textAlign:"center",marginBottom:22,marginTop:18}}>
+          <div style={{fontSize:21,letterSpacing:"0.28em",color:C.accent,fontWeight:800,fontFamily:"monospace",textTransform:"uppercase",textShadow:`0 0 18px ${C.accent}66`}}>Secagem · H2</div>
+          <div style={{color:C.textMuted,fontSize:12,marginTop:6,fontFamily:"monospace"}}>Três Lagoas · M2 · M3</div>
+        </div>
+
         {/* Abas */}
-        <div style={{display:"flex",gap:6,marginBottom:18}}>
+        <div style={{display:"flex",gap:8,marginBottom:16}}>
           {[{id:"login",l:"Entrar"},{id:"cadastro",l:"Primeiro acesso"}].map(t=>(
-            <button key={t.id} onClick={()=>setModo(t.id)} style={{flex:1,padding:"9px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:12,border:`2px solid ${modo===t.id?C.accent:C.border}`,background:modo===t.id?C.accentDark:C.tagBg,color:modo===t.id?C.white:C.textMuted}}>{t.l}</button>
+            <button key={t.id} onClick={()=>setModo(t.id)} style={{flex:1,padding:"12px",borderRadius:11,cursor:"pointer",fontWeight:700,fontSize:13,border:`2px solid ${modo===t.id?C.accent:C.border}`,background:modo===t.id?`linear-gradient(135deg,${C.accentDark},rgba(0,230,118,0.12))`:"rgba(255,255,255,0.02)",color:modo===t.id?C.white:C.textMuted,boxShadow:modo===t.id?`0 0 12px ${C.accent}44`:"none",transition:"all .15s"}}>{t.l}</button>
           ))}
         </div>
-        {modo==="login" ? <FormLogin onEntrar={onEntrar}/> : <FormCadastro onPronto={()=>setModo("login")}/>}
+
+        {/* Card glassmorphism */}
+        <div style={{background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:`1px solid ${C.border}`,borderRadius:16,padding:22,boxShadow:"0 8px 32px rgba(0,0,0,0.4)"}}>
+          {modo==="login" ? <FormLogin onEntrar={onEntrar}/> : <FormCadastro onPronto={()=>setModo("login")}/>}
+        </div>
+
+        {/* Rodapé */}
+        <div style={{textAlign:"center",marginTop:26}}>
+          <div style={{fontSize:18,marginBottom:4,opacity:0.5}}>🛡️</div>
+          <div style={{color:C.textMuted,fontSize:11,fontWeight:600}}>Sistema de Secagem</div>
+          <div style={{color:C.textDim,fontSize:10,marginTop:2}}>Segurança · Performance · Confiabilidade</div>
+        </div>
       </div>
     </div>
   );
