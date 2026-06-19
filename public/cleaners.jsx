@@ -1,0 +1,390 @@
+// ─── cleaners.jsx — Módulo Cleaners (isolado) · Secagem H2 ────────────────────
+// Maior gargalo da operação — mantido separado para evoluir sem inchar o app.
+// Exporta: CleanersTela, RelatorioCleaners, gerarRelatoriosCleaners,
+//          calcEficienciaCleaners, CLEANERS_TOTAL, CLEANERS_LIMITE.
+import { useState } from "react";
+import * as React from "react";
+import { COL, doc, setDoc, getDoc } from "./firebase";
+
+// ── Paleta (espelha o app) ──
+const C = {
+  bg:"#04111D", surface:"#071828", card:"#0A1929", cardHover:"#0E2847",
+  accent:"#00E676", accentLight:"#00E676", accentDark:"#006B2E",
+  blue:"#0E2847", blueLight:"#1A5CCC",
+  warning:"#b87d00", warningLight:"#FFC107",
+  danger:"#c0272d", dangerLight:"#FF5252",
+  text:"#FFFFFF", textMuted:"#B5C6DA", textDim:"#3A5880", white:"#ffffff",
+  border:"rgba(60,255,140,0.15)", tagBg:"rgba(255,255,255,0.04)", success:"#00E676",
+};
+const inputStyle={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",color:C.white,fontSize:14,outline:"none"};
+const btnSec={background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700};
+
+// ── Helpers de turno/letra (cópia local, mesma lógica do app) ──
+const getAutoTurno=()=>{const h=new Date().getHours();if(h>=0&&h<8)return"00x08";if(h>=8&&h<16)return"08x16";return"16x24";};
+const calcularLetra=()=>{const S=["E","D","A","B","C"];const BASE=new Date("2026-06-09T00:00:00");const a=new Date();const dias=Math.floor((a-BASE)/(1000*60*60*24));const bloco=Math.floor(dias/2)%5;const h=a.getHours();const t=h<8?0:h<16?1:2;return S[((bloco-t)%5+5)%5];};
+const turnoDoHorario=(hhmm)=>{const h=parseInt((hhmm||"00:00").split(":")[0],10);return h<8?0:h<16?1:2;};
+
+// ── Storage helpers (local + nuvem) ──
+const storageGet=(k)=>{try{return JSON.parse(localStorage.getItem(k));}catch{return null;}};
+const storageSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}try{setDoc(doc(COL,k),{val:v,ts:Date.now()});}catch{}};
+const cloudGet=async(k)=>{try{const s=await getDoc(doc(COL,k));if(s.exists()){const d=s.data().val;try{localStorage.setItem(k,JSON.stringify(d));}catch{}return d;}}catch{}return storageGet(k);};
+
+const CLEANERS_CONFIG=[
+  {id:"c1",label:"Cleaners 1",garrafas:12,bomba:{M2:"32-11-0-30-08",M3:"33-11-0-30-08"}},
+  {id:"c2",label:"Cleaners 2",garrafas:6, bomba:{M2:"32-11-0-30-09",M3:"33-11-0-30-09"}},
+  {id:"c3",label:"Cleaners 3",garrafas:4, bomba:{M2:"32-11-0-30-10",M3:"33-11-0-30-10"}},
+  {id:"c4",label:"Cleaners 4",garrafas:2, bomba:{M2:"32-11-0-30-11",M3:"33-11-0-30-11"}},
+];
+export const CLEANERS_TOTAL=CLEANERS_CONFIG.reduce((a,e)=>a+e.garrafas,0);
+export const CLEANERS_LIMITE=70;
+const CLEANERS_MOTIVOS=["Garrafa removida","Garrafa furada","Válvula com passagem","Falta de garrafa","Falta de válvula","Falta de vedação","Falta de visor","Entupida","Falta de material","Outro"];
+const ESTOQUE_ITENS=[{id:"garrafa",label:"Garrafa"},{id:"valvula",label:"Válvula"},{id:"visor",label:"Visor"},{id:"bico",label:"Bico de porcelana"},{id:"vedacao",label:"Borracha de vedação"},{id:"pescoco",label:"Pescoço da válvula"}];
+
+// ─── Relatório de Turno dos Cleaners ──────────────────────────────────────────
+// Agrupa cleaners_hist_h2 por (data + turno + máquina). Conta movimentações.
+export function gerarRelatoriosCleaners() {
+  const hist = (()=>{ try{ return JSON.parse(localStorage.getItem("cleaners_hist_h2"))||[]; }catch{ return []; } })();
+  if(!hist.length) return [];
+  const grupos = {};
+  hist.forEach(ev=>{
+    if(!ev.data) return;
+    const turno = ev.turno || "—";
+    const maq = ev.maquina || "—";
+    const chave = `${ev.data}|${turno}|${maq}`;
+    if(!grupos[chave]) grupos[chave] = { data:ev.data, turno, maquina:maq, letra:ev.letra||"—", operadores:new Set(), removidas:0, desobstruidas:0, eventos:[] };
+    const g = grupos[chave];
+    if(ev.letra) g.letra = ev.letra;
+    if(ev.operador) g.operadores.add(ev.operador);
+    if(ev.status==="OPERANDO") g.desobstruidas += 1;       // voltou a operar = desobstruída/recolocada
+    else g.removidas += 1;                                  // removida/sem garrafa
+    g.eventos.push(ev);
+  });
+  return Object.values(grupos)
+    .map(g=>({ ...g, operadores:Array.from(g.operadores), totalMov:g.removidas+g.desobstruidas }))
+    .sort((a,b)=> b.data.localeCompare(a.data) || (b.turno||"").localeCompare(a.turno||""));
+}
+
+export function CleanersTela(){
+  const [dados,setDados]=useState(()=>storageGet("cleaners_h2")||{M2:{},M3:{}});
+  const [est,setEst]=useState(()=>storageGet("cleaners_estoque_h2")||{});
+  React.useEffect(()=>{
+    cloudGet("cleaners_h2").then(data=>{if(data)setDados(data);});
+    cloudGet("cleaners_estoque_h2").then(data=>{if(data)setEst(data);});
+  },[]);
+  const [maq,setMaq]=useState("M2");
+  const [subAba,setSubAba]=useState("op");
+  const [modalG,setModalG]=useState(null);
+  const [mStatus,setMStatus]=useState("REMOVIDA");
+  const [mMotivo,setMMotivo]=useState("");
+  const [mObs,setMObs]=useState("");
+  const [editEst,setEditEst]=useState(null);
+  const [modalRetorno,setModalRetorno]=useState(null);
+  const [retornoItens,setRetornoItens]=useState([]);
+  const cfg=storageGet("op_config")||{};
+  const salvarD=(n)=>{setDados(n);storageSet("cleaners_h2",n);};
+  const salvarE=(n)=>{setEst(n);storageSet("cleaners_estoque_h2",n);};
+  const pushHist=(ev)=>{const h=storageGet("cleaners_hist_h2")||[];storageSet("cleaners_hist_h2",[...h,{...ev,turno:getAutoTurno(),letra:calcularLetra()}]);};
+  const getNowCl=()=>{const a=new Date();return{data:a.toISOString().slice(0,10),hora:`${String(a.getHours()).padStart(2,"0")}:${String(a.getMinutes()).padStart(2,"0")}`};};
+  const eff=(m)=>{const fora=Object.keys(dados[m]||{}).length;return Math.round((CLEANERS_TOTAL-fora)/CLEANERS_TOTAL*100);};
+  const effEst=(m,e)=>{const fora=Object.keys(dados[m]||{}).filter(k=>k.startsWith(e.id+"_")).length;return Math.round((e.garrafas-fora)/e.garrafas*100);};
+  const effCor=(v)=>v>=90?C.accentLight:v>=CLEANERS_LIMITE?C.warningLight:C.dangerLight;
+  const abrirModal=(estId,idx)=>{
+    const g=dados[maq]?.[estId+"_"+idx];
+    setMStatus(g?.status||"REMOVIDA");setMMotivo(g?.motivo||"");setMObs(g?.obs||"");
+    setModalG({estId,idx});
+  };
+  const salvarGarrafa=(operando)=>{
+    const key=modalG.estId+"_"+modalG.idx;
+    const{data,hora}=getNowCl();
+    const novo={...dados,[maq]:{...dados[maq]}};
+    if(operando){delete novo[maq][key];}
+    else{novo[maq][key]={status:mStatus,motivo:mMotivo,obs:mObs,data,hora,operador:cfg.nomeOperador||""};}
+    salvarD(novo);
+    pushHist({data,hora,maquina:maq,garrafa:key,status:operando?"OPERANDO":mStatus,motivo:operando?"":mMotivo,operador:cfg.nomeOperador||""});
+    setModalG(null);setMMotivo("");setMObs("");
+  };
+  const ajusteEst=(id,d)=>{
+    const{data,hora}=getNowCl();
+    const cur=est[id]||{qtd:0};
+    salvarE({...est,[id]:{qtd:Math.max(0,(cur.qtd||0)+d),data,hora,operador:cfg.nomeOperador||""}});
+  };
+  const setQtdEst=(id,v)=>{
+    const{data,hora}=getNowCl();
+    salvarE({...est,[id]:{qtd:Math.max(0,parseInt(v)||0),data,hora,operador:cfg.nomeOperador||""}});
+  };
+  const hist=storageGet("cleaners_hist_h2")||[];
+  const statsMotivos=hist.filter(h=>h.motivo).reduce((a,h)=>{a[h.motivo]=(a[h.motivo]||0)+1;return a;},{});
+  const e2=eff("M2"),e3=eff("M3");
+  const effGeral=Math.round((e2+e3)/2);
+  const gStatusCor=(g)=>!g?C.success:g.status==="REMOVIDA"?C.danger:C.warning;
+  return(
+    <div>
+      <div style={{display:"flex",alignItems:"baseline",gap:8}}>
+        <h2 style={{color:C.white,fontSize:17,fontWeight:900,margin:0,letterSpacing:"0.04em"}}>GESTÃO CLEANERS</h2>
+        <span style={{color:C.textDim,fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase"}}>· Depuração H2</span>
+      </div>
+      <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"8px 0 12px"}}/>
+      {/* Sub-abas */}
+      <div style={{display:"flex",gap:6,marginBottom:12}}>
+        {[{id:"op",l:"⚙ OPERAÇÃO"},{id:"est",l:"📦 ESTOQUE"}].map(a=>(
+          <button key={a.id} onClick={()=>setSubAba(a.id)} style={{flex:1,padding:"8px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11,letterSpacing:"0.05em",background:subAba===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${subAba===a.id?"rgba(255,255,255,0.55)":C.border}`,color:subAba===a.id?"#fff":C.textMuted,boxShadow:subAba===a.id?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>{a.l}</button>
+        ))}
+      </div>
+      {subAba==="op"?(
+        <>
+          {/* Status Geral */}
+          <div style={{background:C.card,border:`1px solid ${effCor(effGeral)}44`,borderTop:`2px solid ${effCor(effGeral)}`,borderRadius:12,padding:"13px 14px",marginBottom:12,animation:effGeral<CLEANERS_LIMITE?"trava-pulse 1.8s ease-in-out infinite":"none"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{color:C.textDim,fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:5}}>Eficiência Cleaners</div>
+                <div style={{display:"flex",gap:12}}>
+                  {[["M2",e2],["M3",e3]].map(([m,v])=>(
+                    <span key={m} style={{display:"flex",alignItems:"center",gap:5}}>
+                      <span style={{width:7,height:7,borderRadius:"50%",background:effCor(v),boxShadow:`0 0 5px ${effCor(v)}`}}/>
+                      <span style={{color:C.textDim,fontSize:10,fontWeight:700}}>{m}</span>
+                      <span style={{color:effCor(v),fontSize:12,fontWeight:900,fontFamily:"monospace"}}>{v}%</span>
+                    </span>
+                  ))}
+                </div>
+                <div style={{color:C.textDim,fontSize:9,marginTop:5}}>{CLEANERS_TOTAL*2-Object.keys(dados.M2||{}).length-Object.keys(dados.M3||{}).length}/{CLEANERS_TOTAL*2} garrafas operando · limite {CLEANERS_LIMITE}%</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <span style={{color:effCor(effGeral),fontWeight:900,fontSize:34,fontFamily:"monospace",lineHeight:1}}>{effGeral}%</span>
+                {effGeral<CLEANERS_LIMITE&&<div style={{color:C.dangerLight,fontSize:9,fontWeight:800,marginTop:3}}>⚠ ABAIXO DO LIMITE</div>}
+              </div>
+            </div>
+          </div>
+          {/* Seletor máquina */}
+          <div style={{display:"flex",gap:6,marginBottom:12}}>
+            {["M2","M3"].map(m=>(
+              <button key={m} onClick={()=>setMaq(m)} style={{flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:maq===m?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${maq===m?"rgba(255,255,255,0.55)":C.border}`,color:maq===m?"#fff":C.textMuted,boxShadow:maq===m?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4),0 0 40px rgba(80,144,255,0.2)":"none"}}>
+                Máquina {m.replace("M","")}<span style={{fontSize:10,fontWeight:400,opacity:.8,marginLeft:6}}>{eff(m)}%</span>
+              </button>
+            ))}
+          </div>
+          {/* Estágios */}
+          {CLEANERS_CONFIG.map(e=>{
+            const ev=effEst(maq,e);
+            return(
+              <div key={e.id} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${effCor(ev)}`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                  <span style={{color:C.text,fontWeight:800,fontSize:13}}>{e.label}</span>
+                  <span style={{color:effCor(ev),fontWeight:900,fontSize:14,fontFamily:"monospace"}}>{e.garrafas-Object.keys(dados[maq]||{}).filter(k=>k.startsWith(e.id+"_")).length}/{e.garrafas} · {ev}%</span>
+                </div>
+                <code style={{color:"#8FB8E8",fontSize:9,letterSpacing:"0.05em",background:"rgba(14,40,71,0.65)",border:"1px solid rgba(80,144,255,0.25)",borderRadius:4,padding:"1px 6px",fontWeight:700}}>Bomba {e.bomba[maq]}</code>
+                <div style={{marginTop:10,overflowX:"auto"}}>
+                  {(()=>{
+                    const W=36,GAP=4,H=70;
+                    const total=e.garrafas;
+                    const totalW=total*(W+GAP)-GAP+2;
+                    return(
+                      <svg width={totalW} height={H+24} style={{display:"block",cursor:"pointer"}}>
+                        {/* header bar */}
+                        <rect x={0} y={8} width={totalW} height={10} rx={2} fill={`rgba(100,150,255,0.25)`} stroke="rgba(100,150,255,0.5)" strokeWidth={1}/>
+                        {Array.from({length:total},(_,i)=>{
+                          const g=dados[maq]?.[e.id+"_"+(i+1)];
+                          const c=gStatusCor(g);
+                          const cx=(W+GAP)*i+W/2;
+                          const isOk=!g;
+                          const fill=isOk?"rgba(0,230,118,0.18)":g.status==="REMOVIDA"?"rgba(255,82,82,0.2)":"rgba(255,193,7,0.2)";
+                          const stroke=c;
+                          return(
+                            <g key={i} onClick={()=>abrirModal(e.id,i+1)} style={{cursor:"pointer"}}>
+                              {/* cone shape */}
+                              <polygon
+                                points={`${(W+GAP)*i},18 ${(W+GAP)*i+W},18 ${cx},${H}`}
+                                fill={fill} stroke={stroke} strokeWidth={1.5}
+                              />
+                              {/* slot cut on header */}
+                              <rect x={(W+GAP)*i+W*0.3} y={8} width={W*0.4} height={10} fill="rgba(4,17,29,0.9)"/>
+                              {/* number */}
+                              <text x={cx} y={H-8} textAnchor="middle" fontSize={9} fontWeight="800" fill={stroke}>{i+1}</text>
+                              {/* status dot */}
+                              {g&&<circle cx={cx} cy={H+8} r={4} fill={stroke}/>}
+                            </g>
+                          );
+                        })}
+                        {/* collector pipe */}
+                        <rect x={0} y={H} width={totalW} height={10} rx={4} fill="rgba(100,150,255,0.2)" stroke="rgba(100,150,255,0.4)" strokeWidth={1}/>
+                      </svg>
+                    );
+                  })()}
+                </div>
+              </div>
+            );
+          })}
+          {/* Estatística de motivos */}
+          {Object.keys(statsMotivos).length>0&&(
+            <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`2px solid #B388FF`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+              <div style={{color:"#B388FF",fontWeight:800,fontSize:11,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:8}}>📊 Estatística de Motivos (acumulado)</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {Object.entries(statsMotivos).sort((a,b)=>b[1]-a[1]).map(([m,n])=>(
+                  <span key={m} style={{background:C.tagBg,border:`1px solid ${C.border}`,borderRadius:20,padding:"3px 10px",fontSize:10,color:C.textMuted}}><b style={{color:C.warningLight,fontFamily:"monospace"}}>{n}</b> {m}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ):(
+        <>
+          {/* ESTOQUE */}
+          <div style={{color:C.textDim,fontSize:10,marginBottom:10,lineHeight:1.5}}>Estoque comum às duas máquinas. Atualize ao usar ou receber material.</div>
+          {ESTOQUE_ITENS.map(it=>{
+            const d=est[it.id]||{};
+            const qtd=d.qtd||0;
+            return(
+              <div key={it.id} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${qtd===0?C.dangerLight:C.accentLight}`,borderRadius:12,padding:"12px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <div style={{color:C.text,fontWeight:700,fontSize:13}}>{it.label}</div>
+                  {d.data&&<div style={{color:C.textDim,fontSize:9,marginTop:3}}>últ: {d.data.split("-").reverse().slice(0,2).join("/")} {d.hora}{d.operador?` · ${d.operador}`:""}</div>}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <button onClick={()=>ajusteEst(it.id,-1)} style={{width:32,height:32,borderRadius:8,border:`1px solid ${C.border}`,background:C.tagBg,color:C.text,fontSize:18,fontWeight:700,cursor:"pointer",lineHeight:1}}>−</button>
+                  {editEst===it.id?(
+                    <input autoFocus type="text" inputMode="numeric" defaultValue={qtd}
+                      onBlur={e=>{setQtdEst(it.id,e.target.value);setEditEst(null);}}
+                      onKeyDown={e=>{if(e.key==="Enter"){setQtdEst(it.id,e.target.value);setEditEst(null);}}}
+                      style={{...inputStyle,width:54,textAlign:"center",padding:"5px",fontSize:15,fontWeight:900}}/>
+                  ):(
+                    <button onClick={()=>setEditEst(it.id)} style={{minWidth:54,padding:"5px 8px",borderRadius:8,border:`1px solid ${qtd===0?C.dangerLight+"66":C.border}`,background:C.tagBg,cursor:"pointer",textAlign:"center"}}>
+                      <span style={{color:qtd===0?C.dangerLight:C.text,fontWeight:900,fontSize:16,fontFamily:"monospace"}}>{qtd}</span>
+                      <span style={{color:C.textDim,fontSize:8,display:"block"}}>un.</span>
+                    </button>
+                  )}
+                  <button onClick={()=>ajusteEst(it.id,1)} style={{width:32,height:32,borderRadius:8,border:`1px solid ${C.border}`,background:C.tagBg,color:C.text,fontSize:18,fontWeight:700,cursor:"pointer",lineHeight:1}}>+</button>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+      {/* Modal garrafa */}
+      {modalG&&(
+        <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setModalG(null)}>
+          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+            <div style={{color:C.white,fontWeight:800,fontSize:14,marginBottom:2}}>🌀 {CLEANERS_CONFIG.find(c=>c.id===modalG.estId)?.label} — Garrafa {modalG.idx}</div>
+            <div style={{color:C.textDim,fontSize:11,marginBottom:14}}>Máquina {maq.replace("M","")}</div>
+            <div style={{display:"flex",gap:6,marginBottom:12}}>
+              {[{s:"OP",l:"✓ Operando",c:C.success},{s:"REMOVIDA",l:"Removida",c:C.danger},{s:"ISOLADA",l:"Isolada",c:C.warning}].map(({s,l,c})=>(
+                <button key={s} onClick={()=>s==="OP"?(()=>{setModalRetorno(modalG);setRetornoItens([]);setModalG(null);})():setMStatus(s)} style={{flex:1,padding:"10px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11,background:(s!=="OP"&&mStatus===s)?c:C.tagBg,border:`1.5px solid ${(s!=="OP"&&mStatus===s)?c:C.border}`,color:(s!=="OP"&&mStatus===s)?"#fff":C.textMuted}}>{l}</button>
+              ))}
+            </div>
+            <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Motivo</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:12}}>
+              {CLEANERS_MOTIVOS.map(m=>(
+                <button key={m} onClick={()=>setMMotivo(m===mMotivo?"":m)} style={{padding:"8px 8px",borderRadius:8,cursor:"pointer",fontWeight:mMotivo===m?700:400,fontSize:11,textAlign:"left",background:mMotivo===m?"rgba(255,193,7,0.15)":C.tagBg,border:`1px solid ${mMotivo===m?C.warningLight:C.border}`,color:mMotivo===m?C.warningLight:C.textMuted}}>{m}</button>
+              ))}
+            </div>
+            <textarea value={mObs} onChange={e=>setMObs(e.target.value)} rows={2} placeholder="Observação opcional..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit",marginBottom:12}}/>
+            <button disabled={!mMotivo} onClick={()=>salvarGarrafa(false)} style={{width:"100%",padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:mStatus==="REMOVIDA"?C.danger:C.warning,border:"none",color:"#fff",opacity:!mMotivo?0.4:1}}>Confirmar {mStatus==="REMOVIDA"?"Remoção":"Isolamento"}</button>
+          </div>
+        </div>
+      )}
+      {modalRetorno&&(
+        <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:C.surface,border:`1px solid ${C.accentLight}33`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600}}>
+            <div style={{color:C.accentLight,fontWeight:800,fontSize:14,marginBottom:4}}>✓ Retornando à operação</div>
+            <div style={{color:C.textDim,fontSize:11,marginBottom:14}}>O que foi realizado? (selecione tudo que se aplica)</div>
+            {[
+              {id:"garrafa",l:"Trocado garrafa",est:"garrafa"},
+              {id:"visor",l:"Trocado visor",est:"visor"},
+              {id:"bico",l:"Trocado cone de cerâmica",est:"bico"},
+              {id:"valvula",l:"Trocada válvula",est:"valvula"},
+              {id:"pescoco",l:"Trocado pescoço da válvula",est:"pescoco"},
+            ].map(it=>{
+              const sel=retornoItens.includes(it.id);
+              const qtdEst=(est[it.est]?.qtd||0);
+              return(
+                <button key={it.id} onClick={()=>setRetornoItens(p=>sel?p.filter(x=>x!==it.id):[...p,it.id])}
+                  style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",borderRadius:9,marginBottom:6,cursor:"pointer",
+                    background:sel?"rgba(0,230,118,0.1)":C.tagBg,border:`1.5px solid ${sel?C.accentLight:C.border}`,color:sel?C.accentLight:C.textMuted,fontWeight:sel?700:400,fontSize:12,textAlign:"left"}}>
+                  <span>{it.l}</span>
+                  <span style={{fontSize:10,color:qtdEst===0?C.dangerLight:C.textDim}}>estoque: {qtdEst}</span>
+                </button>
+              );
+            })}
+            <div style={{display:"flex",gap:8,marginTop:12}}>
+              <button onClick={()=>{
+                const{data,hora}=getNowCl();
+                const novo={...dados,[maq]:{...dados[maq]}};
+                delete novo[maq][modalRetorno.estId+"_"+modalRetorno.idx];
+                salvarD(novo);
+                if(retornoItens.length>0){
+                  const novoEst={...est};
+                  retornoItens.forEach(id=>{const cur=novoEst[id]||{qtd:0};novoEst[id]={...cur,qtd:Math.max(0,(cur.qtd||0)-1),data,hora,operador:cfg.nomeOperador||""};});
+                  salvarE(novoEst);
+                }
+                pushHist({data,hora,maquina:maq,garrafa:modalRetorno.estId+"_"+modalRetorno.idx,status:"OPERANDO",itensSubstituidos:retornoItens,operador:cfg.nomeOperador||""});
+                setModalRetorno(null);setRetornoItens([]);
+              }} style={{flex:1,padding:12,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13,background:C.success,border:"none",color:"#fff"}}>✓ Confirmar</button>
+              <button onClick={()=>{setModalRetorno(null);setRetornoItens([]);}} style={{...btnSec,padding:12,fontSize:13}}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+export function RelatorioCleaners() {
+  const relatorios = gerarRelatoriosCleaners();
+  const [maqF,setMaqF] = useState("todas");
+  const fmtData = d=>{ if(!d)return"—"; const[y,m,dia]=d.split("-"); return `${dia}/${m}/${y}`; };
+  const lista = relatorios.filter(r=> maqF==="todas" || r.maquina===maqF);
+
+  return (
+    <div>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:14,marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}>
+          <span style={{fontSize:14}}>🌀</span>
+          <span style={{color:C.white,fontWeight:800,fontSize:13}}>Relatório de Turno — Cleaners</span>
+        </div>
+        <p style={{color:C.textDim,fontSize:10,margin:"0 0 12px",lineHeight:1.4}}>Movimentações registradas por turno: garrafas removidas e recolocadas, operador e letra.</p>
+        <div style={{display:"flex",gap:5}}>
+          {[{id:"todas",l:"Todas"},{id:"M2",l:"Máq. 2"},{id:"M3",l:"Máq. 3"}].map(m=>(
+            <button key={m.id} onClick={()=>setMaqF(m.id)} style={{flex:1,padding:"7px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${maqF===m.id?C.blueLight:C.border}`,background:maqF===m.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,color:maqF===m.id?C.white:C.textMuted}}>{m.l}</button>
+          ))}
+        </div>
+      </div>
+
+      {lista.length===0?(
+        <div style={{textAlign:"center",color:C.textDim,padding:"40px 0",fontSize:12}}>Nenhuma movimentação de cleaners registrada ainda.</div>
+      ):(
+        lista.map((r,i)=>(
+          <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.accentLight}`,borderRadius:10,padding:13,marginBottom:8}}>
+            {/* Cabeçalho do relatório */}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{color:C.white,fontWeight:700,fontSize:13}}>{fmtData(r.data)}</span>
+                <span style={{color:"#5090FF",fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{r.turno}</span>
+                <span style={{background:C.blue,color:"#fff",borderRadius:5,padding:"1px 7px",fontSize:10,fontWeight:800}}>Letra {r.letra}</span>
+              </div>
+              <span style={{color:C.accentLight,fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{r.maquina}</span>
+            </div>
+            {/* Números */}
+            <div style={{display:"flex",gap:8,marginBottom:8}}>
+              <div style={{flex:1,background:C.danger+"15",border:`1px solid ${C.dangerLight}33`,borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
+                <div style={{color:C.dangerLight,fontSize:18,fontWeight:900,lineHeight:1}}>{r.removidas}</div>
+                <div style={{color:C.textMuted,fontSize:9,marginTop:3}}>Removidas</div>
+              </div>
+              <div style={{flex:1,background:C.accentDark+"33",border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
+                <div style={{color:C.accentLight,fontSize:18,fontWeight:900,lineHeight:1}}>{r.desobstruidas}</div>
+                <div style={{color:C.textMuted,fontSize:9,marginTop:3}}>Recolocadas</div>
+              </div>
+              <div style={{flex:1,background:C.tagBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
+                <div style={{color:C.white,fontSize:18,fontWeight:900,lineHeight:1}}>{r.totalMov}</div>
+                <div style={{color:C.textMuted,fontSize:9,marginTop:3}}>Total mov.</div>
+              </div>
+            </div>
+            {/* Operadores */}
+            {r.operadores.length>0&&(
+              <div style={{color:C.textDim,fontSize:10}}>👤 {r.operadores.join(", ")}</div>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
