@@ -1135,6 +1135,7 @@ const MOTIVOS_OC={
 
 function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorrencias, setOcorrencias }) {
   const [showForm,setShowForm]=useState(false);
+  const [popupChecks,setPopupChecks]=useState(null); // {maquina, detalhes:[{area,label,status}]}
   const [corOc,setCorOc]=useState(null);
   const [motivoSel,setMotivoSel]=useState(null);
   const [outroText,setOutroText]=useState("");
@@ -1224,12 +1225,24 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
         /* máquinas */
         const LINS_M2=["L4","L5"],LINS_M3=["L6","L7","L8"];
         const isMaq=(h,m)=>h.linha?(m==="M2"?LINS_M2.includes(h.linha):LINS_M3.includes(h.linha)):(h.maquina===m||h.maquina==="M2/M3");
+        const justifs=(()=>{ try{ return JSON.parse(localStorage.getItem("justificativas_h2"))||[]; }catch{ return []; } })();
+        const checkTurno=checkHoje.filter(h=>turnoDoHorario(h.hora)===turnoDoHorario(`${String(agora.getHours()).padStart(2,"0")}:00`));
         const maqData=(m,eqs)=>{
           const al=eqs.filter(e=>e.status==="ALERTA").length;
           const cr=eqs.filter(e=>e.status==="MANUTENÇÃO").length;
           const rotas=rotasHoje.filter(h=>isMaq(h,m));
           const ultR=rotas.length>0?[...rotas].sort((a,b)=>b.id-a.id)[0].hora:"—";
-          return{al,cr,ultR,ok:al===0&&cr===0};
+          // Contador X/3: P.Úmida(rotina), Cortadeira(cortadeira), Enfardamento(enf_qualidade)
+          const areasCheck=[{area:"pu",tipo:"rotina",label:"P. Úmida"},{area:"cs",tipo:"cortadeira",label:"Cortadeira"},{area:"enf",tipo:"enf_qualidade",label:"Enfardamento"}];
+          let cumpridas=0;
+          const detalhes=[];
+          areasCheck.forEach(({area,tipo,label})=>{
+            const lancou=checkTurno.some(h=>h.tipoId===tipo&&isMaq(h,m));
+            const justificou=justifs.some(j=>j.data===hoje&&j.turno===turnoAtual&&j.area===area&&(j.maquina===m||j.maquina===null||!j.maquina));
+            if(lancou||justificou) cumpridas++;
+            detalhes.push({area,label,status:lancou?"lancou":justificou?"justificou":"pendente"});
+          });
+          return{al,cr,ultR,ok:al===0&&cr===0,cumpridas,totalAreas:3,detalhes};
         };
         const m2d=maqData("M2",[...eqState.m2,...eqState.cs_m2,...eqState.enf_m2]);
         const m3d=maqData("M3",[...eqState.m3,...eqState.cs_m3,...eqState.enf_m3]);
@@ -1300,11 +1313,11 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                       {l:"Status",v:afetada?(mCor==="vermelho"?"Parada":"Interferência"):d.ok?"Normal":d.cr>0?"Crítico":"Atenção",c:afetada?ledCor:d.ok?C.accentLight:d.cr>0?C.dangerLight:C.warningLight},
                       {l:"Alertas",v:d.al,c:d.al>0?C.warningLight:C.text},
                       {l:"Críticos",v:d.cr,c:d.cr>0?C.dangerLight:C.text},
-                      {l:"Últ. Rota",v:d.ultR,c:cor},
-                    ].map(({l,v,c})=>(
-                      <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:`1px solid ${C.border}22`}}>
+                      {l:"Checklists",v:`${d.cumpridas}/${d.totalAreas}`,c:d.cumpridas>=d.totalAreas?C.accentLight:C.warningLight,clickDetalhe:d.detalhes},
+                    ].map(({l,v,c,clickDetalhe})=>(
+                      <div key={l} onClick={()=>clickDetalhe&&setPopupChecks({maquina:m,detalhes:clickDetalhe})} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"3px 0",borderBottom:`1px solid ${C.border}22`,cursor:clickDetalhe?"pointer":"default"}}>
                         <span style={{color:C.textDim,fontSize:9,textTransform:"uppercase"}}>{l}</span>
-                        <span style={{color:c,fontWeight:700,fontSize:11}}>{v}</span>
+                        <span style={{color:c,fontWeight:700,fontSize:11,display:"flex",alignItems:"center",gap:4}}>{v}{clickDetalhe&&<span style={{fontSize:11,opacity:0.6}}>›</span>}</span>
                       </div>
                     ))}
                   </div>
@@ -1422,6 +1435,28 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
             onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surface;}}>{a.label}</button>
         ))}
       </div>
+
+      {/* Popup detalhe dos Checklists do turno (X/3) */}
+      {popupChecks&&(
+        <div onClick={()=>setPopupChecks(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:20,maxWidth:340,width:"100%",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <span style={{color:C.white,fontWeight:800,fontSize:15}}>Checklists do Turno · {popupChecks.maquina}</span>
+              <button onClick={()=>setPopupChecks(null)} style={{background:"none",border:"none",color:C.textMuted,fontSize:20,cursor:"pointer",padding:0,lineHeight:1}}>×</button>
+            </div>
+            {popupChecks.detalhes.map(d=>{
+              const cfg=d.status==="lancou"?{ic:"✓",cor:C.accentLight,txt:"Lançado"}:d.status==="justificou"?{ic:"✓",cor:"#5090FF",txt:"Justificado"}:{ic:"✗",cor:C.dangerLight,txt:"Pendente"};
+              return (
+                <div key={d.area} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 12px",borderRadius:9,marginBottom:7,background:`${cfg.cor}12`,border:`1px solid ${cfg.cor}33`}}>
+                  <span style={{color:C.white,fontSize:13,fontWeight:600}}>{d.label}</span>
+                  <span style={{color:cfg.cor,fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>{cfg.ic} {cfg.txt}</span>
+                </div>
+              );
+            })}
+            <button onClick={()=>{setPopupChecks(null);setTela("checklist");}} style={{width:"100%",marginTop:8,padding:12,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13,background:C.accent,border:"none",color:"#fff"}}>Ir para Check-list</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
