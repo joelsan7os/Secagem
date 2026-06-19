@@ -1235,14 +1235,14 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
         const m3d=maqData("M3",[...eqState.m3,...eqState.cs_m3,...eqState.enf_m3]);
         /* requer atenção — lista priorizada */
         const atencao=[];
-        if(trocadorSujo)atencao.push({nivel:0,cor:C.dangerLight,icone:"🔥",txt:"TROCADOR DE CALOR SUJO — verificar imediatamente",blink:true});
+        if(trocadorSujo)atencao.push({nivel:0,cor:C.dangerLight,icone:"🔥",txt:"TROCADOR DE CALOR SUJO — verificar imediatamente",blink:true,destino:"equipamentos"});
         const clD=storageGet("cleaners_h2")||{M2:{},M3:{}};
-        ["M2","M3"].forEach(m=>{const fora=Object.keys(clD[m]||{}).length;const ef=Math.round((21-fora)/21*100);if(ef<70)atencao.push({nivel:1,cor:C.dangerLight,icone:"🌀",txt:`Cleaners ${m} — eficiência ${ef}% (abaixo de 70%)`,blink:true});});
-        chamAbertos.filter(c=>c.prazo==="Imediato").forEach(c=>atencao.push({nivel:1,cor:C.dangerLight,icone:"⛔",txt:`${c.equipamentoNome} — ${c.descricao||"chamado imediato"}`}));
-        chamAbertos.filter(c=>c.prazo==="Urgente").forEach(c=>atencao.push({nivel:2,cor:"#FF8C00",icone:"⚠",txt:`${c.equipamentoNome} — ${c.descricao||"chamado urgente"}`}));
-        eqCritico.forEach(e=>atencao.push({nivel:3,cor:C.dangerLight,icone:"🔧",txt:`${e.nome} — em manutenção`}));
-        eqAlerta.slice(0,3).forEach(e=>atencao.push({nivel:4,cor:C.warningLight,icone:"⚡",txt:`${e.nome} — em alerta${e.notas.length>0?` · ${e.notas.length} nota${e.notas.length>1?"s":""}`:""}`}));
-        const atencaoTop=atencao.sort((a,b)=>a.nivel-b.nivel).slice(0,5);
+        ["M2","M3"].forEach(m=>{const fora=Object.keys(clD[m]||{}).length;const ef=Math.round((CLEANERS_TOTAL-fora)/CLEANERS_TOTAL*100);if(ef<70)atencao.push({nivel:1,cor:C.dangerLight,icone:"🌀",txt:`Cleaners ${m} — eficiência ${ef}% (abaixo de 70%)`,blink:true,destino:"equipamentos",maquina:m});});
+        chamAbertos.filter(c=>c.prazo==="Imediato").forEach(c=>atencao.push({nivel:1,cor:C.dangerLight,icone:"⛔",txt:`${c.equipamentoNome} — ${c.descricao||"chamado imediato"}`,destino:"equipamentos"}));
+        chamAbertos.filter(c=>c.prazo==="Urgente").forEach(c=>atencao.push({nivel:2,cor:"#FF8C00",icone:"⚠",txt:`${c.equipamentoNome} — ${c.descricao||"chamado urgente"}`,destino:"equipamentos"}));
+        eqCritico.forEach(e=>atencao.push({nivel:3,cor:C.dangerLight,icone:"🔧",txt:`${e.nome} — em manutenção`,destino:"equipamentos"}));
+        eqAlerta.slice(0,3).forEach(e=>atencao.push({nivel:4,cor:C.warningLight,icone:"⚡",txt:`${e.nome} — em alerta${e.notas.length>0?` · ${e.notas.length} nota${e.notas.length>1?"s":""}`:""}`,destino:"equipamentos"}));
+        const atencaoTop=atencao.sort((a,b)=>a.nivel-b.nivel).slice(0,3);
         /* passagem de turno */
         const herdados=chamAbertos.filter(c=>c.dataAbertura<hoje);
         const ultObs=[...historico].reverse().filter(h=>h.obs&&h.obs.trim()).slice(0,2);
@@ -1318,9 +1318,10 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
               <div style={{background:C.card,border:`1px solid ${C.warningLight}33`,borderTop:`2px solid ${C.warningLight}`,borderRadius:12,padding:"13px 14px",marginBottom:10}}>
                 <SecH n="03" t="Requer Atenção" cor={C.warningLight}/>
                 {atencaoTop.map((a,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 8px",borderRadius:8,marginBottom:4,background:`${a.cor}0d`,border:`1px solid ${a.cor}22`,animation:a.blink?"trava-pulse 1.2s ease-in-out infinite":"none"}}>
+                  <div key={i} onClick={()=>a.destino&&setTela(a.destino)} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px",borderRadius:8,marginBottom:4,background:`${a.cor}0d`,border:`1px solid ${a.cor}22`,animation:a.blink?"trava-pulse 1.2s ease-in-out infinite":"none",cursor:a.destino?"pointer":"default"}}>
                     <span style={{fontSize:12,flexShrink:0}}>{a.icone}</span>
-                    <span style={{color:a.cor,fontSize:11,fontWeight:600,lineHeight:1.45}}>{a.txt}</span>
+                    <span style={{color:a.cor,fontSize:11,fontWeight:600,lineHeight:1.45,flex:1}}>{a.txt}</span>
+                    {a.destino&&<span style={{color:a.cor,fontSize:13,flexShrink:0,opacity:0.6}}>›</span>}
                   </div>
                 ))}
               </div>
@@ -3189,6 +3190,68 @@ function RotaEnfardamentoTela({ onSalvar }) {
 }
 
 // ─── HistoricoTela ────────────────────────────────────────────────────────────
+// ─── RelatorioCleaners — relatórios por turno no Histórico ────────────────────
+function RelatorioCleaners() {
+  const relatorios = gerarRelatoriosCleaners();
+  const [maqF,setMaqF] = useState("todas");
+  const fmtData = d=>{ if(!d)return"—"; const[y,m,dia]=d.split("-"); return `${dia}/${m}/${y}`; };
+  const lista = relatorios.filter(r=> maqF==="todas" || r.maquina===maqF);
+
+  return (
+    <div>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:14,marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}>
+          <span style={{fontSize:14}}>🌀</span>
+          <span style={{color:C.white,fontWeight:800,fontSize:13}}>Relatório de Turno — Cleaners</span>
+        </div>
+        <p style={{color:C.textDim,fontSize:10,margin:"0 0 12px",lineHeight:1.4}}>Movimentações registradas por turno: garrafas removidas e recolocadas, operador e letra.</p>
+        <div style={{display:"flex",gap:5}}>
+          {[{id:"todas",l:"Todas"},{id:"M2",l:"Máq. 2"},{id:"M3",l:"Máq. 3"}].map(m=>(
+            <button key={m.id} onClick={()=>setMaqF(m.id)} style={{flex:1,padding:"7px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${maqF===m.id?C.blueLight:C.border}`,background:maqF===m.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,color:maqF===m.id?C.white:C.textMuted}}>{m.l}</button>
+          ))}
+        </div>
+      </div>
+
+      {lista.length===0?(
+        <div style={{textAlign:"center",color:C.textDim,padding:"40px 0",fontSize:12}}>Nenhuma movimentação de cleaners registrada ainda.</div>
+      ):(
+        lista.map((r,i)=>(
+          <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.accentLight}`,borderRadius:10,padding:13,marginBottom:8}}>
+            {/* Cabeçalho do relatório */}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{color:C.white,fontWeight:700,fontSize:13}}>{fmtData(r.data)}</span>
+                <span style={{color:"#5090FF",fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{r.turno}</span>
+                <span style={{background:C.blue,color:"#fff",borderRadius:5,padding:"1px 7px",fontSize:10,fontWeight:800}}>Letra {r.letra}</span>
+              </div>
+              <span style={{color:C.accentLight,fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{r.maquina}</span>
+            </div>
+            {/* Números */}
+            <div style={{display:"flex",gap:8,marginBottom:8}}>
+              <div style={{flex:1,background:C.danger+"15",border:`1px solid ${C.dangerLight}33`,borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
+                <div style={{color:C.dangerLight,fontSize:18,fontWeight:900,lineHeight:1}}>{r.removidas}</div>
+                <div style={{color:C.textMuted,fontSize:9,marginTop:3}}>Removidas</div>
+              </div>
+              <div style={{flex:1,background:C.accentDark+"33",border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
+                <div style={{color:C.accentLight,fontSize:18,fontWeight:900,lineHeight:1}}>{r.desobstruidas}</div>
+                <div style={{color:C.textMuted,fontSize:9,marginTop:3}}>Recolocadas</div>
+              </div>
+              <div style={{flex:1,background:C.tagBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
+                <div style={{color:C.white,fontSize:18,fontWeight:900,lineHeight:1}}>{r.totalMov}</div>
+                <div style={{color:C.textMuted,fontSize:9,marginTop:3}}>Total mov.</div>
+              </div>
+            </div>
+            {/* Operadores */}
+            {r.operadores.length>0&&(
+              <div style={{color:C.textDim,fontSize:10}}>👤 {r.operadores.join(", ")}</div>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 function HistoricoTela({ historico, areaAtiva }) {
   const [abaHist,setAbaHist]=useState("reg");
   const [buscaData,setBuscaData]=useState("");
@@ -3286,14 +3349,16 @@ function HistoricoTela({ historico, areaAtiva }) {
       </div>
       <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"8px 0 12px"}}/>
       <div style={{display:"flex",gap:6,marginBottom:14}}>
-        {[{id:"reg",l:"📋 REGISTROS"},{id:"ana",l:"📊 EFICIÊNCIA"}].map(a=>(
-          <button key={a.id} onClick={()=>setAbaHist(a.id)} style={{flex:1,padding:"8px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11,letterSpacing:"0.05em",background:abaHist===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${abaHist===a.id?"rgba(255,255,255,0.55)":C.border}`,color:abaHist===a.id?"#fff":C.textMuted,boxShadow:abaHist===a.id?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>{a.l}</button>
+        {[{id:"reg",l:"📋 REGISTROS"},{id:"ana",l:"📊 EFICIÊNCIA"},{id:"clean",l:"🌀 CLEANERS"}].map(a=>(
+          <button key={a.id} onClick={()=>setAbaHist(a.id)} style={{flex:1,padding:"8px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.03em",background:abaHist===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${abaHist===a.id?"rgba(255,255,255,0.55)":C.border}`,color:abaHist===a.id?"#fff":C.textMuted,boxShadow:abaHist===a.id?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>{a.l}</button>
         ))}
       </div>
       {abaHist==="ana"?(
         <div>
           <GraficoEficiencia historico={historico}/>
         </div>
+      ):abaHist==="clean"?(
+        <RelatorioCleaners/>
       ):(
       <>
       {(()=>{
@@ -4042,15 +4107,39 @@ function RotasTela({ historico, onVoltar }) {
 
 // ─── RotasTela ───────────────────────────────────────────────────────────────
 const CLEANERS_CONFIG=[
-  {id:"c1",label:"Cleaners 1",garrafas:11,bomba:{M2:"32-11-0-30-08",M3:"33-11-0-30-08"}},
-  {id:"c2",label:"Cleaners 2",garrafas:5, bomba:{M2:"32-11-0-30-09",M3:"33-11-0-30-09"}},
-  {id:"c3",label:"Cleaners 3",garrafas:3, bomba:{M2:"32-11-0-30-10",M3:"33-11-0-30-10"}},
+  {id:"c1",label:"Cleaners 1",garrafas:12,bomba:{M2:"32-11-0-30-08",M3:"33-11-0-30-08"}},
+  {id:"c2",label:"Cleaners 2",garrafas:6, bomba:{M2:"32-11-0-30-09",M3:"33-11-0-30-09"}},
+  {id:"c3",label:"Cleaners 3",garrafas:4, bomba:{M2:"32-11-0-30-10",M3:"33-11-0-30-10"}},
   {id:"c4",label:"Cleaners 4",garrafas:2, bomba:{M2:"32-11-0-30-11",M3:"33-11-0-30-11"}},
 ];
 const CLEANERS_TOTAL=CLEANERS_CONFIG.reduce((a,e)=>a+e.garrafas,0);
 const CLEANERS_LIMITE=70;
-const CLEANERS_MOTIVOS=["Garrafa furada","Válvula com passagem","Falta de garrafa","Falta de válvula","Falta de vedação","Falta de visor","Entupida","Falta de material","Outro"];
+const CLEANERS_MOTIVOS=["Garrafa removida","Garrafa furada","Válvula com passagem","Falta de garrafa","Falta de válvula","Falta de vedação","Falta de visor","Entupida","Falta de material","Outro"];
 const ESTOQUE_ITENS=[{id:"garrafa",label:"Garrafa"},{id:"valvula",label:"Válvula"},{id:"visor",label:"Visor"},{id:"bico",label:"Bico de porcelana"},{id:"vedacao",label:"Borracha de vedação"},{id:"pescoco",label:"Pescoço da válvula"}];
+
+// ─── Relatório de Turno dos Cleaners ──────────────────────────────────────────
+// Agrupa cleaners_hist_h2 por (data + turno + máquina). Conta movimentações.
+function gerarRelatoriosCleaners() {
+  const hist = (()=>{ try{ return JSON.parse(localStorage.getItem("cleaners_hist_h2"))||[]; }catch{ return []; } })();
+  if(!hist.length) return [];
+  const grupos = {};
+  hist.forEach(ev=>{
+    if(!ev.data) return;
+    const turno = ev.turno || "—";
+    const maq = ev.maquina || "—";
+    const chave = `${ev.data}|${turno}|${maq}`;
+    if(!grupos[chave]) grupos[chave] = { data:ev.data, turno, maquina:maq, letra:ev.letra||"—", operadores:new Set(), removidas:0, desobstruidas:0, eventos:[] };
+    const g = grupos[chave];
+    if(ev.letra) g.letra = ev.letra;
+    if(ev.operador) g.operadores.add(ev.operador);
+    if(ev.status==="OPERANDO") g.desobstruidas += 1;       // voltou a operar = desobstruída/recolocada
+    else g.removidas += 1;                                  // removida/sem garrafa
+    g.eventos.push(ev);
+  });
+  return Object.values(grupos)
+    .map(g=>({ ...g, operadores:Array.from(g.operadores), totalMov:g.removidas+g.desobstruidas }))
+    .sort((a,b)=> b.data.localeCompare(a.data) || (b.turno||"").localeCompare(a.turno||""));
+}
 
 function CleanersTela(){
   const [dados,setDados]=useState(()=>storageGet("cleaners_h2")||{M2:{},M3:{}});
@@ -4071,7 +4160,7 @@ function CleanersTela(){
   const cfg=storageGet("op_config")||{};
   const salvarD=(n)=>{setDados(n);storageSet("cleaners_h2",n);};
   const salvarE=(n)=>{setEst(n);storageSet("cleaners_estoque_h2",n);};
-  const pushHist=(ev)=>{const h=storageGet("cleaners_hist_h2")||[];storageSet("cleaners_hist_h2",[...h,ev]);};
+  const pushHist=(ev)=>{const h=storageGet("cleaners_hist_h2")||[];storageSet("cleaners_hist_h2",[...h,{...ev,turno:getAutoTurno(),letra:calcularLetra()}]);};
   const getNowCl=()=>{const a=new Date();return{data:a.toISOString().slice(0,10),hora:`${String(a.getHours()).padStart(2,"0")}:${String(a.getMinutes()).padStart(2,"0")}`};};
   const eff=(m)=>{const fora=Object.keys(dados[m]||{}).length;return Math.round((CLEANERS_TOTAL-fora)/CLEANERS_TOTAL*100);};
   const effEst=(m,e)=>{const fora=Object.keys(dados[m]||{}).filter(k=>k.startsWith(e.id+"_")).length;return Math.round((e.garrafas-fora)/e.garrafas*100);};
