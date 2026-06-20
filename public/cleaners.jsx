@@ -155,14 +155,6 @@ export function CleanersTela(){
               </div>
             </div>
           </div>
-          {/* Seletor máquina */}
-          <div style={{display:"flex",gap:6,marginBottom:12}}>
-            {["M2","M3"].map(m=>(
-              <button key={m} onClick={()=>setMaq(m)} style={{flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:maq===m?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${maq===m?"rgba(255,255,255,0.55)":C.border}`,color:maq===m?"#fff":C.textMuted,boxShadow:maq===m?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4),0 0 40px rgba(80,144,255,0.2)":"none"}}>
-                Máquina {m.replace("M","")}<span style={{fontSize:10,fontWeight:400,opacity:.8,marginLeft:6}}>{eff(m)}%</span>
-              </button>
-            ))}
-          </div>
           {/* ── GESTÃO CLEANERS ── */}
           {(()=>{
             const maqsFilt=selGest==="Ambas"?["M2","M3"]:[selGest];
@@ -177,29 +169,17 @@ export function CleanersTela(){
             // ranking motivos
             const motCont={};
             hist.filter(h=>h.status!=="OPERANDO"&&h.motivo).forEach(h=>{motCont[h.motivo]=(motCont[h.motivo]||0)+1;});
-            const ranking=Object.entries(motCont).sort((a,b)=>b[1]-a[1]).slice(0,4);
-            // durabilidade: pareia OPERANDO→REMOVIDA por garrafa+maquina
-            const vidas=[];
-            const porG={};
-            [...hist].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora)).forEach(ev=>{
-              const k=(ev.maquina||"")+":"+(ev.garrafa||"");
-              if(ev.status==="OPERANDO"){porG[k]=ev.data+"T"+(ev.hora||"00:00");}
-              else if(ev.status==="REMOVIDA"&&porG[k]){
-                const ini=new Date(porG[k]);const fim=new Date(ev.data+"T"+(ev.hora||"00:00"));
-                const h=Math.round((fim-ini)/3600000);if(h>0&&h<720)vidas.push(h);delete porG[k];
-              }
-            });
-            const avgV=vidas.length?Math.round(vidas.reduce((a,v)=>a+v,0)/vidas.length):null;
-            const maxV=vidas.length?Math.max(...vidas):null;
-            const minV=vidas.length?Math.min(...vidas):null;
-            const fmtH=h=>`${Math.floor(h/24)>0?Math.floor(h/24)+"d ":""}${h%24}h`;
+            const ranking=Object.entries(motCont).sort((a,b)=>b[1]-a[1]).slice(0,5);
             return(
               <div style={{background:C.card,border:`1px solid ${corG}33`,borderTop:`2px solid ${corG}`,borderRadius:12,padding:"12px 14px",marginBottom:12,boxShadow:effG<70?`0 0 10px ${C.dangerLight}22`:"none"}}>
                 {/* seletor */}
-                <div style={{display:"flex",gap:5,marginBottom:10}}>
-                  {["M2","M3","Ambas"].map(o=>(
-                    <button key={o} onClick={()=>setSelGest(o)} style={{flex:1,padding:"5px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:10,background:selGest===o?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`1.5px solid ${selGest===o?"rgba(255,255,255,0.4)":C.border}`,color:selGest===o?"#fff":C.textMuted}}>{o}</button>
-                  ))}
+                <div style={{display:"flex",gap:6,marginBottom:12}}>
+                  {[{o:"M2",pct:eff("M2")},{o:"M3",pct:eff("M3")},{o:"Ambas",pct:Math.round((eff("M2")+eff("M3"))/2)}].map(({o,pct})=>{
+                    const sel=selGest===o;const c=pct>=90?C.accentLight:pct>=70?C.warningLight:C.dangerLight;
+                    return(<button key={o} onClick={()=>{setSelGest(o);if(o!=="Ambas")setMaq(o);}} style={{flex:1,padding:"10px 6px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:12,background:sel?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${sel?"rgba(255,255,255,0.5)":C.border}`,color:sel?"#fff":C.textMuted,boxShadow:sel?"0 0 10px rgba(80,144,255,0.5)":"none",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                      <span>{o}</span><span style={{fontFamily:"monospace",fontSize:11,color:sel?"#fff":c,fontWeight:900}}>{pct}%</span>
+                    </button>);
+                  })}
                 </div>
                 {/* resumo */}
                 <div style={{display:"flex",gap:10,alignItems:"flex-end",marginBottom:10}}>
@@ -209,29 +189,18 @@ export function CleanersTela(){
                     <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.dangerLight,fontSize:9,fontFamily:"monospace",fontWeight:800}}>{nFora} FORA</span><span style={{color:corG,fontSize:9,fontFamily:"monospace",fontWeight:900}}>{effG}%</span></div>
                   </div>
                 </div>
-                {/* ranking + durabilidade */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                  <div>
-                    <div style={{color:"#B388FF",fontSize:8,fontWeight:800,letterSpacing:"0.1em",marginBottom:5}}>RANKING MOTIVOS</div>
-                    {ranking.length===0?<div style={{color:C.textDim,fontSize:9}}>— sem dados —</div>:ranking.map(([m,n],i)=>(
-                      <div key={m} style={{display:"flex",alignItems:"center",gap:5,marginBottom:3}}>
-                        <span style={{color:"#B388FF",fontFamily:"monospace",fontWeight:900,fontSize:9,minWidth:12}}>{i+1}</span>
-                        <span style={{flex:1,color:C.textMuted,fontSize:9,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m}</span>
-                        <span style={{color:C.warningLight,fontFamily:"monospace",fontWeight:900,fontSize:10}}>{n}</span>
-                      </div>
-                    ))}
+                {/* ranking motivos */}
+                <div style={{color:"#B388FF",fontSize:8,fontWeight:800,letterSpacing:"0.1em",marginBottom:6}}>RANKING DE MOTIVOS</div>
+                {ranking.length===0?<div style={{color:C.textDim,fontSize:9}}>— sem registros —</div>:ranking.map(([m,n],i)=>(
+                  <div key={m} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
+                    <span style={{color:"#B388FF",fontFamily:"monospace",fontWeight:900,fontSize:10,minWidth:14}}>{i+1}</span>
+                    <div style={{flex:1,height:4,background:C.tagBg,borderRadius:2,overflow:"hidden"}}>
+                      <div style={{width:`${Math.round(n/ranking[0][1]*100)}%`,height:"100%",background:"#B388FF",borderRadius:2}}/>
+                    </div>
+                    <span style={{color:C.textMuted,fontSize:9,minWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m}</span>
+                    <span style={{color:C.warningLight,fontFamily:"monospace",fontWeight:900,fontSize:11,minWidth:18,textAlign:"right"}}>{n}</span>
                   </div>
-                  <div>
-                    <div style={{color:C.accentLight,fontSize:8,fontWeight:800,letterSpacing:"0.1em",marginBottom:5}}>DURABILIDADE</div>
-                    {avgV===null?<div style={{color:C.textDim,fontSize:9}}>— sem histórico —</div>:(
-                      <>
-                        <div style={{color:C.textMuted,fontSize:9,marginBottom:2}}>Média <span style={{color:C.accentLight,fontFamily:"monospace",fontWeight:900}}>{fmtH(avgV)}</span></div>
-                        <div style={{color:C.textMuted,fontSize:9,marginBottom:2}}>Máx <span style={{color:C.warningLight,fontFamily:"monospace",fontWeight:900}}>{fmtH(maxV)}</span></div>
-                        <div style={{color:C.textMuted,fontSize:9}}>Mín <span style={{color:C.dangerLight,fontFamily:"monospace",fontWeight:900}}>{fmtH(minV)}</span></div>
-                      </>
-                    )}
-                  </div>
-                </div>
+                ))}
               </div>
             );
           })()}
