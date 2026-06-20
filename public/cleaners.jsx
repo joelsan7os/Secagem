@@ -74,6 +74,8 @@ export function CleanersTela(){
   const [maq,setMaq]=useState("M2");
   const [selGest,setSelGest]=useState("Ambas");
   const [subAba,setSubAba]=useState("op");
+  const [snapData,setSnapData]=useState(()=>new Date().toISOString().slice(0,10));
+  const hoje=new Date().toISOString().slice(0,10);
   const [modalG,setModalG]=useState(null);
   const [mStatus,setMStatus]=useState("REMOVIDA");
   const [mMotivos,setMMotivos]=useState([]);
@@ -130,19 +132,35 @@ export function CleanersTela(){
       <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"8px 0 12px"}}/>
       {/* Sub-abas */}
       <div style={{display:"flex",gap:6,marginBottom:12}}>
-        {[{id:"op",l:"⚙ OPERAÇÃO"},{id:"est",l:"📦 ESTOQUE"}].map(a=>(
+        {[{id:"op",l:"⚙ OP"},{id:"est",l:"📦 ESTOQUE"},{id:"hist",l:"📋 HISTÓRICO"}].map(a=>(
           <button key={a.id} onClick={()=>setSubAba(a.id)} style={{flex:1,padding:"8px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11,letterSpacing:"0.05em",background:subAba===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${subAba===a.id?"rgba(255,255,255,0.55)":C.border}`,color:subAba===a.id?"#fff":C.textMuted,boxShadow:subAba===a.id?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>{a.l}</button>
         ))}
       </div>
       {subAba==="op"?(
         <>
+          {/* ── SELETOR DE DATA ── */}
+          {(()=>{
+            const isToday=snapData===hoje;
+            const reconstruirSnap=(data)=>{const estado={M2:{},M3:{}};[...( storageGet("cleaners_hist_h2")||[])].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora)).filter(ev=>ev.data<=data).forEach(ev=>{const m=ev.maquina;if(!m||!estado[m])return;if(ev.status==="REMOVIDA")estado[m][ev.garrafa]={status:"REMOVIDA",motivo:ev.motivo,motivos:ev.motivos||[]};else if(ev.status==="OPERANDO")delete estado[m][ev.garrafa];});return estado;};
+            const dadosSnap=isToday?dados:reconstruirSnap(snapData);
+            return(
+              <div style={{background:C.card,border:`1px solid ${isToday?C.border:"#5090FF44"}`,borderTop:`2px solid ${isToday?C.accentLight:"#5090FF"}`,borderRadius:10,padding:"8px 12px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
+                <span style={{color:C.textDim,fontSize:9,fontWeight:800,letterSpacing:"0.08em",flexShrink:0}}>{isToday?"HOJE":"DATA"}</span>
+                <input type="date" value={snapData} onChange={e=>setSnapData(e.target.value)} style={{flex:1,background:"transparent",border:"none",color:isToday?C.accentLight:"#5090FF",fontSize:12,fontWeight:800,fontFamily:"monospace",outline:"none",cursor:"pointer"}}/>
+                {!isToday&&<button onClick={()=>setSnapData(hoje)} style={{background:"transparent",border:`1px solid ${C.border}`,borderRadius:6,padding:"3px 8px",color:C.textDim,fontSize:9,cursor:"pointer"}}>Hoje</button>}
+              </div>
+            );
+          })()}
           {/* ── GESTÃO CLEANERS ── */}
           {(()=>{
+            const isToday=snapData===hoje;
+            const reconstruirSnap=(data)=>{const estado={M2:{},M3:{}};[...(storageGet("cleaners_hist_h2")||[])].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora)).filter(ev=>ev.data<=data).forEach(ev=>{const m=ev.maquina;if(!m||!estado[m])return;if(ev.status==="REMOVIDA")estado[m][ev.garrafa]={status:"REMOVIDA",motivo:ev.motivo,motivos:ev.motivos||[]};else if(ev.status==="OPERANDO")delete estado[m][ev.garrafa];});return estado;};
+            const dadosSnap=isToday?dados:reconstruirSnap(snapData);
             const maqsFilt=selGest==="Ambas"?["M2","M3"]:[selGest];
             const hist=(storageGet("cleaners_hist_h2")||[]).filter(h=>maqsFilt.includes(h.maquina));
             const totalG=CLEANERS_TOTAL*(selGest==="Ambas"?2:1);
             const foraKeys=new Set();
-            maqsFilt.forEach(m=>Object.keys(dados[m]||{}).forEach(k=>foraKeys.add(m+":"+k)));
+            maqsFilt.forEach(m=>Object.keys(dadosSnap[m]||{}).forEach(k=>foraKeys.add(m+":"+k)));
             const nFora=foraKeys.size;
             const nOp=totalG-nFora;
             const effG=Math.round(nOp/totalG*100);
@@ -220,13 +238,18 @@ export function CleanersTela(){
             );
           })()}
           {/* Estágios */}
-          {CLEANERS_CONFIG.map(e=>{
-            const ev=effEst(maq,e);
+          {(()=>{
+            const isToday=snapData===hoje;
+            const reconstruirSnap=(data)=>{const estado={M2:{},M3:{}};[...(storageGet("cleaners_hist_h2")||[])].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora)).filter(ev=>ev.data<=data).forEach(ev=>{const m=ev.maquina;if(!m||!estado[m])return;if(ev.status==="REMOVIDA")estado[m][ev.garrafa]={status:"REMOVIDA",motivo:ev.motivo,motivos:ev.motivos||[]};else if(ev.status==="OPERANDO")delete estado[m][ev.garrafa];});return estado;};
+            const dadosSnap=isToday?dados:reconstruirSnap(snapData);
+            const effEstSnap=(m,e)=>{const fora=Object.keys(dadosSnap[m]||{}).filter(k=>k.startsWith(e.id+"_")).length;return Math.round((e.garrafas-fora)/e.garrafas*100);};
+            return CLEANERS_CONFIG.map(e=>{
+            const ev=effEstSnap(maq,e);
             return(
               <div key={e.id} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${effCor(ev)}`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                   <span style={{color:C.text,fontWeight:800,fontSize:13}}>{e.label}</span>
-                  <span style={{color:effCor(ev),fontWeight:900,fontSize:14,fontFamily:"monospace"}}>{e.garrafas-Object.keys(dados[maq]||{}).filter(k=>k.startsWith(e.id+"_")).length}/{e.garrafas} · {ev}%</span>
+                  <span style={{color:effCor(ev),fontWeight:900,fontSize:14,fontFamily:"monospace"}}>{e.garrafas-Object.keys(dadosSnap[maq]||{}).filter(k=>k.startsWith(e.id+"_")).length}/{e.garrafas} · {ev}%</span>
                 </div>
                 <code style={{color:"#8FB8E8",fontSize:9,letterSpacing:"0.05em",background:"rgba(14,40,71,0.65)",border:"1px solid rgba(80,144,255,0.25)",borderRadius:4,padding:"1px 6px",fontWeight:700}}>Bomba {e.bomba[maq]}</code>
                 <div style={{marginTop:10,overflowX:"auto"}}>
@@ -239,7 +262,7 @@ export function CleanersTela(){
                         {/* header bar */}
                         <rect x={0} y={8} width={totalW} height={10} rx={2} fill={`rgba(100,150,255,0.25)`} stroke="rgba(100,150,255,0.5)" strokeWidth={1}/>
                         {Array.from({length:total},(_,i)=>{
-                          const g=dados[maq]?.[e.id+"_"+(i+1)];
+                          const g=dadosSnap[maq]?.[e.id+"_"+(i+1)];
                           const passagem=temPassagem(g);
                           const c=gStatusCor(g);
                           const cx=(W+GAP)*i+W/2;
@@ -267,7 +290,8 @@ export function CleanersTela(){
                 </div>
               </div>
             );
-          })}
+          });
+          })()}
           {/* Estatística de motivos */}
           {Object.keys(statsMotivos).length>0&&(
             <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`2px solid #B388FF`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
@@ -280,7 +304,7 @@ export function CleanersTela(){
             </div>
           )}
         </>
-      ):(
+      ):subAba==="est"?(
         <>
           {/* ESTOQUE */}
           <div style={{color:C.textDim,fontSize:10,marginBottom:10,lineHeight:1.5}}>Estoque comum às duas máquinas. Atualize ao usar ou receber material.</div>
@@ -311,6 +335,47 @@ export function CleanersTela(){
               </div>
             );
           })}
+        </>
+      ):(
+        /* ── HISTÓRICO ── */
+        <>
+          {(()=>{
+            const histAll=(storageGet("cleaners_hist_h2")||[]).slice().reverse();
+            const ITENS_LABEL={garrafa:"Garrafa",valvula:"Válvula",visor:"Visor",bico:"Bico de porcelana",vedacao:"Borracha de vedação",pescoco:"Pescoço da válvula"};
+            const fmtGar=key=>{const cfg=CLEANERS_CONFIG.find(c=>key?.startsWith(c.id+"_"));if(!cfg)return key||"—";return`${cfg.label} · G${key.replace(cfg.id+"_","")}`;}
+            const fmtD=d=>{if(!d)return"—";const[y,m,dia]=d.split("-");return`${dia}/${m}`;};
+            return histAll.length===0?(
+              <div style={{textAlign:"center",color:C.textDim,padding:"40px 0",fontSize:12}}>Nenhum evento registrado ainda.</div>
+            ):histAll.map((ev,i)=>{
+              const rem=ev.status==="REMOVIDA";
+              const cor=rem?C.dangerLight:C.accentLight;
+              const subs=(ev.itensSubstituidos||[]).map(id=>ITENS_LABEL[id]||id).filter(Boolean);
+              const motivos=ev.motivos||(ev.motivo?[ev.motivo]:[]);
+              return(
+                <div key={i} style={{display:"flex",gap:10,marginBottom:10}}>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+                    <div style={{width:28,height:28,borderRadius:"50%",background:`${cor}22`,border:`2px solid ${cor}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>{rem?"🔴":"✅"}</div>
+                    {i<histAll.length-1&&<div style={{width:2,flex:1,minHeight:16,background:C.border,marginTop:2}}/>}
+                  </div>
+                  <div style={{flex:1,background:C.card,border:`1px solid ${cor}22`,borderLeft:`3px solid ${cor}`,borderRadius:10,padding:"9px 11px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                      <span style={{color:cor,fontWeight:900,fontSize:11}}>{fmtGar(ev.garrafa)}</span>
+                      <span style={{color:C.textDim,fontFamily:"monospace",fontSize:9}}>{fmtD(ev.data)} {ev.hora||""} · {ev.maquina}</span>
+                    </div>
+                    <div style={{color:C.text,fontWeight:700,fontSize:10,marginBottom:motivos.length>0?3:0}}>{rem?"Removida":"Retornou à operação"}</div>
+                    {motivos.length>0&&<div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:3}}>{motivos.map(m=>(<span key={m} style={{background:m==="Válvula com passagem"?"rgba(255,82,82,0.15)":"rgba(255,193,7,0.1)",border:`1px solid ${m==="Válvula com passagem"?"#FF5252":"rgba(255,193,7,0.4)"}`,color:m==="Válvula com passagem"?"#FF5252":C.warningLight,borderRadius:20,padding:"1px 7px",fontSize:9,fontWeight:700}}>{m}</span>))}</div>}
+                    {subs.length>0&&<div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:3}}>{subs.map(s=>(<span key={s} style={{background:"rgba(0,230,118,0.1)",border:"1px solid rgba(0,230,118,0.3)",color:C.accentLight,borderRadius:20,padding:"1px 7px",fontSize:9,fontWeight:700}}>🔧 {s}</span>))}</div>}
+                    {ev.obs&&<div style={{color:C.textDim,fontSize:9,fontStyle:"italic"}}>"{ev.obs}"</div>}
+                    <div style={{display:"flex",gap:8,marginTop:3}}>
+                      {ev.operador&&<span style={{color:C.textDim,fontSize:9}}>👤 {ev.operador}</span>}
+                      {ev.letra&&<span style={{color:C.textDim,fontSize:9}}>Letra {ev.letra}</span>}
+                      {ev.turno&&<span style={{color:C.textDim,fontSize:9}}>{ev.turno}</span>}
+                    </div>
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </>
       )}
       {/* Modal garrafa */}
@@ -449,178 +514,4 @@ export function CleanersTela(){
 }
 
 
-export function RelatorioCleaners() {
-  const [maqF,setMaqF]=useState("todas");
-  const [garrafaF,setGarrafaF]=useState("todas");
-  const [modoSnap,setModoSnap]=useState(false);
-  const [snapData,setSnapData]=useState(()=>new Date().toISOString().slice(0,10));
-  const fmtData=d=>{if(!d)return"—";const[y,m,dia]=d.split("-");return`${dia}/${m}`;};
-  const fmtGarrafa=key=>{const cfg=CLEANERS_CONFIG.find(c=>key?.startsWith(c.id+"_"));if(!cfg)return key||"—";const num=key.replace(cfg.id+"_","");return`${cfg.label} · G${num}`;};
-  const ITENS_LABEL={garrafa:"Garrafa",valvula:"Válvula",visor:"Visor",bico:"Bico de porcelana",vedacao:"Borracha de vedação",pescoco:"Pescoço da válvula"};
-  const histTodos=(storageGet("cleaners_hist_h2")||[]);
-  const hist=histTodos.slice().reverse();
-  const garrafasDisponiveis=[...new Set(hist.map(h=>h.garrafa).filter(Boolean))].sort();
-  const lista=hist.filter(h=>{
-    if(maqF!=="todas"&&h.maquina!==maqF)return false;
-    if(garrafaF!=="todas"&&h.garrafa!==garrafaF)return false;
-    return true;
-  });
-  // reconstrução de estado na data selecionada
-  const reconstruir=(data)=>{
-    const estado={M2:{},M3:{}};
-    [...histTodos].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora))
-      .filter(ev=>ev.data<=data)
-      .forEach(ev=>{
-        const m=ev.maquina;if(!m||!estado[m])return;
-        if(ev.status==="REMOVIDA")estado[m][ev.garrafa]={status:"REMOVIDA",motivo:ev.motivo,motivos:ev.motivos||[]};
-        else if(ev.status==="OPERANDO")delete estado[m][ev.garrafa];
-      });
-    return estado;
-  };
-  const gStatusCorSnap=(g)=>!g?C.success:C.dangerLight;
-  const temPassagemSnap=(g)=>{const ms=g?.motivos||[];const m=g?.motivo||"";return ms.includes("Válvula com passagem")||m==="Válvula com passagem";};
-  return(
-    <div>
-      {/* toggle modo */}
-      <div style={{display:"flex",gap:6,marginBottom:12}}>
-        {[{id:false,l:"📋 Linha do Tempo"},{id:true,l:"📸 Snapshot"}].map(({id,l})=>(
-          <button key={String(id)} onClick={()=>setModoSnap(id)} style={{flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:11,background:modoSnap===id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${modoSnap===id?"rgba(255,255,255,0.5)":C.border}`,color:modoSnap===id?"#fff":C.textMuted,boxShadow:modoSnap===id?"0 0 10px rgba(80,144,255,0.4)":"none"}}>{l}</button>
-        ))}
-      </div>
-      {modoSnap?(
-        /* ── MODO SNAPSHOT ── */
-        <div>
-          <div style={{background:C.card,border:`1px solid #5090FF44`,borderTop:`2px solid #5090FF`,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
-            <div style={{color:C.textDim,fontSize:9,fontWeight:800,letterSpacing:"0.1em",marginBottom:8}}>VISUALIZAR ESTADO EM</div>
-            <input type="date" value={snapData} onChange={e=>setSnapData(e.target.value)} style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 12px",color:C.white,fontSize:13,fontWeight:700,outline:"none"}}/>
-          </div>
-          {(()=>{
-            const estado=reconstruir(snapData);
-            const maqsSnap=["M2","M3"];
-            const totalFora=maqsSnap.reduce((a,m)=>a+Object.keys(estado[m]||{}).length,0);
-            const totalOp=CLEANERS_TOTAL*2-totalFora;
-            const effSnap=Math.round(totalOp/(CLEANERS_TOTAL*2)*100);
-            const corSnap=effSnap>=90?C.accentLight:effSnap>=70?C.warningLight:C.dangerLight;
-            return(
-              <>
-                <div style={{background:C.card,border:`1px solid ${corSnap}33`,borderTop:`2px solid ${corSnap}`,borderRadius:12,padding:"10px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div>
-                    <div style={{color:corSnap,fontWeight:900,fontSize:28,fontFamily:"monospace",lineHeight:1}}>{effSnap}%</div>
-                    <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em",marginTop:2}}>EFICIÊNCIA EM {fmtData(snapData)}</div>
-                  </div>
-                  <div style={{textAlign:"right"}}>
-                    <div style={{color:C.accentLight,fontFamily:"monospace",fontWeight:900,fontSize:13}}>{totalOp}/{CLEANERS_TOTAL*2} OP</div>
-                    <div style={{color:C.dangerLight,fontFamily:"monospace",fontWeight:700,fontSize:11}}>{totalFora} FORA</div>
-                  </div>
-                </div>
-                {maqsSnap.map(mq=>(
-                  <div key={mq} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
-                    <div style={{color:C.white,fontWeight:800,fontSize:13,marginBottom:10}}>Máquina {mq.replace("M","")}</div>
-                    {CLEANERS_CONFIG.map(e=>{
-                      const W=32,GAP=3,H=65;
-                      const total=e.garrafas;
-                      const totalW=total*(W+GAP)-GAP+2;
-                      const foraEst=Object.keys(estado[mq]||{}).filter(k=>k.startsWith(e.id+"_")).length;
-                      const evEst=Math.round((e.garrafas-foraEst)/e.garrafas*100);
-                      const cEst=evEst>=90?C.accentLight:evEst>=70?C.warningLight:C.dangerLight;
-                      return(
-                        <div key={e.id} style={{marginBottom:10}}>
-                          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                            <span style={{color:C.textMuted,fontSize:11,fontWeight:700}}>{e.label}</span>
-                            <span style={{color:cEst,fontFamily:"monospace",fontWeight:900,fontSize:11}}>{e.garrafas-foraEst}/{e.garrafas} · {evEst}%</span>
-                          </div>
-                          <div style={{overflowX:"auto"}}>
-                            <svg width={totalW} height={H+18} style={{display:"block"}}>
-                              <rect x={0} y={8} width={totalW} height={10} rx={2} fill="rgba(100,150,255,0.25)" stroke="rgba(100,150,255,0.5)" strokeWidth={1}/>
-                              {Array.from({length:total},(_,i)=>{
-                                const g=estado[mq]?.[e.id+"_"+(i+1)];
-                                const c=gStatusCorSnap(g);
-                                const cx=(W+GAP)*i+W/2;
-                                const passagem=temPassagemSnap(g);
-                                const fill=!g?"rgba(0,230,118,0.18)":"rgba(255,82,82,0.2)";
-                                return(
-                                  <g key={i} style={{animation:passagem?"trava-pulse 1s ease-in-out infinite":"none"}}>
-                                    <polygon points={`${(W+GAP)*i},18 ${(W+GAP)*i+W},18 ${cx},${H}`} fill={fill} stroke={c} strokeWidth={passagem?2.5:1.5}/>
-                                    <rect x={(W+GAP)*i+W*0.3} y={8} width={W*0.4} height={10} fill="rgba(4,17,29,0.9)"/>
-                                    <circle cx={cx} cy={H-18} r={4} fill={c} opacity={0.9}/>
-                                    <text x={cx} y={H+12} textAnchor="middle" fontSize={10} fontWeight="900" fill={c}>{i+1}</text>
-                                  </g>
-                                );
-                              })}
-                              <rect x={0} y={H} width={totalW} height={8} rx={3} fill="rgba(100,150,255,0.2)" stroke="rgba(100,150,255,0.4)" strokeWidth={1}/>
-                            </svg>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </>
-            );
-          })()}
-        </div>
-      ):(
-        /* ── MODO LINHA DO TEMPO ── */
-        <div>
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`2px solid #5090FF`,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
-            <div style={{color:C.textDim,fontSize:9,fontWeight:800,letterSpacing:"0.1em",marginBottom:8}}>LINHA DO TEMPO · CLEANERS</div>
-            <div style={{display:"flex",gap:5,marginBottom:8}}>
-              {[{id:"todas",l:"Todas"},{id:"M2",l:"M2"},{id:"M3",l:"M3"}].map(m=>(
-                <button key={m.id} onClick={()=>setMaqF(m.id)} style={{flex:1,padding:"7px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${maqF===m.id?"#5090FF":C.border}`,background:maqF===m.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,color:maqF===m.id?C.white:C.textMuted}}>{m.l}</button>
-              ))}
-            </div>
-            <select value={garrafaF} onChange={e=>setGarrafaF(e.target.value)} style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 10px",color:garrafaF!=="todas"?C.accentLight:C.textMuted,fontSize:11,fontWeight:700,outline:"none"}}>
-              <option value="todas">🔍 Todas as garrafas</option>
-              {garrafasDisponiveis.map(g=>(<option key={g} value={g}>{fmtGarrafa(g)}</option>))}
-            </select>
-          </div>
-          {lista.length===0?(
-            <div style={{textAlign:"center",color:C.textDim,padding:"40px 0",fontSize:12}}>Nenhum evento registrado.</div>
-          ):lista.map((ev,i)=>{
-            const removida=ev.status==="REMOVIDA";
-            const cor=removida?C.dangerLight:C.accentLight;
-            const subs=(ev.itensSubstituidos||[]).map(id=>ITENS_LABEL[id]||id).filter(Boolean);
-            const motivos=ev.motivos||(ev.motivo?[ev.motivo]:[]);
-            return(
-              <div key={i} style={{display:"flex",gap:10,marginBottom:10}}>
-                <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
-                  <div style={{width:28,height:28,borderRadius:"50%",background:`${cor}22`,border:`2px solid ${cor}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>{removida?"🔴":"✅"}</div>
-                  {i<lista.length-1&&<div style={{width:2,flex:1,minHeight:16,background:C.border,marginTop:2}}/>}
-                </div>
-                <div style={{flex:1,background:C.card,border:`1px solid ${cor}22`,borderLeft:`3px solid ${cor}`,borderRadius:10,padding:"9px 11px",marginBottom:0}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
-                    <span style={{color:cor,fontWeight:900,fontSize:11}}>{fmtGarrafa(ev.garrafa)}</span>
-                    <span style={{color:C.textDim,fontFamily:"monospace",fontSize:9}}>{fmtData(ev.data)} {ev.hora||""}</span>
-                  </div>
-                  <div style={{color:C.text,fontWeight:700,fontSize:10,marginBottom:motivos.length>0?3:0}}>
-                    {removida?"Removida":"Retornou à operação"}
-                  </div>
-                  {motivos.length>0&&(
-                    <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:3}}>
-                      {motivos.map(m=>{
-                        const passagem=m==="Válvula com passagem";
-                        return(<span key={m} style={{background:passagem?"rgba(255,82,82,0.15)":"rgba(255,193,7,0.1)",border:`1px solid ${passagem?"#FF5252":"rgba(255,193,7,0.4)"}`,color:passagem?"#FF5252":C.warningLight,borderRadius:20,padding:"1px 7px",fontSize:9,fontWeight:700}}>{m}</span>);
-                      })}
-                    </div>
-                  )}
-                  {subs.length>0&&(
-                    <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:3}}>
-                      {subs.map(s=>(<span key={s} style={{background:"rgba(0,230,118,0.1)",border:"1px solid rgba(0,230,118,0.3)",color:C.accentLight,borderRadius:20,padding:"1px 7px",fontSize:9,fontWeight:700}}>🔧 {s}</span>))}
-                    </div>
-                  )}
-                  {ev.obs&&<div style={{color:C.textDim,fontSize:9,fontStyle:"italic",marginBottom:2}}>"{ev.obs}"</div>}
-                  <div style={{display:"flex",gap:8,marginTop:3}}>
-                    {ev.operador&&<span style={{color:C.textDim,fontSize:9}}>👤 {ev.operador}</span>}
-                    {ev.maquina&&<span style={{color:"#5090FF",fontSize:9,fontFamily:"monospace",fontWeight:700}}>{ev.maquina}</span>}
-                    {ev.letra&&<span style={{color:C.textDim,fontSize:9}}>Letra {ev.letra}</span>}
-                    {ev.turno&&<span style={{color:C.textDim,fontSize:9}}>{ev.turno}</span>}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
+export function RelatorioCleaners(){return null;}
