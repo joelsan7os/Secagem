@@ -72,6 +72,7 @@ export function CleanersTela(){
     cloudGet("cleaners_estoque_h2").then(data=>{if(data)setEst(data);});
   },[]);
   const [maq,setMaq]=useState("M2");
+  const [selGest,setSelGest]=useState("Ambas");
   const [subAba,setSubAba]=useState("op");
   const [modalG,setModalG]=useState(null);
   const [mStatus,setMStatus]=useState("REMOVIDA");
@@ -162,6 +163,78 @@ export function CleanersTela(){
               </button>
             ))}
           </div>
+          {/* ── GESTÃO CLEANERS ── */}
+          {(()=>{
+            const maqsFilt=selGest==="Ambas"?["M2","M3"]:[selGest];
+            const hist=(storageGet("cleaners_hist_h2")||[]).filter(h=>maqsFilt.includes(h.maquina));
+            const totalG=CLEANERS_TOTAL*(selGest==="Ambas"?2:1);
+            const foraKeys=new Set();
+            maqsFilt.forEach(m=>Object.keys(dados[m]||{}).forEach(k=>foraKeys.add(m+":"+k)));
+            const nFora=foraKeys.size;
+            const nOp=totalG-nFora;
+            const effG=Math.round(nOp/totalG*100);
+            const corG=effG>=90?C.accentLight:effG>=70?C.warningLight:C.dangerLight;
+            // ranking motivos
+            const motCont={};
+            hist.filter(h=>h.status!=="OPERANDO"&&h.motivo).forEach(h=>{motCont[h.motivo]=(motCont[h.motivo]||0)+1;});
+            const ranking=Object.entries(motCont).sort((a,b)=>b[1]-a[1]).slice(0,4);
+            // durabilidade: pareia OPERANDO→REMOVIDA por garrafa+maquina
+            const vidas=[];
+            const porG={};
+            [...hist].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora)).forEach(ev=>{
+              const k=(ev.maquina||"")+":"+(ev.garrafa||"");
+              if(ev.status==="OPERANDO"){porG[k]=ev.data+"T"+(ev.hora||"00:00");}
+              else if(ev.status==="REMOVIDA"&&porG[k]){
+                const ini=new Date(porG[k]);const fim=new Date(ev.data+"T"+(ev.hora||"00:00"));
+                const h=Math.round((fim-ini)/3600000);if(h>0&&h<720)vidas.push(h);delete porG[k];
+              }
+            });
+            const avgV=vidas.length?Math.round(vidas.reduce((a,v)=>a+v,0)/vidas.length):null;
+            const maxV=vidas.length?Math.max(...vidas):null;
+            const minV=vidas.length?Math.min(...vidas):null;
+            const fmtH=h=>`${Math.floor(h/24)>0?Math.floor(h/24)+"d ":""}${h%24}h`;
+            return(
+              <div style={{background:C.card,border:`1px solid ${corG}33`,borderTop:`2px solid ${corG}`,borderRadius:12,padding:"12px 14px",marginBottom:12,boxShadow:effG<70?`0 0 10px ${C.dangerLight}22`:"none"}}>
+                {/* seletor */}
+                <div style={{display:"flex",gap:5,marginBottom:10}}>
+                  {["M2","M3","Ambas"].map(o=>(
+                    <button key={o} onClick={()=>setSelGest(o)} style={{flex:1,padding:"5px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:10,background:selGest===o?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`1.5px solid ${selGest===o?"rgba(255,255,255,0.4)":C.border}`,color:selGest===o?"#fff":C.textMuted}}>{o}</button>
+                  ))}
+                </div>
+                {/* resumo */}
+                <div style={{display:"flex",gap:10,alignItems:"flex-end",marginBottom:10}}>
+                  <div><div style={{color:corG,fontWeight:900,fontSize:32,fontFamily:"monospace",lineHeight:1}}>{nOp}<span style={{fontSize:14,color:C.textDim}}>/{totalG}</span></div><div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em"}}>OPERANDO</div></div>
+                  <div style={{flex:1}}>
+                    <div style={{height:6,background:C.tagBg,borderRadius:3,overflow:"hidden",marginBottom:3}}><div style={{width:`${effG}%`,height:"100%",background:corG,borderRadius:3,transition:"width .4s"}}/></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.dangerLight,fontSize:9,fontFamily:"monospace",fontWeight:800}}>{nFora} FORA</span><span style={{color:corG,fontSize:9,fontFamily:"monospace",fontWeight:900}}>{effG}%</span></div>
+                  </div>
+                </div>
+                {/* ranking + durabilidade */}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  <div>
+                    <div style={{color:"#B388FF",fontSize:8,fontWeight:800,letterSpacing:"0.1em",marginBottom:5}}>RANKING MOTIVOS</div>
+                    {ranking.length===0?<div style={{color:C.textDim,fontSize:9}}>— sem dados —</div>:ranking.map(([m,n],i)=>(
+                      <div key={m} style={{display:"flex",alignItems:"center",gap:5,marginBottom:3}}>
+                        <span style={{color:"#B388FF",fontFamily:"monospace",fontWeight:900,fontSize:9,minWidth:12}}>{i+1}</span>
+                        <span style={{flex:1,color:C.textMuted,fontSize:9,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m}</span>
+                        <span style={{color:C.warningLight,fontFamily:"monospace",fontWeight:900,fontSize:10}}>{n}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <div style={{color:C.accentLight,fontSize:8,fontWeight:800,letterSpacing:"0.1em",marginBottom:5}}>DURABILIDADE</div>
+                    {avgV===null?<div style={{color:C.textDim,fontSize:9}}>— sem histórico —</div>:(
+                      <>
+                        <div style={{color:C.textMuted,fontSize:9,marginBottom:2}}>Média <span style={{color:C.accentLight,fontFamily:"monospace",fontWeight:900}}>{fmtH(avgV)}</span></div>
+                        <div style={{color:C.textMuted,fontSize:9,marginBottom:2}}>Máx <span style={{color:C.warningLight,fontFamily:"monospace",fontWeight:900}}>{fmtH(maxV)}</span></div>
+                        <div style={{color:C.textMuted,fontSize:9}}>Mín <span style={{color:C.dangerLight,fontFamily:"monospace",fontWeight:900}}>{fmtH(minV)}</span></div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
           {/* Estágios */}
           {CLEANERS_CONFIG.map(e=>{
             const ev=effEst(maq,e);
@@ -191,16 +264,15 @@ export function CleanersTela(){
                           return(
                             <g key={i} onClick={()=>abrirModal(e.id,i+1)} style={{cursor:"pointer"}}>
                               {/* cone shape */}
-                              <polygon
-                                points={`${(W+GAP)*i},18 ${(W+GAP)*i+W},18 ${cx},${H}`}
-                                fill={fill} stroke={stroke} strokeWidth={1.5}
-                              />
+                              <polygon points={`${(W+GAP)*i},18 ${(W+GAP)*i+W},18 ${cx},${H}`} fill={fill} stroke={stroke} strokeWidth={1.5} filter={isOk?undefined:`url(#glow${i})`}/>
+                              {/* glow filter */}
+                              {!isOk&&<defs><filter id={`glow${i}`}><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>}
                               {/* slot cut on header */}
                               <rect x={(W+GAP)*i+W*0.3} y={8} width={W*0.4} height={10} fill="rgba(4,17,29,0.9)"/>
-                              {/* number */}
-                              <text x={cx} y={H-8} textAnchor="middle" fontSize={9} fontWeight="800" fill={stroke}>{i+1}</text>
-                              {/* status dot */}
-                              {g&&<circle cx={cx} cy={H+8} r={4} fill={stroke}/>}
+                              {/* status dot inside cone */}
+                              <circle cx={cx} cy={H-22} r={5} fill={stroke} opacity={0.9}/>
+                              {/* number below cone */}
+                              <text x={cx} y={H+14} textAnchor="middle" fontSize={11} fontWeight="900" fill={stroke}>{i+1}</text>
                             </g>
                           );
                         })}
