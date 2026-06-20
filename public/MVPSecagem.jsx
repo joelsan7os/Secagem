@@ -1429,6 +1429,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
             {/* ── 05 CLEANERS ── */}
             {(()=>{
               const histCl=storageGet("cleaners_hist_h2")||[];
+              const sedimAll=storageGet("cleaners_sedim_h2")||[];
               const effCl=(m)=>{const fora=Object.keys(clD[m]||{}).length;return Math.round((CLEANERS_TOTAL-fora)/CLEANERS_TOTAL*100);};
               const e2=effCl("M2"),e3=effCl("M3"),eg=Math.round((e2+e3)/2);
               const corCl=v=>v>=90?C.accentLight:v>=70?C.warningLight:C.dangerLight;
@@ -1436,61 +1437,91 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
               const totalBoth=CLEANERS_TOTAL*2;
               const foraTotal=Object.keys(clD.M2||{}).length+Object.keys(clD.M3||{}).length;
               const nOpTotal=totalBoth-foraTotal;
-              // sparkline 7 dias geral
+              // sparkline 7 dias + delta
               const spDays=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
               const snapSp={M2:{},M3:{}};
               const sortedSp=[...histCl].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
               const spVals=spDays.map(d=>{sortedSp.filter(ev=>ev.data===d).forEach(ev=>{if(!ev.maquina)return;if(ev.status==="REMOVIDA")snapSp[ev.maquina][ev.garrafa]=1;else delete snapSp[ev.maquina][ev.garrafa];});const fora=Object.keys(snapSp.M2||{}).length+Object.keys(snapSp.M3||{}).length;return Math.round((totalBoth-fora)/totalBoth*100);});
-              const SW=80,SH=22,smn=Math.max(0,Math.min(...spVals)-5),smx=Math.min(100,Math.max(...spVals)+5),srng=smx-smn||1;
-              const spts=spVals.map((v,i)=>`${(i/(spVals.length-1))*SW},${SH-(v-smn)/srng*SH}`).join(" ");
+              const delta=spVals[spVals.length-1]-spVals[0];
+              const deltaStr=delta>0?`↗ +${delta}%`:delta<0?`↘ ${delta}%`:"→ estável";
+              const deltaCol=delta>0?C.accentLight:delta<0?C.warningLight:C.textDim;
               // gauge geral
-              const r=30,circ=2*Math.PI*r,fillOp=circ*(nOpTotal/totalBoth),fillFora=circ*(foraTotal/totalBoth);
+              const r=38,circ=2*Math.PI*r,fillOp=circ*(nOpTotal/totalBoth),fillFora=circ*(foraTotal/totalBoth);
+              // sparkline path + area fill
+              const SW=260,SH=44,smn=Math.max(0,Math.min(...spVals)-8),smx=Math.min(100,Math.max(...spVals)+8),srng=smx-smn||1;
+              const spPts=spVals.map((v,i)=>`${(i/(spVals.length-1))*SW},${SH-(v-smn)/srng*SH}`);
+              const lineStr=spPts.join(" ");
+              const areaStr=`0,${SH} ${lineStr} ${SW},${SH}`;
+              // último sedim
+              const lastSedim=sedimAll.length>0?sedimAll[sedimAll.length-1]:null;
+              const corSedim=lastSedim?(lastSedim.valor<150?C.accentLight:lastSedim.valor<=250?C.warningLight:C.dangerLight):null;
               return(
-                <div onClick={()=>setTela("cleaners")} style={{background:C.card,border:`1px solid ${corEg}33`,borderTop:`2px solid ${corEg}`,borderRadius:12,padding:"13px 14px",marginBottom:10,cursor:"pointer",boxShadow:`0 0 10px ${corEg}11`}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                    <SecH n="05" t="Cleaners" cor={corEg}/>
-                    <span style={{color:corEg,fontSize:11,fontWeight:700}}>abrir ›</span>
+                <div onClick={()=>setTela("cleaners")} style={{background:`linear-gradient(135deg,${C.card},${corEg}08)`,border:`1px solid ${corEg}44`,borderTop:`3px solid ${corEg}`,borderRadius:14,padding:"14px 14px 12px",marginBottom:10,cursor:"pointer",boxShadow:`0 4px 24px ${corEg}15`}}>
+                  {/* header */}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{color:C.textDim,fontSize:9,fontWeight:900,letterSpacing:"0.1em"}}>05</span>
+                      <span style={{color:C.white,fontSize:13,fontWeight:900,letterSpacing:"0.06em"}}>CLEANERS</span>
+                      {lastSedim&&<span style={{background:`${corSedim}22`,border:`1px solid ${corSedim}55`,color:corSedim,borderRadius:20,padding:"1px 7px",fontSize:8,fontFamily:"monospace",fontWeight:800}}>Sedim {lastSedim.valor} mL/L</span>}
+                    </div>
+                    <span style={{color:corEg,fontSize:11,fontWeight:700,letterSpacing:"0.04em"}}>abrir ›</span>
                   </div>
-                  {/* gauge geral + sparkline */}
-                  <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-                    <svg width={70} height={70} viewBox="0 0 70 70">
-                      <circle cx="35" cy="35" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="7"/>
-                      <circle cx="35" cy="35" r={r} fill="none" stroke={C.accentLight} strokeWidth="7" strokeDasharray={`${fillOp} ${circ}`} strokeLinecap="butt" strokeDashoffset={circ*0.25} style={{filter:`drop-shadow(0 0 3px ${C.accentLight}66)`,transition:"stroke-dasharray .6s"}}/>
-                      {foraTotal>0&&<circle cx="35" cy="35" r={r} fill="none" stroke={C.warningLight} strokeWidth="7" strokeDasharray={`${fillFora} ${circ}`} strokeLinecap="butt" strokeDashoffset={circ*0.25-fillOp} style={{filter:`drop-shadow(0 0 3px ${C.warningLight}66)`,transition:"stroke-dasharray .6s"}}/>}
-                      <text x="35" y="32" textAnchor="middle" fontSize="14" fontWeight="900" fill={corEg} fontFamily="monospace">{eg}</text>
-                      <text x="35" y="43" textAnchor="middle" fontSize="8" fill={C.textDim}>%</text>
+                  {/* gauge + metrics */}
+                  <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
+                    <svg width={90} height={90} viewBox="0 0 100 100" style={{flexShrink:0}}>
+                      <defs><filter id="glow-cl"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+                      <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10"/>
+                      <circle cx="50" cy="50" r={r} fill="none" stroke={C.accentLight} strokeWidth="10" strokeDasharray={`${fillOp} ${circ}`} strokeLinecap="butt" strokeDashoffset={circ*0.25} filter="url(#glow-cl)" style={{transition:"stroke-dasharray .8s"}}/>
+                      {foraTotal>0&&<circle cx="50" cy="50" r={r} fill="none" stroke={C.warningLight} strokeWidth="10" strokeDasharray={`${fillFora} ${circ}`} strokeLinecap="butt" strokeDashoffset={circ*0.25-fillOp} style={{filter:`drop-shadow(0 0 4px ${C.warningLight})`,transition:"stroke-dasharray .8s"}}/>}
+                      <circle cx="50" cy="50" r="26" fill={`${corEg}11`}/>
+                      <text x="50" y="46" textAnchor="middle" fontSize="18" fontWeight="900" fill={corEg} fontFamily="monospace">{eg}</text>
+                      <text x="50" y="57" textAnchor="middle" fontSize="8" fill={C.textDim} letterSpacing="1">%</text>
                     </svg>
                     <div style={{flex:1}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                        <span style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em"}}>7 DIAS</span>
-                        <span style={{color:corEg,fontFamily:"monospace",fontWeight:900,fontSize:10}}>{spVals[spVals.length-1]}%</span>
+                      <div style={{color:corEg,fontWeight:900,fontSize:26,fontFamily:"monospace",lineHeight:1,marginBottom:2}}>{nOpTotal}<span style={{color:C.textDim,fontSize:13,fontWeight:400}}>/{totalBoth}</span></div>
+                      <div style={{color:C.textDim,fontSize:9,letterSpacing:"0.08em",marginBottom:6}}>GARRAFAS OP</div>
+                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                        {foraTotal>0&&<span style={{color:C.warningLight,fontFamily:"monospace",fontWeight:800,fontSize:12}}>{foraTotal}↓</span>}
+                        <span style={{color:deltaCol,fontSize:10,fontWeight:700,fontFamily:"monospace"}}>{deltaStr}</span>
                       </div>
-                      <svg width={SW} height={SH}>
-                        <polyline points={spts} fill="none" stroke={corEg} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${corEg}66)`}}/>
-                        <circle cx={SW} cy={SH-(spVals[spVals.length-1]-smn)/srng*SH} r="2.5" fill={corEg}/>
-                      </svg>
-                      <div style={{color:foraTotal>0?C.warningLight:C.textDim,fontSize:8,marginTop:3,fontFamily:"monospace"}}>{foraTotal>0?`${foraTotal} fora · ${nOpTotal}/${totalBoth} op`:"todas operando"}</div>
                     </div>
                   </div>
-                  {/* mini-tiles M2 e M3 */}
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                  {/* sparkline full-width com area */}
+                  <div style={{marginBottom:10,borderRadius:8,overflow:"hidden",background:"rgba(255,255,255,0.02)",padding:"4px 0 0"}}>
+                    <svg width="100%" height={SH} viewBox={`0 0 ${SW} ${SH}`} preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="spFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={corEg} stopOpacity="0.25"/>
+                          <stop offset="100%" stopColor={corEg} stopOpacity="0.02"/>
+                        </linearGradient>
+                      </defs>
+                      <polygon points={areaStr} fill="url(#spFill)"/>
+                      <polyline points={lineStr} fill="none" stroke={corEg} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${corEg}88)`}}/>
+                      <circle cx={SW} cy={SH-(spVals[spVals.length-1]-smn)/srng*SH} r="3.5" fill={corEg} style={{filter:`drop-shadow(0 0 4px ${corEg})`}}/>
+                    </svg>
+                  </div>
+                  {/* M2 e M3 */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                     {[{m:"M2",e:e2},{m:"M3",e:e3}].map(({m,e})=>{
                       const fora=Object.keys(clD[m]||{}).length;
+                      const nOp=CLEANERS_TOTAL-fora;
                       const cor=corCl(e);
-                      const rM=16,circM=2*Math.PI*rM;
-                      const fillOpM=circM*((CLEANERS_TOTAL-fora)/CLEANERS_TOTAL);
+                      const rM=20,circM=2*Math.PI*rM;
+                      const fillOpM=circM*(nOp/CLEANERS_TOTAL);
                       const fillForaM=circM*(fora/CLEANERS_TOTAL);
                       return(
-                        <div key={m} style={{background:C.tagBg,border:`1px solid ${cor}33`,borderRadius:8,padding:"8px",display:"flex",alignItems:"center",gap:8}}>
-                          <svg width={40} height={40} viewBox="0 0 40 40">
-                            <circle cx="20" cy="20" r={rM} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5"/>
-                            <circle cx="20" cy="20" r={rM} fill="none" stroke={C.accentLight} strokeWidth="5" strokeDasharray={`${fillOpM} ${circM}`} strokeLinecap="butt" strokeDashoffset={circM*0.25}/>
-                            {fora>0&&<circle cx="20" cy="20" r={rM} fill="none" stroke={C.warningLight} strokeWidth="5" strokeDasharray={`${fillForaM} ${circM}`} strokeLinecap="butt" strokeDashoffset={circM*0.25-fillOpM}/>}
-                            <text x="20" y="23" textAnchor="middle" fontSize="8" fontWeight="900" fill={cor} fontFamily="monospace">{e}%</text>
+                        <div key={m} style={{background:`${cor}09`,border:`1px solid ${cor}33`,borderLeft:`3px solid ${cor}`,borderRadius:10,padding:"9px 10px",display:"flex",alignItems:"center",gap:10}}>
+                          <svg width={50} height={50} viewBox="0 0 50 50" style={{flexShrink:0}}>
+                            <circle cx="25" cy="25" r={rM} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6"/>
+                            <circle cx="25" cy="25" r={rM} fill="none" stroke={C.accentLight} strokeWidth="6" strokeDasharray={`${fillOpM} ${circM}`} strokeLinecap="butt" strokeDashoffset={circM*0.25} style={{filter:`drop-shadow(0 0 3px ${C.accentLight}88)`}}/>
+                            {fora>0&&<circle cx="25" cy="25" r={rM} fill="none" stroke={C.warningLight} strokeWidth="6" strokeDasharray={`${fillForaM} ${circM}`} strokeLinecap="butt" strokeDashoffset={circM*0.25-fillOpM} style={{filter:`drop-shadow(0 0 3px ${C.warningLight}88)`}}/>}
+                            <text x="25" y="28" textAnchor="middle" fontSize="10" fontWeight="900" fill={cor} fontFamily="monospace">{e}%</text>
                           </svg>
                           <div>
-                            <div style={{color:C.text,fontSize:11,fontWeight:800}}>{m}</div>
-                            <div style={{color:fora>0?C.warningLight:C.accentLight,fontSize:9,fontFamily:"monospace"}}>{fora>0?`${fora} fora`:"ok"}</div>
+                            <div style={{color:C.white,fontWeight:900,fontSize:13,letterSpacing:"0.06em"}}>{m}</div>
+                            <div style={{color:cor,fontFamily:"monospace",fontWeight:800,fontSize:11}}>{nOp}/{CLEANERS_TOTAL}<span style={{color:C.textDim,fontWeight:400,fontSize:9}}> op</span></div>
+                            {fora>0&&<div style={{color:C.warningLight,fontSize:9,fontFamily:"monospace"}}>{fora} fora</div>}
+                            {fora===0&&<div style={{color:C.accentLight,fontSize:9}}>✓ todas op.</div>}
                           </div>
                         </div>
                       );
