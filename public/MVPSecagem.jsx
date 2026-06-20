@@ -1262,6 +1262,9 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
         /* requer atenção — lista priorizada */
         const atencao=[];
         if(trocadorSujo)atencao.push({chave:"trocador",nivel:0,cor:C.dangerLight,icone:"🔥",txt:"TROCADOR DE CALOR SUJO — verificar imediatamente",blink:true,destino:"equipamentos"});
+        {const parseAlt=r=>{const m=(r||"").match(/(\d),(\d{2})/);return m?parseFloat(`${m[1]}.${m[2]}`):null;};
+        const ultAlt={};[...historico].sort((a,b)=>b.id-a.id).filter(h=>h.tipoId==="enf_qualidade").forEach(r=>{const ln=r.linha||r.maquina;if(!ultAlt[ln]){const it=r.items?.find(i=>i.id==="enf_14");const v=it?parseAlt(it.resp):null;if(v!==null)ultAlt[ln]=v;}});
+        ["L4","L5","L6","L7","L8"].forEach(ln=>{const v=ultAlt[ln];if(v===null||v===undefined)return;const verde=v>=1.89&&v<=1.91;const amarelo=!verde&&v>=1.88&&v<=1.92;const vermelho=v<1.88||v>1.92;if(verde)return;const cor=amarelo?C.warningLight:C.dangerLight;const nivel=amarelo?4:0;atencao.push({chave:"alt:"+ln,nivel,cor,icone:"📏",txt:`Altura Unit ${ln}: ${v.toFixed(2).replace(".",",")} m — ${amarelo?"limite de tolerância":"FORA DA FAIXA"}`,destino:null});});}
         const clD=storageGet("cleaners_h2")||{M2:{},M3:{}};
         // Cleaners não entra no top 3 — já tem card dedicado na home
         chamAbertos.filter(c=>c.prazo==="Imediato").forEach(c=>atencao.push({chave:"cham:"+c.id,nivel:1,cor:C.dangerLight,icone:"⛔",txt:`${c.equipamentoNome} — ${c.descricao||"chamado imediato"}`,destino:"equipamentos"}));
