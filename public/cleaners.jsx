@@ -64,7 +64,8 @@ export function gerarRelatoriosCleaners() {
     .sort((a,b)=> b.data.localeCompare(a.data) || (b.turno||"").localeCompare(a.turno||""));
 }
 
-export function CleanersTela(){
+export function CleanersTela({eqState=[]}){
+  const [modalBomba,setModalBomba]=useState(null);
   const [dados,setDados]=useState(()=>storageGet("cleaners_h2")||{M2:{},M3:{}});
   const [est,setEst]=useState(()=>storageGet("cleaners_estoque_h2")||{});
   React.useEffect(()=>{
@@ -151,89 +152,71 @@ export function CleanersTela(){
               </div>
             );
           })()}
-          {/* ── GESTÃO CLEANERS ── */}
+          {/* ── CARDS M2 · M3 ── */}
           {(()=>{
+            const histAll=storageGet("cleaners_hist_h2")||[];
+            const sparkDays=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
+            const sparkEff=(mq)=>sparkDays.map(d=>{const est2={M2:{},M3:{}};[...histAll].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora)).filter(ev=>ev.data<=d).forEach(ev=>{const m=ev.maquina;if(!m||!est2[m])return;if(ev.status==="REMOVIDA")est2[m][ev.garrafa]={status:"REMOVIDA"};else delete est2[m][ev.garrafa];});return Math.round((CLEANERS_TOTAL-Object.keys(est2[mq]||{}).length)/CLEANERS_TOTAL*100);});
+            const MOTIVO_ICON={"Entupida":"🔧","Garrafa removida":"📤","Válvula com passagem":"💧","Garrafa furada":"💥","Falta de garrafa":"📦","Falta de válvula":"🔩","Falta de visor":"👁","Falta de vedação":"⭕","Falta de material":"📦","Outro":"❓"};
+            const Gauge=({pct,cor})=>{const r=38;const circ=2*Math.PI*r;const fill=circ*(pct/100);return(<svg width={90} height={90} viewBox="0 0 100 100"><circle cx="50" cy="50" r={r} fill="none" stroke={C.tagBg} strokeWidth="9"/><circle cx="50" cy="50" r={r} fill="none" stroke={cor} strokeWidth="9" strokeDasharray={`${fill} ${circ}`} strokeLinecap="round" strokeDashoffset={circ*0.25} style={{filter:`drop-shadow(0 0 4px ${cor}88)`,transition:"stroke-dasharray .6s"}}/><text x="50" y="46" textAnchor="middle" fontSize="18" fontWeight="900" fill={cor} fontFamily="monospace">{pct}</text><text x="50" y="58" textAnchor="middle" fontSize="9" fill={C.textDim}>%</text></svg>);};
+            const Spark=({vals,cor})=>{if(!vals||vals.length<2)return null;const W=76,H=26;const min=Math.max(0,Math.min(...vals)-5);const max=Math.min(100,Math.max(...vals)+5);const rng=max-min||1;const pts=vals.map((v,i)=>`${(i/(vals.length-1))*W},${H-(v-min)/rng*H}`).join(" ");return(<svg width={W} height={H}><polyline points={pts} fill="none" stroke={cor} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${cor}66)`}}/><circle cx={(vals.length-1)/(vals.length-1)*W} cy={H-(vals[vals.length-1]-min)/rng*H} r="2.5" fill={cor}/></svg>);};
             const isToday=snapData===hoje;
-            const reconstruirSnap=(data)=>{const estado={M2:{},M3:{}};[...(storageGet("cleaners_hist_h2")||[])].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora)).filter(ev=>ev.data<=data).forEach(ev=>{const m=ev.maquina;if(!m||!estado[m])return;if(ev.status==="REMOVIDA")estado[m][ev.garrafa]={status:"REMOVIDA",motivo:ev.motivo,motivos:ev.motivos||[]};else if(ev.status==="OPERANDO")delete estado[m][ev.garrafa];});return estado;};
+            const reconstruirSnap=(data)=>{const estado={M2:{},M3:{}};[...histAll].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora)).filter(ev=>ev.data<=data).forEach(ev=>{const m=ev.maquina;if(!m||!estado[m])return;if(ev.status==="REMOVIDA")estado[m][ev.garrafa]={status:"REMOVIDA",motivo:ev.motivo,motivos:ev.motivos||[]};else if(ev.status==="OPERANDO")delete estado[m][ev.garrafa];});return estado;};
             const dadosSnap=isToday?dados:reconstruirSnap(snapData);
-            const maqsFilt=selGest==="Ambas"?["M2","M3"]:[selGest];
-            const hist=(storageGet("cleaners_hist_h2")||[]).filter(h=>maqsFilt.includes(h.maquina));
-            const totalG=CLEANERS_TOTAL*(selGest==="Ambas"?2:1);
-            const foraKeys=new Set();
-            maqsFilt.forEach(m=>Object.keys(dadosSnap[m]||{}).forEach(k=>foraKeys.add(m+":"+k)));
-            const nFora=foraKeys.size;
-            const nOp=totalG-nFora;
-            const effG=Math.round(nOp/totalG*100);
-            const corG=effG>=90?C.accentLight:effG>=70?C.warningLight:C.dangerLight;
-            // ranking motivos
-            const motCont={};
-            hist.filter(h=>h.status!=="OPERANDO"&&h.motivo).forEach(h=>{motCont[h.motivo]=(motCont[h.motivo]||0)+1;});
-            const ranking=Object.entries(motCont).sort((a,b)=>b[1]-a[1]).slice(0,5);
             return(
-              <div style={{background:C.card,border:`1px solid ${corG}33`,borderTop:`2px solid ${corG}`,borderRadius:12,padding:"12px 14px",marginBottom:12,boxShadow:effG<70?`0 0 10px ${C.dangerLight}22`:"none"}}>
-                {/* seletor */}
-                <div style={{display:"flex",gap:6,marginBottom:10}}>
-                  {["M2","M3","Ambas"].map(o=>{
-                    const sel=selGest===o;
-                    return(<button key={o} onClick={()=>{setSelGest(o);if(o!=="Ambas")setMaq(o);}} style={{flex:1,padding:"10px 6px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13,background:sel?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${sel?"rgba(255,255,255,0.5)":C.border}`,color:sel?"#fff":C.textMuted,boxShadow:sel?"0 0 10px rgba(80,144,255,0.5)":"none"}}>{o}</button>);
-                  })}
-                </div>
-                {/* resumo dinâmico */}
-                {(()=>{
-                  const MOTIVOS_FORA_OP=["Entupida","Válvula com passagem","Falta de visor","Falta de vedação"];
-                  const nForaOp=maqsFilt.reduce((a,m)=>a+Object.values(dados[m]||{}).filter(g=>MOTIVOS_FORA_OP.includes(g?.motivo)).length,0);
-                  const nRemovida=nFora-nForaOp;
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                {["M2","M3"].map(mq=>{
+                  const nFora=Object.keys(dadosSnap[mq]||{}).length;
+                  const nOp=CLEANERS_TOTAL-nFora;
+                  const effG=Math.round(nOp/CLEANERS_TOTAL*100);
+                  const cor=effG>=90?C.accentLight:effG>=70?C.warningLight:C.dangerLight;
+                  const histMq=histAll.filter(h=>h.maquina===mq);
+                  const passagem=Object.values(dadosSnap[mq]||{}).filter(g=>temPassagem(g)).length;
+                  const recentes=histMq.filter(h=>{try{const hd=new Date(h.data+"T"+(h.hora||"00:00"));return(Date.now()-hd)<86400000&&h.status==="REMOVIDA";}catch{return false;}}).length;
+                  const hs=Math.max(0,100-nFora*4-passagem*10-recentes*3);
+                  const hsCor=hs>=70?C.accentLight:hs>=40?C.warningLight:C.dangerLight;
+                  const motCont={};histMq.filter(h=>h.status!=="OPERANDO").forEach(h=>(h.motivos||(h.motivo?[h.motivo]:[])).filter(Boolean).forEach(m=>{motCont[m]=(motCont[m]||0)+1;}));
+                  const top2=Object.entries(motCont).sort((a,b)=>b[1]-a[1]).slice(0,2);
+                  const spark=sparkEff(mq);
                   return(
-                    <>
-                      <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:12}}>
-                        <div>
-                          <div style={{color:corG,fontWeight:900,fontSize:36,fontFamily:"monospace",lineHeight:1}}>{effG}<span style={{fontSize:16,color:corG}}>%</span></div>
-                          <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em",marginTop:2}}>EFICIÊNCIA · {selGest==="Ambas"?"M2 + M3":selGest}</div>
-                        </div>
+                    <div key={mq} style={{background:C.card,border:`1px solid ${cor}33`,borderTop:`3px solid ${cor}`,borderRadius:14,padding:"12px 10px",boxShadow:`0 0 14px ${cor}15`}}>
+                      <div style={{color:C.textDim,fontSize:9,fontWeight:800,letterSpacing:"0.12em",marginBottom:8}}>MÁQ {mq.replace("M","")}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+                        <Gauge pct={effG} cor={cor}/>
                         <div style={{flex:1}}>
-                          <div style={{height:7,background:C.tagBg,borderRadius:3,overflow:"hidden",marginBottom:4}}><div style={{width:`${effG}%`,height:"100%",background:corG,borderRadius:3,transition:"width .5s"}}/></div>
-                          <div style={{display:"flex",justifyContent:"space-between"}}>
-                            <span style={{color:C.accentLight,fontSize:9,fontFamily:"monospace",fontWeight:800}}>{nOp}/{totalG} OP</span>
-                            <span style={{color:C.dangerLight,fontSize:9,fontFamily:"monospace",fontWeight:800}}>{nFora} FORA</span>
+                          <div style={{marginBottom:6}}>
+                            <div style={{color:cor,fontWeight:900,fontSize:17,fontFamily:"monospace",lineHeight:1}}>{nOp}<span style={{color:C.textDim,fontSize:10}}>/{CLEANERS_TOTAL}</span></div>
+                            <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.05em"}}>Operando</div>
+                          </div>
+                          <div>
+                            <div style={{color:nFora>0?C.dangerLight:C.textDim,fontWeight:900,fontSize:14,fontFamily:"monospace",lineHeight:1}}>{nFora}</div>
+                            <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.05em"}}>Fora de op.</div>
                           </div>
                         </div>
                       </div>
-                      {/* contadores fora de op vs removida */}
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-                        {[{v:nForaOp,l:"FORA DE OPERAÇÃO",c:C.warningLight,i:"⚠"},{v:nRemovida,l:"REMOVIDAS",c:C.dangerLight,i:"🔴"}].map(({v,l,c,i})=>(
-                          <div key={l} style={{background:C.tagBg,border:`1px solid ${v>0?c+"44":C.border}`,borderTop:`2px solid ${v>0?c:C.border}`,borderRadius:10,padding:"8px 10px"}}>
-                            <div style={{color:v>0?c:C.textDim,fontFamily:"monospace",fontWeight:900,fontSize:24,lineHeight:1}}>{v}</div>
-                            <div style={{color:C.textDim,fontSize:7.5,letterSpacing:"0.08em",marginTop:3}}>{l}</div>
-                          </div>
-                        ))}
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",background:C.tagBg,borderRadius:8,padding:"6px 8px",marginBottom:8}}>
+                        <div>
+                          <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.07em",marginBottom:1}}>Health Score</div>
+                          <div style={{color:hsCor,fontWeight:900,fontSize:20,fontFamily:"monospace",lineHeight:1,textShadow:`0 0 8px ${hsCor}55`}}>{hs}</div>
+                        </div>
+                        <Spark vals={spark} cor={cor}/>
                       </div>
-                    </>
+                      {top2.length>0&&(
+                        <div>
+                          <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em",marginBottom:5}}>PRINCIPAIS MOTIVOS</div>
+                          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                            {top2.map(([m,n])=>(
+                              <div key={m} style={{display:"flex",alignItems:"center",gap:4,background:C.tagBg,borderRadius:8,padding:"4px 7px"}}>
+                                <span style={{fontSize:13}}>{MOTIVO_ICON[m]||"❓"}</span>
+                                <div><div style={{color:C.textMuted,fontSize:8,fontWeight:700,lineHeight:1.2}}>{m}</div><div style={{color:cor,fontFamily:"monospace",fontWeight:900,fontSize:11}}>{n}</div></div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   );
-                })()}
-                {/* causas de remoção */}
-                <div style={{borderTop:`1px solid ${C.border}`,paddingTop:10}}>
-                  <div style={{color:"#B388FF",fontSize:9,fontWeight:800,letterSpacing:"0.1em",marginBottom:8}}>CAUSAS DE REMOÇÃO</div>
-                  {ranking.length===0?(
-                    <div style={{color:C.textDim,fontSize:9,fontStyle:"italic"}}>— nenhum evento registrado —</div>
-                  ):ranking.slice(0,3).map(([m,n],i)=>{
-                    const pct=Math.round(n/hist.filter(h=>h.status!=="OPERANDO"&&h.motivo).length*100);
-                    const cores=["#FF5252","#FF8C00","#B388FF"];
-                    const cor=cores[i]||"#B388FF";
-                    return(
-                      <div key={m} style={{marginBottom:8}}>
-                        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
-                          <span style={{color:cor,fontFamily:"monospace",fontWeight:900,fontSize:12,minWidth:16}}>#{i+1}</span>
-                          <span style={{flex:1,color:C.text,fontSize:10,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m}</span>
-                          <span style={{color:cor,fontFamily:"monospace",fontWeight:900,fontSize:12}}>{n}</span>
-                          <span style={{color:C.textDim,fontFamily:"monospace",fontSize:9,minWidth:30,textAlign:"right"}}>{pct}%</span>
-                        </div>
-                        <div style={{height:5,background:C.tagBg,borderRadius:3,overflow:"hidden"}}>
-                          <div style={{width:`${pct}%`,height:"100%",background:cor,borderRadius:3,boxShadow:`0 0 6px ${cor}88`,transition:"width .4s"}}/>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                })}
               </div>
             );
           })()}
@@ -245,40 +228,48 @@ export function CleanersTela(){
             const effEstSnap=(m,e)=>{const fora=Object.keys(dadosSnap[m]||{}).filter(k=>k.startsWith(e.id+"_")).length;return Math.round((e.garrafas-fora)/e.garrafas*100);};
             return CLEANERS_CONFIG.map(e=>{
             const ev=effEstSnap(maq,e);
+            const bombaTag=e.bomba[maq]||"";
+            const eqBomba=(eqState||[]).find(eq=>eq.nome&&(eq.nome.includes(bombaTag)||bombaTag.includes(eq.nome.replace(/[^0-9-]/g,""))));
+            const bombaManut=eqBomba&&(eqBomba.status==="MANUTENÇÃO"||eqBomba.status==="ALERTA"||(eqBomba.notas||[]).length>0);
             return(
-              <div key={e.id} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${effCor(ev)}`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+              <div key={e.id} style={{background:C.card,border:`1px solid ${bombaManut?C.dangerLight+"44":C.border}`,borderLeft:`3px solid ${effCor(ev)}`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                   <span style={{color:C.text,fontWeight:800,fontSize:13}}>{e.label}</span>
                   <span style={{color:effCor(ev),fontWeight:900,fontSize:14,fontFamily:"monospace"}}>{e.garrafas-Object.keys(dadosSnap[maq]||{}).filter(k=>k.startsWith(e.id+"_")).length}/{e.garrafas} · {ev}%</span>
                 </div>
-                <code style={{color:"#8FB8E8",fontSize:9,letterSpacing:"0.05em",background:"rgba(14,40,71,0.65)",border:"1px solid rgba(80,144,255,0.25)",borderRadius:4,padding:"1px 6px",fontWeight:700}}>Bomba {e.bomba[maq]}</code>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                  <code style={{color:"#8FB8E8",fontSize:9,letterSpacing:"0.05em",background:"rgba(14,40,71,0.65)",border:"1px solid rgba(80,144,255,0.25)",borderRadius:4,padding:"1px 6px",fontWeight:700}}>Bomba {bombaTag}</code>
+                  {bombaManut&&(
+                    <button onClick={()=>setModalBomba(eqBomba)} style={{background:`${C.dangerLight}22`,border:`1px solid ${C.dangerLight}55`,borderRadius:6,padding:"1px 7px",cursor:"pointer",display:"flex",alignItems:"center",gap:3,animation:"trava-pulse 1.8s ease-in-out infinite"}}>
+                      <span style={{fontSize:11}}>📋</span>
+                      <span style={{color:C.dangerLight,fontSize:9,fontWeight:800}}>{eqBomba.status}</span>
+                    </button>
+                  )}
+                </div>
                 <div style={{marginTop:10,overflowX:"auto"}}>
                   {(()=>{
                     const W=36,GAP=4,H=70;
                     const total=e.garrafas;
                     const totalW=total*(W+GAP)-GAP+2;
                     return(
-                      <svg width={totalW} height={H+24} style={{display:"block",cursor:"pointer"}}>
+                      <svg width={totalW} height={H+30} style={{display:"block",cursor:"pointer"}}>
                         {/* header bar */}
                         <rect x={0} y={8} width={totalW} height={10} rx={2} fill={`rgba(100,150,255,0.25)`} stroke="rgba(100,150,255,0.5)" strokeWidth={1}/>
                         {Array.from({length:total},(_,i)=>{
                           const g=dadosSnap[maq]?.[e.id+"_"+(i+1)];
                           const passagem=temPassagem(g);
-                          const c=gStatusCor(g);
                           const cx=(W+GAP)*i+W/2;
-                          const isOk=!g;
-                          const fill=isOk?"rgba(0,230,118,0.18)":passagem?"rgba(255,82,82,0.35)":g.status==="REMOVIDA"?"rgba(255,82,82,0.2)":"rgba(255,193,7,0.2)";
-                          const stroke=passagem?C.dangerLight:c;
+                          const dotCor=!g?C.accentLight:passagem?C.dangerLight:g.status==="MANUTENÇÃO"?C.warningLight:C.dangerLight;
                           return(
                             <g key={i} onClick={()=>abrirModal(e.id,i+1)} style={{cursor:"pointer",animation:passagem?"trava-pulse 1s ease-in-out infinite":"none"}}>
-                              {/* cone shape */}
-                              <polygon points={`${(W+GAP)*i},18 ${(W+GAP)*i+W},18 ${cx},${H}`} fill={fill} stroke={stroke} strokeWidth={passagem?2.5:1.5}/>
-                              {/* slot cut on header */}
+                              {/* cone cinza */}
+                              <polygon points={`${(W+GAP)*i},18 ${(W+GAP)*i+W},18 ${cx},${H}`} fill="rgba(120,140,160,0.13)" stroke="rgba(160,180,200,0.35)" strokeWidth={1.5}/>
+                              {/* slot header */}
                               <rect x={(W+GAP)*i+W*0.3} y={8} width={W*0.4} height={10} fill="rgba(4,17,29,0.9)"/>
-                              {/* status dot inside cone */}
-                              <circle cx={cx} cy={H-22} r={5} fill={stroke} opacity={0.9}/>
-                              {/* number below cone */}
-                              <text x={cx} y={H+14} textAnchor="middle" fontSize={11} fontWeight="900" fill={stroke}>{i+1}</text>
+                              {/* dot status — maior, colorido */}
+                              <circle cx={cx} cy={H-20} r={7} fill={dotCor} opacity={0.95} style={{filter:`drop-shadow(0 0 4px ${dotCor})`}}/>
+                              {/* número abaixo da barra coletora */}
+                              <text x={cx} y={H+20} textAnchor="middle" fontSize={10} fontWeight="900" fill="rgba(160,180,200,0.7)">{i+1}</text>
                             </g>
                           );
                         })}
@@ -377,6 +368,34 @@ export function CleanersTela(){
             });
           })()}
         </>
+      )}
+      {/* Modal bomba em manutenção */}
+      {modalBomba&&(
+        <div onClick={()=>setModalBomba(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:C.surface,border:`1px solid ${C.dangerLight}44`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"70vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+              <div>
+                <div style={{color:C.dangerLight,fontWeight:900,fontSize:14}}>🔧 {modalBomba.nome}</div>
+                <div style={{color:C.textDim,fontSize:11,marginTop:2}}>Status: <span style={{color:modalBomba.status==="MANUTENÇÃO"?C.dangerLight:C.warningLight,fontWeight:800}}>{modalBomba.status}</span></div>
+              </div>
+              <button onClick={()=>setModalBomba(null)} style={{background:"transparent",border:"none",color:C.textDim,fontSize:20,cursor:"pointer"}}>✕</button>
+            </div>
+            {(modalBomba.notas||[]).length>0?(
+              <div>
+                <div style={{color:C.textDim,fontSize:9,fontWeight:800,letterSpacing:"0.1em",marginBottom:8}}>NOTAS / OCORRÊNCIAS</div>
+                {(modalBomba.notas||[]).map((n,i)=>(
+                  <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.dangerLight}`,borderRadius:9,padding:"9px 12px",marginBottom:7}}>
+                    <div style={{color:C.text,fontSize:11,fontWeight:700,marginBottom:3}}>{n.titulo||n.desc||"Sem descrição"}</div>
+                    {n.obs&&<div style={{color:C.textDim,fontSize:10}}>{n.obs}</div>}
+                    {n.data&&<div style={{color:C.textDim,fontSize:9,marginTop:4,fontFamily:"monospace"}}>{n.data} {n.hora||""}</div>}
+                  </div>
+                ))}
+              </div>
+            ):(
+              <div style={{color:C.textDim,fontSize:11,fontStyle:"italic"}}>Equipamento em {modalBomba.status} — sem notas registradas.</div>
+            )}
+          </div>
+        </div>
       )}
       {/* Modal garrafa */}
       {modalG&&(
