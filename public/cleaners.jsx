@@ -158,31 +158,61 @@ export function CleanersTela(){
                   })}
                 </div>
                 {/* resumo dinâmico */}
-                <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
-                  <div>
-                    <div style={{color:corG,fontWeight:900,fontSize:36,fontFamily:"monospace",lineHeight:1}}>{effG}<span style={{fontSize:16,color:corG}}>%</span></div>
-                    <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em",marginTop:2}}>EFICIÊNCIA · {selGest==="Ambas"?"M2 + M3":selGest}</div>
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{height:7,background:C.tagBg,borderRadius:3,overflow:"hidden",marginBottom:4}}><div style={{width:`${effG}%`,height:"100%",background:corG,borderRadius:3,transition:"width .5s"}}/></div>
-                    <div style={{display:"flex",justifyContent:"space-between"}}>
-                      <span style={{color:C.accentLight,fontSize:9,fontFamily:"monospace",fontWeight:800}}>{nOp}/{totalG} OP</span>
-                      <span style={{color:C.dangerLight,fontSize:9,fontFamily:"monospace",fontWeight:800}}>{nFora} FORA</span>
-                    </div>
-                  </div>
+                {(()=>{
+                  const MOTIVOS_FORA_OP=["Entupida","Válvula com passagem","Falta de visor","Falta de vedação"];
+                  const nForaOp=maqsFilt.reduce((a,m)=>a+Object.values(dados[m]||{}).filter(g=>MOTIVOS_FORA_OP.includes(g?.motivo)).length,0);
+                  const nRemovida=nFora-nForaOp;
+                  return(
+                    <>
+                      <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:12}}>
+                        <div>
+                          <div style={{color:corG,fontWeight:900,fontSize:36,fontFamily:"monospace",lineHeight:1}}>{effG}<span style={{fontSize:16,color:corG}}>%</span></div>
+                          <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em",marginTop:2}}>EFICIÊNCIA · {selGest==="Ambas"?"M2 + M3":selGest}</div>
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{height:7,background:C.tagBg,borderRadius:3,overflow:"hidden",marginBottom:4}}><div style={{width:`${effG}%`,height:"100%",background:corG,borderRadius:3,transition:"width .5s"}}/></div>
+                          <div style={{display:"flex",justifyContent:"space-between"}}>
+                            <span style={{color:C.accentLight,fontSize:9,fontFamily:"monospace",fontWeight:800}}>{nOp}/{totalG} OP</span>
+                            <span style={{color:C.dangerLight,fontSize:9,fontFamily:"monospace",fontWeight:800}}>{nFora} FORA</span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* contadores fora de op vs removida */}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                        {[{v:nForaOp,l:"FORA DE OPERAÇÃO",c:C.warningLight,i:"⚠"},{v:nRemovida,l:"REMOVIDAS",c:C.dangerLight,i:"🔴"}].map(({v,l,c,i})=>(
+                          <div key={l} style={{background:C.tagBg,border:`1px solid ${v>0?c+"44":C.border}`,borderTop:`2px solid ${v>0?c:C.border}`,borderRadius:10,padding:"8px 10px"}}>
+                            <div style={{color:v>0?c:C.textDim,fontFamily:"monospace",fontWeight:900,fontSize:24,lineHeight:1}}>{v}</div>
+                            <div style={{color:C.textDim,fontSize:7.5,letterSpacing:"0.08em",marginTop:3}}>{l}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  );
+                })()}
+                {/* causas de remoção */}
+                <div style={{borderTop:`1px solid ${C.border}`,paddingTop:10}}>
+                  <div style={{color:"#B388FF",fontSize:9,fontWeight:800,letterSpacing:"0.1em",marginBottom:8}}>CAUSAS DE REMOÇÃO</div>
+                  {ranking.length===0?(
+                    <div style={{color:C.textDim,fontSize:9,fontStyle:"italic"}}>— nenhum evento registrado —</div>
+                  ):ranking.slice(0,3).map(([m,n],i)=>{
+                    const pct=Math.round(n/hist.filter(h=>h.status!=="OPERANDO"&&h.motivo).length*100);
+                    const cores=["#FF5252","#FF8C00","#B388FF"];
+                    const cor=cores[i]||"#B388FF";
+                    return(
+                      <div key={m} style={{marginBottom:8}}>
+                        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
+                          <span style={{color:cor,fontFamily:"monospace",fontWeight:900,fontSize:12,minWidth:16}}>#{i+1}</span>
+                          <span style={{flex:1,color:C.text,fontSize:10,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m}</span>
+                          <span style={{color:cor,fontFamily:"monospace",fontWeight:900,fontSize:12}}>{n}</span>
+                          <span style={{color:C.textDim,fontFamily:"monospace",fontSize:9,minWidth:30,textAlign:"right"}}>{pct}%</span>
+                        </div>
+                        <div style={{height:5,background:C.tagBg,borderRadius:3,overflow:"hidden"}}>
+                          <div style={{width:`${pct}%`,height:"100%",background:cor,borderRadius:3,boxShadow:`0 0 6px ${cor}88`,transition:"width .4s"}}/>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                {/* ranking motivos */}
-                <div style={{color:"#B388FF",fontSize:8,fontWeight:800,letterSpacing:"0.1em",marginBottom:6}}>RANKING DE MOTIVOS</div>
-                {ranking.length===0?<div style={{color:C.textDim,fontSize:9}}>— sem registros —</div>:ranking.map(([m,n],i)=>(
-                  <div key={m} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
-                    <span style={{color:"#B388FF",fontFamily:"monospace",fontWeight:900,fontSize:10,minWidth:14}}>{i+1}</span>
-                    <div style={{flex:1,height:4,background:C.tagBg,borderRadius:2,overflow:"hidden"}}>
-                      <div style={{width:`${Math.round(n/ranking[0][1]*100)}%`,height:"100%",background:"#B388FF",borderRadius:2}}/>
-                    </div>
-                    <span style={{color:C.textMuted,fontSize:9,minWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m}</span>
-                    <span style={{color:C.warningLight,fontFamily:"monospace",fontWeight:900,fontSize:11,minWidth:18,textAlign:"right"}}>{n}</span>
-                  </div>
-                ))}
               </div>
             );
           })()}
