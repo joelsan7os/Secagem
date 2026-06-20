@@ -75,6 +75,8 @@ export function CleanersTela({eqState=[]}){
   const [maq,setMaq]=useState("M2");
   const [selGest,setSelGest]=useState("Ambas");
   const [subAba,setSubAba]=useState("op");
+  const [modalSedim,setModalSedim]=useState(false);
+  const [sedimVal,setSedimVal]=useState("");
   const [snapData,setSnapData]=useState(()=>new Date().toISOString().slice(0,10));
   const hoje=new Date().toISOString().slice(0,10);
   const [modalG,setModalG]=useState(null);
@@ -278,6 +280,65 @@ export function CleanersTela({eqState=[]}){
               </div>
             );
           })()}
+          {/* ── TENDÊNCIA 10 DIAS + SEDIMENTÁVEIS ── */}
+          {(()=>{
+            const histAll=storageGet("cleaners_hist_h2")||[];
+            const sedimAll=storageGet("cleaners_sedim_h2")||[];
+            const days=Array.from({length:10},(_,i)=>{const d=new Date();d.setDate(d.getDate()-9+i);return d.toISOString().slice(0,10);});
+            // eficiência geral por dia
+            const snapEf={M2:{},M3:{}};
+            const sortedEf=[...histAll].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
+            const effVals=days.map(d=>{sortedEf.filter(ev=>ev.data===d).forEach(ev=>{if(!ev.maquina)return;if(ev.status==="REMOVIDA")snapEf[ev.maquina][ev.garrafa]=1;else delete snapEf[ev.maquina][ev.garrafa];});const fora=Object.keys(snapEf.M2||{}).length+Object.keys(snapEf.M3||{}).length;return Math.round(((CLEANERS_TOTAL*2)-fora)/(CLEANERS_TOTAL*2)*100);});
+            // sedimentáveis por dia (último valor do dia)
+            const sedimVals=days.map(d=>{const dayRecs=sedimAll.filter(s=>s.data===d);return dayRecs.length>0?dayRecs[dayRecs.length-1].valor:null;});
+            const hasSedim=sedimVals.some(v=>v!==null);
+            const lastSedim=sedimAll.length>0?sedimAll[sedimAll.length-1]:null;
+            const corSedim=lastSedim?(lastSedim.valor<150?C.accentLight:lastSedim.valor<=250?C.warningLight:C.dangerLight):C.textDim;
+            // SVG dual-line chart
+            const W=280,H=70;
+            const efMin=Math.max(0,Math.min(...effVals)-5),efMax=Math.min(100,Math.max(...effVals)+5),efRng=efMax-efMin||1;
+            const sdMax=Math.max(300,...sedimVals.filter(v=>v!==null))+30;
+            const xOf=(i)=>(i/(days.length-1))*W;
+            const yEf=(v)=>H-(v-efMin)/efRng*H;
+            const ySd=(v)=>H-(v/sdMax)*H;
+            const efPts=effVals.map((v,i)=>`${xOf(i)},${yEf(v)}`).join(" ");
+            const sdPts=sedimVals.map((v,i)=>v!==null?`${xOf(i)},${ySd(v)}`:null).filter(Boolean).join(" ");
+            // faixas sedim (y positions)
+            const y150=ySd(150),y250=ySd(250);
+            return(
+              <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`2px solid ${C.accentLight}`,borderRadius:12,padding:"11px 14px",marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <span style={{color:C.textDim,fontSize:9,fontWeight:800,letterSpacing:"0.1em"}}>TENDÊNCIA 10 DIAS</span>
+                  {lastSedim&&<span style={{background:`${corSedim}22`,border:`1px solid ${corSedim}55`,color:corSedim,borderRadius:20,padding:"1px 8px",fontSize:9,fontFamily:"monospace",fontWeight:800}}>Sedim: {lastSedim.valor} mL/L</span>}
+                </div>
+                <div style={{overflowX:"auto"}}>
+                  <svg width={W} height={H} style={{display:"block"}}>
+                    {/* faixas sedimentáveis */}
+                    <rect x={0} y={0} width={W} height={y250} fill="rgba(255,82,82,0.06)"/>
+                    <rect x={0} y={y250} width={W} height={y150-y250} fill="rgba(255,193,7,0.06)"/>
+                    <rect x={0} y={y150} width={W} height={H-y150} fill="rgba(0,230,118,0.06)"/>
+                    {/* linhas de referência */}
+                    <line x1={0} y1={y250} x2={W} y2={y250} stroke={C.dangerLight} strokeWidth="0.5" strokeDasharray="3,3" opacity={0.4}/>
+                    <line x1={0} y1={y150} x2={W} y2={y150} stroke={C.accentLight} strokeWidth="0.5" strokeDasharray="3,3" opacity={0.4}/>
+                    {/* linha eficiência */}
+                    <polyline points={efPts} fill="none" stroke={C.accentLight} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${C.accentLight}66)`}}/>
+                    {/* linha sedimentáveis */}
+                    {hasSedim&&sdPts&&<polyline points={sdPts} fill="none" stroke={C.warningLight} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="5,3" style={{filter:`drop-shadow(0 0 3px ${C.warningLight}66)`}}/>}
+                    {/* dot último dia eficiência */}
+                    <circle cx={xOf(days.length-1)} cy={yEf(effVals[effVals.length-1])} r="3" fill={C.accentLight}/>
+                    {/* dot último sedim */}
+                    {lastSedim&&sedimVals[sedimVals.length-1]!==null&&<circle cx={xOf(days.length-1)} cy={ySd(sedimVals[sedimVals.length-1])} r="3" fill={C.warningLight}/>}
+                  </svg>
+                </div>
+                <div style={{display:"flex",gap:12,marginTop:6}}>
+                  <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:16,height:2,background:C.accentLight,display:"inline-block",borderRadius:1}}/><span style={{color:C.textDim,fontSize:8}}>Eficiência %</span></span>
+                  <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:16,height:2,background:C.warningLight,display:"inline-block",borderRadius:1,opacity:0.8}}/><span style={{color:C.textDim,fontSize:8}}>Sedimentáveis mL/L</span></span>
+                </div>
+              </div>
+            );
+          })()}
+          {/* ── BOTÃO LANÇAR SEDIMENTÁVEIS ── */}
+          <button onClick={()=>{setSedimVal("");setModalSedim(true);}} style={{width:"100%",background:"transparent",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px",cursor:"pointer",color:C.textMuted,fontSize:11,fontWeight:700,letterSpacing:"0.06em",marginBottom:12}}>⊕ Lançar Sedimentáveis</button>
           {/* Estágios */}
           {(()=>{
             const isToday=snapData===hoje;
@@ -427,6 +488,52 @@ export function CleanersTela({eqState=[]}){
             });
           })()}
         </>
+      )}
+      {/* Modal sedimentáveis */}
+      {modalSedim&&(
+        <div onClick={()=>setModalSedim(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:C.surface,border:`1px solid ${C.accentLight}33`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600}}>
+            <div style={{color:C.accentLight,fontWeight:800,fontSize:14,marginBottom:4}}>⊕ Lançar Sedimentáveis</div>
+            {(()=>{
+              const now=new Date();
+              const data=now.toISOString().slice(0,10);
+              const hora=`${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+              const turno=getAutoTurno();const letra=calcularLetra();
+              const cfg2=storageGet("op_config")||{};
+              const sedNum=parseFloat(sedimVal);
+              const corV=!sedimVal?"":sedNum<150?C.accentLight:sedNum<=250?C.warningLight:C.dangerLight;
+              return(
+                <>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:12}}>
+                    {[["Data",data],["Hora",hora],["Turno",turno],["Letra",letra]].map(([l,v])=>(
+                      <div key={l} style={{background:C.tagBg,borderRadius:8,padding:"6px 10px"}}>
+                        <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em"}}>{l}</div>
+                        <div style={{color:C.text,fontWeight:700,fontSize:11,fontFamily:"monospace"}}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{marginBottom:12}}>
+                    <div style={{color:C.textDim,fontSize:10,marginBottom:6}}>Valor medido <span style={{color:C.textDim,fontFamily:"monospace"}}>(mL/L)</span></div>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <input type="number" value={sedimVal} onChange={e=>setSedimVal(e.target.value)} placeholder="ex: 185" style={{...inputStyle,flex:1,fontSize:22,fontFamily:"monospace",fontWeight:900,color:corV||C.text,textAlign:"center"}} autoFocus/>
+                      <span style={{color:C.textDim,fontSize:12,fontWeight:700,whiteSpace:"nowrap"}}>mL/L</span>
+                    </div>
+                    {sedimVal&&<div style={{marginTop:6,textAlign:"center",color:corV,fontSize:10,fontWeight:800}}>{sedNum<150?"✓ Normal (<150)":sedNum<=250?"⚠ Atenção (150-250)":"⛔ Crítico (>250)"}</div>}
+                  </div>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>setModalSedim(false)} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
+                    <button disabled={!sedimVal||isNaN(sedNum)||sedNum<=0} onClick={()=>{
+                      const rec={data,hora,turno,letra,operador:cfg2.nomeOperador||"",valor:sedNum};
+                      const hist=storageGet("cleaners_sedim_h2")||[];
+                      storageSet("cleaners_sedim_h2",[...hist,rec]);
+                      setModalSedim(false);setSedimVal("");
+                    }} style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:corV||C.accentLight,border:"none",color:"#fff",opacity:!sedimVal||isNaN(sedNum)||sedNum<=0?0.4:1}}>Confirmar</button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
       )}
       {/* Modal bomba em manutenção */}
       {modalBomba&&(
