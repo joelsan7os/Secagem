@@ -4216,7 +4216,7 @@ export default function App() {
     if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil}/>;
     if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout} onAbrirAdmin={()=>setAdminAberto(true)}/>;
     if(tela==="rotas")return <RotasTela historico={historico} onVoltar={()=>setTela("dashboard")}/>;
-    if(tela==="cleaners")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>setTela("dashboard")} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><CleanersTela/></div>;
+    if(tela==="cleaners")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>setTela("dashboard")} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><CleanersTela eqState={eqState}/></div>;
   };
   if(!perfil) return <TelaAuth onEntrar={setPerfil}/>;
   if(adminAberto && perfil.funcao==="dev") return <PainelAdmin onVoltar={()=>setAdminAberto(false)}/>;
