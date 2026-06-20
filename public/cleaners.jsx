@@ -173,20 +173,24 @@ export function CleanersTela(){
             return(
               <div style={{background:C.card,border:`1px solid ${corG}33`,borderTop:`2px solid ${corG}`,borderRadius:12,padding:"12px 14px",marginBottom:12,boxShadow:effG<70?`0 0 10px ${C.dangerLight}22`:"none"}}>
                 {/* seletor */}
-                <div style={{display:"flex",gap:6,marginBottom:12}}>
-                  {[{o:"M2",pct:eff("M2")},{o:"M3",pct:eff("M3")},{o:"Ambas",pct:Math.round((eff("M2")+eff("M3"))/2)}].map(({o,pct})=>{
-                    const sel=selGest===o;const c=pct>=90?C.accentLight:pct>=70?C.warningLight:C.dangerLight;
-                    return(<button key={o} onClick={()=>{setSelGest(o);if(o!=="Ambas")setMaq(o);}} style={{flex:1,padding:"10px 6px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:12,background:sel?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${sel?"rgba(255,255,255,0.5)":C.border}`,color:sel?"#fff":C.textMuted,boxShadow:sel?"0 0 10px rgba(80,144,255,0.5)":"none",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                      <span>{o}</span><span style={{fontFamily:"monospace",fontSize:11,color:sel?"#fff":c,fontWeight:900}}>{pct}%</span>
-                    </button>);
+                <div style={{display:"flex",gap:6,marginBottom:10}}>
+                  {["M2","M3","Ambas"].map(o=>{
+                    const sel=selGest===o;
+                    return(<button key={o} onClick={()=>{setSelGest(o);if(o!=="Ambas")setMaq(o);}} style={{flex:1,padding:"10px 6px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13,background:sel?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${sel?"rgba(255,255,255,0.5)":C.border}`,color:sel?"#fff":C.textMuted,boxShadow:sel?"0 0 10px rgba(80,144,255,0.5)":"none"}}>{o}</button>);
                   })}
                 </div>
-                {/* resumo */}
-                <div style={{display:"flex",gap:10,alignItems:"flex-end",marginBottom:10}}>
-                  <div><div style={{color:corG,fontWeight:900,fontSize:32,fontFamily:"monospace",lineHeight:1}}>{nOp}<span style={{fontSize:14,color:C.textDim}}>/{totalG}</span></div><div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em"}}>OPERANDO</div></div>
+                {/* resumo dinâmico */}
+                <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
+                  <div>
+                    <div style={{color:corG,fontWeight:900,fontSize:36,fontFamily:"monospace",lineHeight:1}}>{effG}<span style={{fontSize:16,color:corG}}>%</span></div>
+                    <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em",marginTop:2}}>EFICIÊNCIA · {selGest==="Ambas"?"M2 + M3":selGest}</div>
+                  </div>
                   <div style={{flex:1}}>
-                    <div style={{height:6,background:C.tagBg,borderRadius:3,overflow:"hidden",marginBottom:3}}><div style={{width:`${effG}%`,height:"100%",background:corG,borderRadius:3,transition:"width .4s"}}/></div>
-                    <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:C.dangerLight,fontSize:9,fontFamily:"monospace",fontWeight:800}}>{nFora} FORA</span><span style={{color:corG,fontSize:9,fontFamily:"monospace",fontWeight:900}}>{effG}%</span></div>
+                    <div style={{height:7,background:C.tagBg,borderRadius:3,overflow:"hidden",marginBottom:4}}><div style={{width:`${effG}%`,height:"100%",background:corG,borderRadius:3,transition:"width .5s"}}/></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}>
+                      <span style={{color:C.accentLight,fontSize:9,fontFamily:"monospace",fontWeight:800}}>{nOp}/{totalG} OP</span>
+                      <span style={{color:C.dangerLight,fontSize:9,fontFamily:"monospace",fontWeight:800}}>{nFora} FORA</span>
+                    </div>
                   </div>
                 </div>
                 {/* ranking motivos */}
