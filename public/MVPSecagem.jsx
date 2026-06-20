@@ -1282,6 +1282,35 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
         return(
           <div style={{marginBottom:16}}>
 
+            {/* ── 00 PAINEL DE ALARMES · SDCD ── */}
+            <div style={{background:C.card,border:`1px solid ${atencao.length>0?C.dangerLight+"44":C.border}`,borderTop:`2px solid ${atencao.length>0?C.dangerLight:C.accentLight}`,borderRadius:12,padding:"11px 12px",marginBottom:10,boxShadow:atencao.some(a=>a.nivel<=3)?`0 0 10px ${C.dangerLight}22`:"none"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:atencao.length>0?8:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{color:C.textDim,fontSize:9,fontWeight:900,letterSpacing:"0.1em"}}>00</span>
+                  <span style={{color:atencao.length>0?C.dangerLight:C.textMuted,fontSize:11,fontWeight:800,letterSpacing:"0.08em",textTransform:"uppercase"}}>Painel de Alarmes</span>
+                </div>
+                <div style={{minWidth:34,textAlign:"center",background:atencao.length>0?C.danger:C.tagBg,color:atencao.length>0?"#fff":C.textDim,fontFamily:"monospace",fontWeight:900,fontSize:15,borderRadius:6,padding:"2px 8px",animation:atencao.some(a=>a.nivel<=3)?"trava-pulse 1.6s ease-in-out infinite":"none"}}>{atencao.length}</div>
+              </div>
+              {atencao.length===0?(
+                <div style={{color:C.textDim,fontSize:10,fontFamily:"monospace",textAlign:"center",padding:"4px 0"}}>— sem alarmes ativos —</div>
+              ):(
+                <div style={{maxHeight:168,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
+                  {[...atencao].sort((a,b)=>a.nivel-b.nivel).map((a,i)=>{
+                    const tag=a.nivel===0?"TROCADOR":a.nivel===1?"IMEDIATO":a.nivel===2?"URGENTE":a.nivel===3?"MANUTENÇÃO":"ALERTA";
+                    return(
+                    <div key={i} onClick={()=>a.destino&&setTela(a.destino)} style={{display:"flex",alignItems:"flex-start",gap:8,background:C.tagBg,border:`1px solid ${a.cor}33`,borderLeft:`3px solid ${a.cor}`,borderRadius:7,padding:"6px 8px",cursor:a.destino?"pointer":"default"}}>
+                      <span style={{fontSize:13,lineHeight:1.2,flexShrink:0}}>{a.icone}</span>
+                      <div style={{minWidth:0,flex:1}}>
+                        <div style={{color:C.text,fontSize:11,fontWeight:600,lineHeight:1.25,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.txt}</div>
+                        <div style={{color:a.cor,fontSize:8.5,fontFamily:"monospace",fontWeight:700,letterSpacing:"0.05em",marginTop:1}}>{tag}</div>
+                      </div>
+                      <span style={{color:C.textDim,fontSize:13,flexShrink:0}}>›</span>
+                    </div>);
+                  })}
+                </div>
+              )}
+            </div>
+
             {/* ── 01 STATUS OPERACIONAL ── */}
             <div style={{background:C.card,border:`1px solid ${stArea.cor}33`,borderTop:`2px solid ${stArea.cor}`,borderRadius:12,padding:"13px 14px",marginBottom:10}}>
               <SecH n="01" t="Status Operacional" cor={stArea.cor}/>
