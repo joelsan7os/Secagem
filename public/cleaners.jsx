@@ -381,62 +381,73 @@ export function CleanersTela(){
 
 
 export function RelatorioCleaners() {
-  const relatorios = gerarRelatoriosCleaners();
-  const [maqF,setMaqF] = useState("todas");
-  const fmtData = d=>{ if(!d)return"—"; const[y,m,dia]=d.split("-"); return `${dia}/${m}/${y}`; };
-  const lista = relatorios.filter(r=> maqF==="todas" || r.maquina===maqF);
-
-  return (
+  const [maqF,setMaqF]=useState("todas");
+  const [garrafaF,setGarrafaF]=useState("todas");
+  const fmtData=d=>{if(!d)return"—";const[y,m,dia]=d.split("-");return`${dia}/${m}`;};
+  const fmtGarrafa=key=>{const cfg=CLEANERS_CONFIG.find(c=>key?.startsWith(c.id+"_"));if(!cfg)return key||"—";const num=key.replace(cfg.id+"_","");return`${cfg.label} · G${num}`;};
+  const ITENS_LABEL={garrafa:"Garrafa",valvula:"Válvula",visor:"Visor",bico:"Bico de porcelana",vedacao:"Borracha de vedação",pescoco:"Pescoço da válvula"};
+  const hist=(storageGet("cleaners_hist_h2")||[]).slice().reverse();
+  const garrafasDisponiveis=[...new Set(hist.map(h=>h.garrafa).filter(Boolean))].sort();
+  const lista=hist.filter(h=>{
+    if(maqF!=="todas"&&h.maquina!==maqF)return false;
+    if(garrafaF!=="todas"&&h.garrafa!==garrafaF)return false;
+    return true;
+  });
+  return(
     <div>
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:14,marginBottom:14}}>
-        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}>
-          <span style={{fontSize:14}}>🌀</span>
-          <span style={{color:C.white,fontWeight:800,fontSize:13}}>Relatório de Turno — Cleaners</span>
-        </div>
-        <p style={{color:C.textDim,fontSize:10,margin:"0 0 12px",lineHeight:1.4}}>Movimentações registradas por turno: garrafas removidas e recolocadas, operador e letra.</p>
-        <div style={{display:"flex",gap:5}}>
-          {[{id:"todas",l:"Todas"},{id:"M2",l:"Máq. 2"},{id:"M3",l:"Máq. 3"}].map(m=>(
-            <button key={m.id} onClick={()=>setMaqF(m.id)} style={{flex:1,padding:"7px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${maqF===m.id?C.blueLight:C.border}`,background:maqF===m.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,color:maqF===m.id?C.white:C.textMuted}}>{m.l}</button>
+      {/* filtros */}
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`2px solid #5090FF`,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
+        <div style={{color:C.textDim,fontSize:9,fontWeight:800,letterSpacing:"0.1em",marginBottom:8}}>LINHA DO TEMPO · CLEANERS</div>
+        <div style={{display:"flex",gap:5,marginBottom:8}}>
+          {[{id:"todas",l:"Todas"},{id:"M2",l:"M2"},{id:"M3",l:"M3"}].map(m=>(
+            <button key={m.id} onClick={()=>setMaqF(m.id)} style={{flex:1,padding:"7px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${maqF===m.id?"#5090FF":C.border}`,background:maqF===m.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,color:maqF===m.id?C.white:C.textMuted}}>{m.l}</button>
           ))}
         </div>
+        <select value={garrafaF} onChange={e=>setGarrafaF(e.target.value)} style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 10px",color:garrafaF!=="todas"?C.accentLight:C.textMuted,fontSize:11,fontWeight:700,outline:"none"}}>
+          <option value="todas">🔍 Todas as garrafas</option>
+          {garrafasDisponiveis.map(g=>(<option key={g} value={g}>{fmtGarrafa(g)}</option>))}
+        </select>
       </div>
-
+      {/* timeline */}
       {lista.length===0?(
-        <div style={{textAlign:"center",color:C.textDim,padding:"40px 0",fontSize:12}}>Nenhuma movimentação de cleaners registrada ainda.</div>
-      ):(
-        lista.map((r,i)=>(
-          <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.accentLight}`,borderRadius:10,padding:13,marginBottom:8}}>
-            {/* Cabeçalho do relatório */}
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{color:C.white,fontWeight:700,fontSize:13}}>{fmtData(r.data)}</span>
-                <span style={{color:"#5090FF",fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{r.turno}</span>
-                <span style={{background:C.blue,color:"#fff",borderRadius:5,padding:"1px 7px",fontSize:10,fontWeight:800}}>Letra {r.letra}</span>
-              </div>
-              <span style={{color:C.accentLight,fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{r.maquina}</span>
+        <div style={{textAlign:"center",color:C.textDim,padding:"40px 0",fontSize:12}}>Nenhum evento registrado.</div>
+      ):lista.map((ev,i)=>{
+        const removida=ev.status==="REMOVIDA";
+        const cor=removida?C.dangerLight:C.accentLight;
+        const icone=removida?"🔴":"✅";
+        const subs=(ev.itensSubstituidos||[]).map(id=>ITENS_LABEL[id]||id).filter(Boolean);
+        return(
+          <div key={i} style={{display:"flex",gap:10,marginBottom:10}}>
+            {/* linha vertical */}
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0}}>
+              <div style={{width:28,height:28,borderRadius:"50%",background:`${cor}22`,border:`2px solid ${cor}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>{icone}</div>
+              {i<lista.length-1&&<div style={{width:2,flex:1,minHeight:16,background:`${C.border}`,marginTop:2}}/>}
             </div>
-            {/* Números */}
-            <div style={{display:"flex",gap:8,marginBottom:8}}>
-              <div style={{flex:1,background:C.danger+"15",border:`1px solid ${C.dangerLight}33`,borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
-                <div style={{color:C.dangerLight,fontSize:18,fontWeight:900,lineHeight:1}}>{r.removidas}</div>
-                <div style={{color:C.textMuted,fontSize:9,marginTop:3}}>Removidas</div>
+            {/* card evento */}
+            <div style={{flex:1,background:C.card,border:`1px solid ${cor}22`,borderLeft:`3px solid ${cor}`,borderRadius:10,padding:"9px 11px",marginBottom:0}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+                <span style={{color:cor,fontWeight:900,fontSize:11}}>{fmtGarrafa(ev.garrafa)}</span>
+                <span style={{color:C.textDim,fontFamily:"monospace",fontSize:9}}>{fmtData(ev.data)} {ev.hora||""}</span>
               </div>
-              <div style={{flex:1,background:C.accentDark+"33",border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
-                <div style={{color:C.accentLight,fontSize:18,fontWeight:900,lineHeight:1}}>{r.desobstruidas}</div>
-                <div style={{color:C.textMuted,fontSize:9,marginTop:3}}>Recolocadas</div>
+              <div style={{color:C.text,fontWeight:700,fontSize:10,marginBottom:3}}>
+                {removida?(ev.motivo||"Removida"):`Retornou à operação${subs.length>0?"":""}`}
               </div>
-              <div style={{flex:1,background:C.tagBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
-                <div style={{color:C.white,fontSize:18,fontWeight:900,lineHeight:1}}>{r.totalMov}</div>
-                <div style={{color:C.textMuted,fontSize:9,marginTop:3}}>Total mov.</div>
+              {subs.length>0&&(
+                <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:3}}>
+                  {subs.map(s=>(<span key={s} style={{background:"rgba(0,230,118,0.1)",border:"1px solid rgba(0,230,118,0.3)",color:C.accentLight,borderRadius:20,padding:"1px 7px",fontSize:9,fontWeight:700}}>🔧 {s}</span>))}
+                </div>
+              )}
+              {ev.obs&&<div style={{color:C.textDim,fontSize:9,fontStyle:"italic",marginBottom:2}}>"{ev.obs}"</div>}
+              <div style={{display:"flex",gap:8,marginTop:3}}>
+                {ev.operador&&<span style={{color:C.textDim,fontSize:9}}>👤 {ev.operador}</span>}
+                {ev.maquina&&<span style={{color:"#5090FF",fontSize:9,fontFamily:"monospace",fontWeight:700}}>{ev.maquina}</span>}
+                {ev.letra&&<span style={{color:C.textDim,fontSize:9}}>Letra {ev.letra}</span>}
+                {ev.turno&&<span style={{color:C.textDim,fontSize:9}}>{ev.turno}</span>}
               </div>
             </div>
-            {/* Operadores */}
-            {r.operadores.length>0&&(
-              <div style={{color:C.textDim,fontSize:10}}>👤 {r.operadores.join(", ")}</div>
-            )}
           </div>
-        ))
-      )}
+        );
+      })}
     </div>
   );
 }
