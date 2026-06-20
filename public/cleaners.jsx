@@ -230,14 +230,11 @@ export function CleanersTela({eqState=[]}){
                       {/* gauge bicolor SVG */}
                       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
                         <svg width={84} height={84} viewBox="0 0 100 100">
-                          <circle cx="50" cy="50" r={r} fill="none" stroke={C.tagBg} strokeWidth="9"/>
-                          {/* arco verde = operando */}
+                          <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="9"/>
                           <circle cx="50" cy="50" r={r} fill="none" stroke={C.accentLight} strokeWidth="9" strokeDasharray={`${fillOp} ${circ}`} strokeLinecap="butt" strokeDashoffset={circ*0.25} style={{filter:`drop-shadow(0 0 3px ${C.accentLight}88)`,transition:"stroke-dasharray .6s"}}/>
-                          {/* arco vermelho = fora */}
-                          {nFora>0&&<circle cx="50" cy="50" r={r} fill="none" stroke={C.dangerLight} strokeWidth="9" strokeDasharray={`${fillFora} ${circ}`} strokeLinecap="butt" strokeDashoffset={circ*0.25-fillOp} style={{filter:`drop-shadow(0 0 3px ${C.dangerLight}88)`,transition:"stroke-dasharray .6s"}}/>}
-                          <text x="50" y="43" textAnchor="middle" fontSize="14" fontWeight="900" fill={C.accentLight} fontFamily="monospace">{nOp}</text>
-                          <text x="50" y="54" textAnchor="middle" fontSize="8" fill={C.textDim}>op</text>
-                          {nFora>0&&<text x="50" y="64" textAnchor="middle" fontSize="11" fontWeight="900" fill={C.dangerLight} fontFamily="monospace">{nFora}✕</text>}
+                          {nFora>0&&<circle cx="50" cy="50" r={r} fill="none" stroke={C.warningLight} strokeWidth="9" strokeDasharray={`${fillFora} ${circ}`} strokeLinecap="butt" strokeDashoffset={circ*0.25-fillOp} style={{filter:`drop-shadow(0 0 3px ${C.warningLight}88)`,transition:"stroke-dasharray .6s"}}/>}
+                          <text x="50" y="47" textAnchor="middle" fontSize="18" fontWeight="900" fill={cor} fontFamily="monospace">{effG}</text>
+                          <text x="50" y="59" textAnchor="middle" fontSize="9" fill={C.textDim}>%</text>
                         </svg>
                         <div style={{flex:1}}>
                           <div style={{marginBottom:5}}>
@@ -245,7 +242,7 @@ export function CleanersTela({eqState=[]}){
                             <div style={{color:C.textDim,fontSize:8}}>Operando</div>
                           </div>
                           <div>
-                            <div style={{color:nFora>0?C.dangerLight:C.textDim,fontWeight:900,fontSize:13,fontFamily:"monospace",lineHeight:1}}>{nFora}</div>
+                            <div style={{color:nFora>0?C.warningLight:C.textDim,fontWeight:900,fontSize:13,fontFamily:"monospace",lineHeight:1}}>{nFora}</div>
                             <div style={{color:C.textDim,fontSize:8}}>Fora de op.</div>
                           </div>
                         </div>
@@ -321,7 +318,7 @@ export function CleanersTela({eqState=[]}){
                           const g=dadosSnap[maq]?.[e.id+"_"+(i+1)];
                           const passagem=temPassagem(g);
                           const cx=(W+GAP)*i+W/2;
-                          const dotCor=!g?C.accentLight:passagem?C.dangerLight:g.status==="MANUTENÇÃO"?C.warningLight:C.dangerLight;
+                          const dotCor=!g?C.accentLight:passagem?C.dangerLight:C.warningLight;
                           return(
                             <g key={i} onClick={()=>abrirModal(e.id,i+1)} style={{cursor:"pointer",animation:passagem?"trava-pulse 1s ease-in-out infinite":"none"}}>
                               {/* cone cinza */}
@@ -394,7 +391,7 @@ export function CleanersTela({eqState=[]}){
         <>
           {(()=>{
             const histAll=(storageGet("cleaners_hist_h2")||[]).slice().reverse();
-            const ITENS_LABEL={garrafa:"Garrafa",valvula:"Válvula",visor:"Visor",bico:"Bico de porcelana",vedacao:"Borracha de vedação",pescoco:"Pescoço da válvula"};
+            const ITENS_LABEL={garrafa:"Garrafa",valvula:"Válvula",visor:"Visor",bico:"Bico de porcelana",vedacao:"Borracha de vedação",pescoco:"Pescoço da válvula",desentupida:"Desentupida"};
             const fmtGar=key=>{const cfg=CLEANERS_CONFIG.find(c=>key?.startsWith(c.id+"_"));if(!cfg)return key||"—";return`${cfg.label} · G${key.replace(cfg.id+"_","")}`;}
             const fmtD=d=>{if(!d)return"—";const[y,m,dia]=d.split("-");return`${dia}/${m}`;};
             return histAll.length===0?(
@@ -531,7 +528,10 @@ export function CleanersTela({eqState=[]}){
               })}
             </div>
             <textarea value={mObs} onChange={e=>setMObs(e.target.value)} rows={2} placeholder="Observação opcional..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit",marginBottom:12}}/>
-            <button disabled={mMotivos.length===0} onClick={()=>salvarGarrafa(false)} style={{width:"100%",padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:mStatus==="REMOVIDA"?C.danger:C.warning,border:"none",color:"#fff",opacity:mMotivos.length===0?0.4:1}}>Confirmar {mStatus==="REMOVIDA"?"Remoção":"Isolamento"}</button>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{setModalG(null);setMMotivos([]);setMObs("");}} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
+              <button disabled={mMotivos.length===0} onClick={()=>salvarGarrafa(false)} style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:mStatus==="REMOVIDA"?C.danger:C.warning,border:"none",color:"#fff",opacity:mMotivos.length===0?0.4:1}}>Confirmar {mStatus==="REMOVIDA"?"Remoção":"Isolamento"}</button>
+            </div>
           </div>
         </div>
       )}
@@ -540,6 +540,10 @@ export function CleanersTela({eqState=[]}){
           <div style={{background:C.surface,border:`1px solid ${C.accentLight}33`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600}}>
             <div style={{color:C.accentLight,fontWeight:800,fontSize:14,marginBottom:4}}>✓ Retornando à operação</div>
             <div style={{color:C.textDim,fontSize:11,marginBottom:10}}>O que foi realizado? (selecione tudo que se aplica)</div>
+            {/* atalho desentupida */}
+            <button onClick={()=>setRetornoItens(p=>p.includes("desentupida")?p.filter(x=>x!=="desentupida"):[...p.filter(x=>x!=="desentupida"),"desentupida"])} style={{width:"100%",padding:"9px",borderRadius:9,marginBottom:6,cursor:"pointer",fontWeight:800,fontSize:12,background:retornoItens.includes("desentupida")?"rgba(0,230,118,0.15)":C.tagBg,border:`1.5px solid ${retornoItens.includes("desentupida")?C.accentLight:C.border}`,color:retornoItens.includes("desentupida")?C.accentLight:C.textMuted}}>
+              {retornoItens.includes("desentupida")?"✓ Desentupida":"🔧 Desentupida (sem troca de peças)"}
+            </button>
             <button onClick={()=>setRetornoItens(p=>p.length===5?[]:["garrafa","visor","bico","valvula","pescoco"])} style={{width:"100%",padding:"9px",borderRadius:9,marginBottom:10,cursor:"pointer",fontWeight:800,fontSize:12,background:retornoItens.length===5?"rgba(0,230,118,0.15)":C.tagBg,border:`1.5px solid ${retornoItens.length===5?C.accentLight:C.border}`,color:retornoItens.length===5?C.accentLight:C.textMuted}}>
               {retornoItens.length===5?"✓ Garrafa nova (tudo selecionado)":"⚡ Garrafa nova — selecionar todos os componentes"}
             </button>
