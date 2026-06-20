@@ -76,7 +76,7 @@ export function CleanersTela(){
   const [subAba,setSubAba]=useState("op");
   const [modalG,setModalG]=useState(null);
   const [mStatus,setMStatus]=useState("REMOVIDA");
-  const [mMotivo,setMMotivo]=useState("");
+  const [mMotivos,setMMotivos]=useState([]);
   const [mObs,setMObs]=useState("");
   const [editEst,setEditEst]=useState(null);
   const [modalRetorno,setModalRetorno]=useState(null);
@@ -89,9 +89,12 @@ export function CleanersTela(){
   const eff=(m)=>{const fora=Object.keys(dados[m]||{}).length;return Math.round((CLEANERS_TOTAL-fora)/CLEANERS_TOTAL*100);};
   const effEst=(m,e)=>{const fora=Object.keys(dados[m]||{}).filter(k=>k.startsWith(e.id+"_")).length;return Math.round((e.garrafas-fora)/e.garrafas*100);};
   const effCor=(v)=>v>=90?C.accentLight:v>=CLEANERS_LIMITE?C.warningLight:C.dangerLight;
+  const temPassagem=(g)=>{const ms=g?.motivos||[];const m=g?.motivo||"";return ms.includes("Válvula com passagem")||m==="Válvula com passagem";};
   const abrirModal=(estId,idx)=>{
     const g=dados[maq]?.[estId+"_"+idx];
-    setMStatus(g?.status||"REMOVIDA");setMMotivo(g?.motivo||"");setMObs(g?.obs||"");
+    setMStatus(g?.status||"REMOVIDA");
+    setMMotivos(g?.motivos||(g?.motivo?[g.motivo]:[]));
+    setMObs(g?.obs||"");
     setModalG({estId,idx});
   };
   const salvarGarrafa=(operando)=>{
@@ -99,10 +102,10 @@ export function CleanersTela(){
     const{data,hora}=getNowCl();
     const novo={...dados,[maq]:{...dados[maq]}};
     if(operando){delete novo[maq][key];}
-    else{novo[maq][key]={status:mStatus,motivo:mMotivo,obs:mObs,data,hora,operador:cfg.nomeOperador||""};}
+    else{novo[maq][key]={status:mStatus,motivos:mMotivos,motivo:mMotivos[0]||"",obs:mObs,data,hora,operador:cfg.nomeOperador||""};}
     salvarD(novo);
-    pushHist({data,hora,maquina:maq,garrafa:key,status:operando?"OPERANDO":mStatus,motivo:operando?"":mMotivo,operador:cfg.nomeOperador||""});
-    setModalG(null);setMMotivo("");setMObs("");
+    pushHist({data,hora,maquina:maq,garrafa:key,status:operando?"OPERANDO":mStatus,motivo:mMotivos.join(", "),motivos:mMotivos,operador:cfg.nomeOperador||""});
+    setModalG(null);setMMotivos([]);setMObs("");
   };
   const ajusteEst=(id,d)=>{
     const{data,hora}=getNowCl();
@@ -237,17 +240,16 @@ export function CleanersTela(){
                         <rect x={0} y={8} width={totalW} height={10} rx={2} fill={`rgba(100,150,255,0.25)`} stroke="rgba(100,150,255,0.5)" strokeWidth={1}/>
                         {Array.from({length:total},(_,i)=>{
                           const g=dados[maq]?.[e.id+"_"+(i+1)];
+                          const passagem=temPassagem(g);
                           const c=gStatusCor(g);
                           const cx=(W+GAP)*i+W/2;
                           const isOk=!g;
-                          const fill=isOk?"rgba(0,230,118,0.18)":g.status==="REMOVIDA"?"rgba(255,82,82,0.2)":"rgba(255,193,7,0.2)";
-                          const stroke=c;
+                          const fill=isOk?"rgba(0,230,118,0.18)":passagem?"rgba(255,82,82,0.35)":g.status==="REMOVIDA"?"rgba(255,82,82,0.2)":"rgba(255,193,7,0.2)";
+                          const stroke=passagem?C.dangerLight:c;
                           return(
-                            <g key={i} onClick={()=>abrirModal(e.id,i+1)} style={{cursor:"pointer"}}>
+                            <g key={i} onClick={()=>abrirModal(e.id,i+1)} style={{cursor:"pointer",animation:passagem?"trava-pulse 1s ease-in-out infinite":"none"}}>
                               {/* cone shape */}
-                              <polygon points={`${(W+GAP)*i},18 ${(W+GAP)*i+W},18 ${cx},${H}`} fill={fill} stroke={stroke} strokeWidth={1.5} filter={isOk?undefined:`url(#glow${i})`}/>
-                              {/* glow filter */}
-                              {!isOk&&<defs><filter id={`glow${i}`}><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>}
+                              <polygon points={`${(W+GAP)*i},18 ${(W+GAP)*i+W},18 ${cx},${H}`} fill={fill} stroke={stroke} strokeWidth={passagem?2.5:1.5}/>
                               {/* slot cut on header */}
                               <rect x={(W+GAP)*i+W*0.3} y={8} width={W*0.4} height={10} fill="rgba(4,17,29,0.9)"/>
                               {/* status dot inside cone */}
@@ -365,14 +367,25 @@ export function CleanersTela(){
                 <button key={s} onClick={()=>s==="OP"?(()=>{setModalRetorno(modalG);setRetornoItens([]);setModalG(null);})():setMStatus(s)} style={{flex:1,padding:"10px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11,background:(s!=="OP"&&mStatus===s)?c:C.tagBg,border:`1.5px solid ${(s!=="OP"&&mStatus===s)?c:C.border}`,color:(s!=="OP"&&mStatus===s)?"#fff":C.textMuted}}>{l}</button>
               ))}
             </div>
-            <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Motivo</div>
+            {temPassagem(dados[maq]?.[modalG.estId+"_"+modalG.idx])&&(
+              <div style={{background:"rgba(255,82,82,0.15)",border:"1.5px solid #FF5252",borderRadius:10,padding:"8px 12px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:18}}>⚠️</span>
+                <div>
+                  <div style={{color:"#FF5252",fontWeight:900,fontSize:12}}>RISCO DE QUEIMADURA</div>
+                  <div style={{color:"#FF5252",fontSize:10}}>Válvula com passagem · Não manusear</div>
+                </div>
+              </div>
+            )}
+            <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Motivo <span style={{color:C.textDim,fontSize:9,fontWeight:400,textTransform:"none"}}>(selecione um ou mais)</span></div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:12}}>
-              {CLEANERS_MOTIVOS.map(m=>(
-                <button key={m} onClick={()=>setMMotivo(m===mMotivo?"":m)} style={{padding:"8px 8px",borderRadius:8,cursor:"pointer",fontWeight:mMotivo===m?700:400,fontSize:11,textAlign:"left",background:mMotivo===m?"rgba(255,193,7,0.15)":C.tagBg,border:`1px solid ${mMotivo===m?C.warningLight:C.border}`,color:mMotivo===m?C.warningLight:C.textMuted}}>{m}</button>
-              ))}
+              {CLEANERS_MOTIVOS.map(m=>{
+                const sel=mMotivos.includes(m);
+                const isPassagem=m==="Válvula com passagem";
+                return(<button key={m} onClick={()=>setMMotivos(p=>sel?p.filter(x=>x!==m):[...p,m])} style={{padding:"8px 8px",borderRadius:8,cursor:"pointer",fontWeight:sel?700:400,fontSize:11,textAlign:"left",background:sel?(isPassagem?"rgba(255,82,82,0.2)":"rgba(255,193,7,0.15)"):C.tagBg,border:`1px solid ${sel?(isPassagem?"#FF5252":C.warningLight):C.border}`,color:sel?(isPassagem?"#FF5252":C.warningLight):C.textMuted}}>{m}</button>);
+              })}
             </div>
             <textarea value={mObs} onChange={e=>setMObs(e.target.value)} rows={2} placeholder="Observação opcional..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit",marginBottom:12}}/>
-            <button disabled={!mMotivo} onClick={()=>salvarGarrafa(false)} style={{width:"100%",padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:mStatus==="REMOVIDA"?C.danger:C.warning,border:"none",color:"#fff",opacity:!mMotivo?0.4:1}}>Confirmar {mStatus==="REMOVIDA"?"Remoção":"Isolamento"}</button>
+            <button disabled={mMotivos.length===0} onClick={()=>salvarGarrafa(false)} style={{width:"100%",padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:mStatus==="REMOVIDA"?C.danger:C.warning,border:"none",color:"#fff",opacity:mMotivos.length===0?0.4:1}}>Confirmar {mStatus==="REMOVIDA"?"Remoção":"Isolamento"}</button>
           </div>
         </div>
       )}
@@ -380,7 +393,10 @@ export function CleanersTela(){
         <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:C.surface,border:`1px solid ${C.accentLight}33`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600}}>
             <div style={{color:C.accentLight,fontWeight:800,fontSize:14,marginBottom:4}}>✓ Retornando à operação</div>
-            <div style={{color:C.textDim,fontSize:11,marginBottom:14}}>O que foi realizado? (selecione tudo que se aplica)</div>
+            <div style={{color:C.textDim,fontSize:11,marginBottom:10}}>O que foi realizado? (selecione tudo que se aplica)</div>
+            <button onClick={()=>setRetornoItens(p=>p.length===5?[]:["garrafa","visor","bico","valvula","pescoco"])} style={{width:"100%",padding:"9px",borderRadius:9,marginBottom:10,cursor:"pointer",fontWeight:800,fontSize:12,background:retornoItens.length===5?"rgba(0,230,118,0.15)":C.tagBg,border:`1.5px solid ${retornoItens.length===5?C.accentLight:C.border}`,color:retornoItens.length===5?C.accentLight:C.textMuted}}>
+              {retornoItens.length===5?"✓ Garrafa nova (tudo selecionado)":"⚡ Garrafa nova — selecionar todos os componentes"}
+            </button>
             {[
               {id:"garrafa",l:"Trocado garrafa",est:"garrafa"},
               {id:"visor",l:"Trocado visor",est:"visor"},
@@ -412,16 +428,15 @@ export function CleanersTela(){
                 }
                 pushHist({data,hora,maquina:maq,garrafa:modalRetorno.estId+"_"+modalRetorno.idx,status:"OPERANDO",itensSubstituidos:retornoItens,operador:cfg.nomeOperador||""});
                 // gravar timestamps de componentes instalados
-                if(retornoItens.length>0){
-                  const ts=`${data}T${hora}`;
-                  const keyG=modalRetorno.estId+"_"+modalRetorno.idx;
-                  const compAtual=storageGet("comp_em_h2")||{};
-                  const chave=maq+":"+keyG;
-                  const anterior=compAtual[chave]||{};
-                  const novoComp={...anterior};
-                  retornoItens.forEach(id=>{novoComp[id]=ts;});
-                  storageSet("comp_em_h2",{...compAtual,[chave]:novoComp});
-                }
+                {const ts=`${data}T${hora}`;
+                const ALL_COMP=["garrafa","visor","bico","valvula","pescoco"];
+                const ids=retornoItens.length>0?retornoItens:ALL_COMP;
+                const keyG=modalRetorno.estId+"_"+modalRetorno.idx;
+                const compAtual=storageGet("comp_em_h2")||{};
+                const chave=maq+":"+keyG;
+                const novoComp={...(compAtual[chave]||{})};
+                ids.forEach(id=>{novoComp[id]=ts;});
+                storageSet("comp_em_h2",{...compAtual,[chave]:novoComp});}
                 setModalRetorno(null);setRetornoItens([]);
               }} style={{flex:1,padding:12,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13,background:C.success,border:"none",color:"#fff"}}>✓ Confirmar</button>
               <button onClick={()=>{setModalRetorno(null);setRetornoItens([]);}} style={{...btnSec,padding:12,fontSize:13}}>Cancelar</button>
