@@ -255,8 +255,9 @@ export function CleanersTela({eqState=[]}){
             const effEstSnap=(m,e)=>{const fora=Object.keys(dadosSnap[m]||{}).filter(k=>k.startsWith(e.id+"_")).length;return Math.round((e.garrafas-fora)/e.garrafas*100);};
             return CLEANERS_CONFIG.map(e=>{
             const ev=effEstSnap(maq,e);
-            const bombaTag=e.bomba[maq]||"";
-            const eqBomba=(eqState||[]).find(eq=>eq.nome&&(eq.nome.includes(bombaTag)||bombaTag.includes(eq.nome.replace(/[^0-9-]/g,""))));
+            const bombaTag=(e.bomba&&e.bomba[maq])||"";
+            const todosEq=[...(eqState.comum||[]),...(eqState.m2||[]),...(eqState.m3||[]),...(eqState.cs_m2||[]),...(eqState.cs_m3||[]),...(eqState.enf_m2||[]),...(eqState.enf_m3||[])];
+            const eqBomba=bombaTag?todosEq.find(eq=>eq.nome&&(eq.nome.includes(bombaTag)||bombaTag.includes(eq.nome.replace(/[^0-9-]/g,"")))):null;
             const bombaManut=eqBomba&&(eqBomba.status==="MANUTENÇÃO"||eqBomba.status==="ALERTA"||(eqBomba.notas||[]).length>0);
             return(
               <div key={e.id} style={{background:C.card,border:`1px solid ${bombaManut?C.dangerLight+"44":C.border}`,borderLeft:`3px solid ${effCor(ev)}`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
