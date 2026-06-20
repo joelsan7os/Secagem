@@ -316,7 +316,50 @@ export function CleanersTela(){
         <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setModalG(null)}>
           <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
             <div style={{color:C.white,fontWeight:800,fontSize:14,marginBottom:2}}>🌀 {CLEANERS_CONFIG.find(c=>c.id===modalG.estId)?.label} — Garrafa {modalG.idx}</div>
-            <div style={{color:C.textDim,fontSize:11,marginBottom:14}}>Máquina {maq.replace("M","")}</div>
+            <div style={{color:C.textDim,fontSize:11,marginBottom:10}}>Máquina {maq.replace("M","")}</div>
+            {/* diagrama de componentes */}
+            {(()=>{
+              const key=modalG.estId+"_"+modalG.idx;
+              const compEm=(storageGet("comp_em_h2")||{})[maq+":"+key]||{};
+              const fmtTs=ts=>{if(!ts)return"sem registro";const[d,t]=(ts||"").split("T");if(!d)return"sem registro";const[y,m,dia]=d.split("-");return`${dia}/${m} ${(t||"").slice(0,5)}`;};
+              const comps=[
+                {id:"garrafa",l:"Corpo",desc:"Garrafa (corpo principal)",cor:"#5090FF"},
+                {id:"visor",l:"Visor",desc:"Visor de inspeção",cor:"#00E676"},
+                {id:"bico",l:"Bico",desc:"Cone de cerâmica",cor:"#B388FF"},
+                {id:"valvula",l:"Válvula",desc:"Válvula",cor:"#FF8C00"},
+              ];
+              return(
+                <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",marginBottom:12}}>
+                  <div style={{color:C.textDim,fontSize:8,fontWeight:800,letterSpacing:"0.1em",marginBottom:8}}>RASTREABILIDADE DE COMPONENTES</div>
+                  {/* mini diagrama SVG */}
+                  <div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
+                    <svg width={80} height={110} viewBox="0 0 80 110">
+                      {/* corpo/garrafa */}
+                      <polygon points="10,10 70,10 55,75 25,75" fill="rgba(80,144,255,0.15)" stroke={compEm.garrafa?"#5090FF":"rgba(80,144,255,0.3)"} strokeWidth={1.5}/>
+                      {/* visor */}
+                      <rect x={28} y={30} width={24} height={10} rx={2} fill={compEm.visor?"rgba(0,230,118,0.25)":"rgba(0,230,118,0.08)"} stroke={compEm.visor?"#00E676":"rgba(0,230,118,0.3)"} strokeWidth={1.5}/>
+                      {/* bico */}
+                      <polygon points="33,75 47,75 43,95 37,95" fill={compEm.bico?"rgba(179,136,255,0.25)":"rgba(179,136,255,0.08)"} stroke={compEm.bico?"#B388FF":"rgba(179,136,255,0.3)"} strokeWidth={1.5}/>
+                      {/* válvula */}
+                      <rect x={20} y={6} width={40} height={6} rx={2} fill={compEm.valvula?"rgba(255,140,0,0.25)":"rgba(255,140,0,0.08)"} stroke={compEm.valvula?"#FF8C00":"rgba(255,140,0,0.3)"} strokeWidth={1.5}/>
+                      {/* labels */}
+                      <text x={40} y={5} textAnchor="middle" fontSize={6} fill="#FF8C00" fontWeight="700">VÁL</text>
+                      <text x={40} y={40} textAnchor="middle" fontSize={6} fill="#00E676" fontWeight="700">VSR</text>
+                      <text x={40} y={55} textAnchor="middle" fontSize={6} fill="#5090FF" fontWeight="700">CORPO</text>
+                      <text x={40} y={90} textAnchor="middle" fontSize={6} fill="#B388FF" fontWeight="700">BICO</text>
+                    </svg>
+                  </div>
+                  {/* lista de componentes */}
+                  {comps.map(({id,l,desc,cor})=>(
+                    <div key={id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
+                      <span style={{width:8,height:8,borderRadius:"50%",background:compEm[id]?cor:"rgba(255,255,255,0.15)",boxShadow:compEm[id]?`0 0 5px ${cor}`:"none",flexShrink:0}}/>
+                      <span style={{color:C.text,fontSize:10,fontWeight:700,minWidth:45}}>{l}</span>
+                      <span style={{flex:1,color:compEm[id]?C.accentLight:C.textDim,fontSize:9,fontFamily:"monospace"}}>desde {fmtTs(compEm[id])}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
             <div style={{display:"flex",gap:6,marginBottom:12}}>
               {[{s:"OP",l:"✓ Operando",c:C.success},{s:"REMOVIDA",l:"Removida",c:C.danger},{s:"ISOLADA",l:"Isolada",c:C.warning}].map(({s,l,c})=>(
                 <button key={s} onClick={()=>s==="OP"?(()=>{setModalRetorno(modalG);setRetornoItens([]);setModalG(null);})():setMStatus(s)} style={{flex:1,padding:"10px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11,background:(s!=="OP"&&mStatus===s)?c:C.tagBg,border:`1.5px solid ${(s!=="OP"&&mStatus===s)?c:C.border}`,color:(s!=="OP"&&mStatus===s)?"#fff":C.textMuted}}>{l}</button>
@@ -368,6 +411,17 @@ export function CleanersTela(){
                   salvarE(novoEst);
                 }
                 pushHist({data,hora,maquina:maq,garrafa:modalRetorno.estId+"_"+modalRetorno.idx,status:"OPERANDO",itensSubstituidos:retornoItens,operador:cfg.nomeOperador||""});
+                // gravar timestamps de componentes instalados
+                if(retornoItens.length>0){
+                  const ts=`${data}T${hora}`;
+                  const keyG=modalRetorno.estId+"_"+modalRetorno.idx;
+                  const compAtual=storageGet("comp_em_h2")||{};
+                  const chave=maq+":"+keyG;
+                  const anterior=compAtual[chave]||{};
+                  const novoComp={...anterior};
+                  retornoItens.forEach(id=>{novoComp[id]=ts;});
+                  storageSet("comp_em_h2",{...compAtual,[chave]:novoComp});
+                }
                 setModalRetorno(null);setRetornoItens([]);
               }} style={{flex:1,padding:12,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13,background:C.success,border:"none",color:"#fff"}}>✓ Confirmar</button>
               <button onClick={()=>{setModalRetorno(null);setRetornoItens([]);}} style={{...btnSec,padding:12,fontSize:13}}>Cancelar</button>
