@@ -155,17 +155,24 @@ export function CleanersTela({eqState=[]}){
           {/* ── CARDS M2 · M3 ── */}
           {(()=>{
             const histAll=storageGet("cleaners_hist_h2")||[];
-            const sparkDays=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
-            const sparkEff=(mq)=>sparkDays.map(d=>{const est2={M2:{},M3:{}};[...histAll].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora)).filter(ev=>ev.data<=d).forEach(ev=>{const m=ev.maquina;if(!m||!est2[m])return;if(ev.status==="REMOVIDA")est2[m][ev.garrafa]={status:"REMOVIDA"};else delete est2[m][ev.garrafa];});return Math.round((CLEANERS_TOTAL-Object.keys(est2[mq]||{}).length)/CLEANERS_TOTAL*100);});
-            const MOTIVO_ICON={"Entupida":"🔧","Garrafa removida":"📤","Válvula com passagem":"💧","Garrafa furada":"💥","Falta de garrafa":"📦","Falta de válvula":"🔩","Falta de visor":"👁","Falta de vedação":"⭕","Falta de material":"📦","Outro":"❓"};
-            const Gauge=({pct,cor})=>{const r=38;const circ=2*Math.PI*r;const fill=circ*(pct/100);return(<svg width={90} height={90} viewBox="0 0 100 100"><circle cx="50" cy="50" r={r} fill="none" stroke={C.tagBg} strokeWidth="9"/><circle cx="50" cy="50" r={r} fill="none" stroke={cor} strokeWidth="9" strokeDasharray={`${fill} ${circ}`} strokeLinecap="round" strokeDashoffset={circ*0.25} style={{filter:`drop-shadow(0 0 4px ${cor}88)`,transition:"stroke-dasharray .6s"}}/><text x="50" y="46" textAnchor="middle" fontSize="18" fontWeight="900" fill={cor} fontFamily="monospace">{pct}</text><text x="50" y="58" textAnchor="middle" fontSize="9" fill={C.textDim}>%</text></svg>);};
-            const Spark=({vals,cor})=>{if(!vals||vals.length<2)return null;const W=76,H=26;const min=Math.max(0,Math.min(...vals)-5);const max=Math.min(100,Math.max(...vals)+5);const rng=max-min||1;const pts=vals.map((v,i)=>`${(i/(vals.length-1))*W},${H-(v-min)/rng*H}`).join(" ");return(<svg width={W} height={H}><polyline points={pts} fill="none" stroke={cor} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${cor}66)`}}/><circle cx={(vals.length-1)/(vals.length-1)*W} cy={H-(vals[vals.length-1]-min)/rng*H} r="2.5" fill={cor}/></svg>);};
             const isToday=snapData===hoje;
             const reconstruirSnap=(data)=>{const estado={M2:{},M3:{}};[...histAll].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora)).filter(ev=>ev.data<=data).forEach(ev=>{const m=ev.maquina;if(!m||!estado[m])return;if(ev.status==="REMOVIDA")estado[m][ev.garrafa]={status:"REMOVIDA",motivo:ev.motivo,motivos:ev.motivos||[]};else if(ev.status==="OPERANDO")delete estado[m][ev.garrafa];});return estado;};
             const dadosSnap=isToday?dados:reconstruirSnap(snapData);
+            // sparkline leve: agregar eficiência por dia dos últimos 7 dias
+            const sparkDays=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
+            const getSparkMaq=(mq)=>{
+              const snap={M2:{},M3:{}};
+              const sorted=[...histAll].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
+              return sparkDays.map(d=>{
+                sorted.filter(ev=>ev.data===d).forEach(ev=>{if(!ev.maquina||ev.maquina!==mq)return;if(ev.status==="REMOVIDA")snap[mq][ev.garrafa]=1;else delete snap[mq][ev.garrafa];});
+                return Math.round((CLEANERS_TOTAL-Object.keys(snap[mq]||{}).length)/CLEANERS_TOTAL*100);
+              });
+            };
+            const MOTIVO_ICON={"Entupida":"🔧","Garrafa removida":"📤","Válvula com passagem":"💧","Garrafa furada":"💥","Falta de garrafa":"📦","Falta de válvula":"🔩","Falta de visor":"👁","Falta de vedação":"⭕","Falta de material":"📦","Outro":"❓"};
             return(
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
                 {["M2","M3"].map(mq=>{
+                  const sel=maq===mq;
                   const nFora=Object.keys(dadosSnap[mq]||{}).length;
                   const nOp=CLEANERS_TOTAL-nFora;
                   const effG=Math.round(nOp/CLEANERS_TOTAL*100);
@@ -177,38 +184,58 @@ export function CleanersTela({eqState=[]}){
                   const hsCor=hs>=70?C.accentLight:hs>=40?C.warningLight:C.dangerLight;
                   const motCont={};histMq.filter(h=>h.status!=="OPERANDO").forEach(h=>(h.motivos||(h.motivo?[h.motivo]:[])).filter(Boolean).forEach(m=>{motCont[m]=(motCont[m]||0)+1;}));
                   const top2=Object.entries(motCont).sort((a,b)=>b[1]-a[1]).slice(0,2);
-                  const spark=sparkEff(mq);
+                  const spark=getSparkMaq(mq);
+                  const r=38,circ=2*Math.PI*r,fill=circ*(effG/100);
+                  const W2=72,H2=24,mn=Math.max(0,Math.min(...spark)-5),mx=Math.min(100,Math.max(...spark)+5),rng=mx-mn||1;
+                  const pts=spark.map((v,i)=>`${(i/(spark.length-1))*W2},${H2-(v-mn)/rng*H2}`).join(" ");
                   return(
-                    <div key={mq} style={{background:C.card,border:`1px solid ${cor}33`,borderTop:`3px solid ${cor}`,borderRadius:14,padding:"12px 10px",boxShadow:`0 0 14px ${cor}15`}}>
-                      <div style={{color:C.textDim,fontSize:9,fontWeight:800,letterSpacing:"0.12em",marginBottom:8}}>MÁQ {mq.replace("M","")}</div>
+                    <div key={mq} onClick={()=>setMaq(mq)} style={{background:sel?`linear-gradient(160deg,${C.card},${cor}18)`:C.card,border:`2px solid ${sel?cor:C.border}`,borderTop:`3px solid ${cor}`,borderRadius:14,padding:"12px 10px",cursor:"pointer",boxShadow:sel?`0 0 18px ${cor}33`:"none",transition:"all .25s"}}>
+                      {/* título + seleção */}
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                        <span style={{color:sel?cor:C.textDim,fontSize:9,fontWeight:900,letterSpacing:"0.14em"}}>MÁQ {mq.replace("M","")}</span>
+                        {sel&&<span style={{background:`${cor}22`,border:`1px solid ${cor}55`,color:cor,borderRadius:20,padding:"1px 7px",fontSize:8,fontWeight:800}}>SELECIONADA</span>}
+                      </div>
+                      {/* gauge SVG inline */}
                       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-                        <Gauge pct={effG} cor={cor}/>
+                        <svg width={84} height={84} viewBox="0 0 100 100">
+                          <circle cx="50" cy="50" r={r} fill="none" stroke={C.tagBg} strokeWidth="9"/>
+                          <circle cx="50" cy="50" r={r} fill="none" stroke={cor} strokeWidth="9" strokeDasharray={`${fill} ${circ}`} strokeLinecap="round" strokeDashoffset={circ*0.25} style={{filter:`drop-shadow(0 0 4px ${cor}88)`,transition:"stroke-dasharray .6s"}}/>
+                          <text x="50" y="46" textAnchor="middle" fontSize="17" fontWeight="900" fill={cor} fontFamily="monospace">{effG}</text>
+                          <text x="50" y="58" textAnchor="middle" fontSize="8" fill={C.textDim}>%</text>
+                        </svg>
                         <div style={{flex:1}}>
-                          <div style={{marginBottom:6}}>
-                            <div style={{color:cor,fontWeight:900,fontSize:17,fontFamily:"monospace",lineHeight:1}}>{nOp}<span style={{color:C.textDim,fontSize:10}}>/{CLEANERS_TOTAL}</span></div>
-                            <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.05em"}}>Operando</div>
+                          <div style={{marginBottom:5}}>
+                            <div style={{color:cor,fontWeight:900,fontSize:16,fontFamily:"monospace",lineHeight:1}}>{nOp}<span style={{color:C.textDim,fontSize:10}}>/{CLEANERS_TOTAL}</span></div>
+                            <div style={{color:C.textDim,fontSize:8}}>Operando</div>
                           </div>
                           <div>
-                            <div style={{color:nFora>0?C.dangerLight:C.textDim,fontWeight:900,fontSize:14,fontFamily:"monospace",lineHeight:1}}>{nFora}</div>
-                            <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.05em"}}>Fora de op.</div>
+                            <div style={{color:nFora>0?C.dangerLight:C.textDim,fontWeight:900,fontSize:13,fontFamily:"monospace",lineHeight:1}}>{nFora}</div>
+                            <div style={{color:C.textDim,fontSize:8}}>Fora de op.</div>
                           </div>
                         </div>
                       </div>
+                      {/* health + spark */}
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",background:C.tagBg,borderRadius:8,padding:"6px 8px",marginBottom:8}}>
                         <div>
-                          <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.07em",marginBottom:1}}>Health Score</div>
-                          <div style={{color:hsCor,fontWeight:900,fontSize:20,fontFamily:"monospace",lineHeight:1,textShadow:`0 0 8px ${hsCor}55`}}>{hs}</div>
+                          <div style={{color:C.textDim,fontSize:8,marginBottom:1}}>Health Score</div>
+                          <div style={{color:hsCor,fontWeight:900,fontSize:20,fontFamily:"monospace",lineHeight:1}}>{hs}</div>
                         </div>
-                        <Spark vals={spark} cor={cor}/>
+                        {spark.length>=2&&(
+                          <svg width={W2} height={H2}>
+                            <polyline points={pts} fill="none" stroke={cor} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${cor}66)`}}/>
+                            <circle cx={(spark.length-1)/(spark.length-1)*W2} cy={H2-(spark[spark.length-1]-mn)/rng*H2} r="2.5" fill={cor}/>
+                          </svg>
+                        )}
                       </div>
+                      {/* motivos */}
                       {top2.length>0&&(
                         <div>
-                          <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em",marginBottom:5}}>PRINCIPAIS MOTIVOS</div>
-                          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                          <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em",marginBottom:4}}>PRINCIPAIS MOTIVOS</div>
+                          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                             {top2.map(([m,n])=>(
-                              <div key={m} style={{display:"flex",alignItems:"center",gap:4,background:C.tagBg,borderRadius:8,padding:"4px 7px"}}>
-                                <span style={{fontSize:13}}>{MOTIVO_ICON[m]||"❓"}</span>
-                                <div><div style={{color:C.textMuted,fontSize:8,fontWeight:700,lineHeight:1.2}}>{m}</div><div style={{color:cor,fontFamily:"monospace",fontWeight:900,fontSize:11}}>{n}</div></div>
+                              <div key={m} style={{display:"flex",alignItems:"center",gap:4,background:C.tagBg,borderRadius:8,padding:"3px 6px"}}>
+                                <span style={{fontSize:12}}>{MOTIVO_ICON[m]||"❓"}</span>
+                                <div><div style={{color:C.textMuted,fontSize:8,lineHeight:1.2}}>{m}</div><div style={{color:cor,fontFamily:"monospace",fontWeight:900,fontSize:11}}>{n}</div></div>
                               </div>
                             ))}
                           </div>
