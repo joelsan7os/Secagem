@@ -4222,6 +4222,7 @@ export default function App() {
   if(adminAberto && perfil.funcao==="dev") return <PainelAdmin onVoltar={()=>setAdminAberto(false)}/>;
   return (
     <div style={{background:C.bg,minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text}}>
+      <div style={{maxWidth:860,margin:"0 auto",position:"relative"}}>
       <style>{`
         @keyframes trava-pulse {
           0%   { box-shadow: 0 0 0 0 rgba(232,51,58,0.8); }
@@ -4340,6 +4341,7 @@ export default function App() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
