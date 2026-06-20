@@ -2658,84 +2658,88 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
     <div>
       {modalEq&&<ModalNotas eq={modalEq} onClose={()=>setModalEq(null)} onSave={salvarNotas}/>}
       {modalObs&&<ModalObservacao eq={modalObs} onClose={()=>setModalObs(null)} onSave={salvarObservacao}/>}
+      {/* ── FALHAS · Painel de Equipamentos ── */}
       {(()=>{
         const todosA=[...(lista1||[]),...(lista2||[]),...(lista3||[])];
-        const nOP=todosA.filter(e=>e.status==="OP").length;
-        const nAl=todosA.filter(e=>e.status==="ALERTA").length;
-        const nMn=todosA.filter(e=>e.status==="MANUTENÇÃO").length;
+        const falhas=todosA.filter(e=>e.status!=="OP");
+        const nAl=falhas.filter(e=>e.status==="ALERTA").length;
+        const nMn=falhas.filter(e=>e.status==="MANUTENÇÃO").length;
+        const temCrit=nMn>0;
         return(
-          <div style={{marginBottom:14}}>
-            <div style={{display:"flex",alignItems:"baseline",gap:8}}>
-              <h2 style={{color:C.white,fontSize:17,fontWeight:900,margin:0,letterSpacing:"0.04em"}}>GESTÃO DE ATIVOS</h2>
-              <span style={{color:C.textDim,fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase"}}>· {AREAS.find(a=>a.id===areaAtiva)?.label||""}</span>
+          <div style={{background:C.card,border:`1px solid ${falhas.length>0?C.dangerLight+"44":C.border}`,borderTop:`2px solid ${falhas.length>0?C.dangerLight:C.accentLight}`,borderRadius:12,padding:"10px 12px",marginBottom:10,boxShadow:temCrit?`0 0 10px ${C.dangerLight}22`:"none"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:falhas.length>0?8:4}}>
+              <span style={{color:falhas.length>0?C.dangerLight:C.textDim,fontSize:9,fontFamily:"monospace",fontWeight:700,letterSpacing:"0.12em"}}>FALHAS</span>
+              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                {[{v:nAl,l:"ALERTA",c:C.warningLight},{v:nMn,l:"MANUT",c:C.dangerLight}].map(({v,l,c})=>(
+                  <span key={l} style={{display:"flex",alignItems:"center",gap:4}}>
+                    <span style={{width:6,height:6,borderRadius:"50%",background:v>0?c:C.textDim,boxShadow:v>0?`0 0 5px ${c}`:"none",display:"inline-block"}}/>
+                    <span style={{color:v>0?c:C.textDim,fontSize:11,fontWeight:900,fontFamily:"monospace"}}>{v}</span>
+                    <span style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em"}}>{l}</span>
+                  </span>
+                ))}
+              </div>
             </div>
-            <button onClick={()=>setTela("dashboard")} style={{...btnSec,padding:"5px 12px",fontSize:11,marginTop:6}}>← Início</button>
-            <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"8px 0 10px"}}/>
-            <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
-              <span style={{color:C.text,fontSize:11,fontWeight:800,fontFamily:"monospace",letterSpacing:"0.04em"}}>{todosA.length} ATIVOS</span>
-              {[
-                {v:nOP,l:"OP",c:C.accentLight},
-                {v:nAl,l:"ALERTA",c:nAl>0?C.warningLight:C.textDim},
-                {v:nMn,l:"MANUT",c:nMn>0?C.dangerLight:C.textDim},
-              ].map(({v,l,c})=>(
-                <span key={l} style={{display:"flex",alignItems:"center",gap:5}}>
-                  <span style={{width:7,height:7,borderRadius:"50%",background:c,boxShadow:v>0||l==="OP"?`0 0 5px ${c}`:"none",display:"inline-block"}}/>
-                  <span style={{color:c,fontSize:11,fontWeight:800,fontFamily:"monospace"}}>{v}</span>
-                  <span style={{color:C.textDim,fontSize:9,letterSpacing:"0.08em"}}>{l}</span>
-                </span>
-              ))}
-            </div>
+            {falhas.length===0?(
+              <div style={{color:C.textDim,fontSize:10,fontFamily:"monospace",textAlign:"center",padding:"3px 0"}}>— todos os equipamentos operacionais —</div>
+            ):(
+              <div style={{maxHeight:156,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
+                {[...falhas].sort((a,b)=>a.status==="MANUTENÇÃO"&&b.status!=="MANUTENÇÃO"?-1:1).map(eq=>(
+                  <div key={eq.id} onClick={()=>setSelId(eq.id)} style={{display:"flex",alignItems:"center",gap:8,background:C.tagBg,border:`1px solid ${eq.status==="MANUTENÇÃO"?C.dangerLight+"33":C.warningLight+"33"}`,borderLeft:`3px solid ${eq.status==="MANUTENÇÃO"?C.dangerLight:C.warningLight}`,borderRadius:7,padding:"6px 8px",cursor:"pointer"}}>
+                    <span style={{fontSize:12,flexShrink:0}}>{eq.status==="MANUTENÇÃO"?"🔧":"⚡"}</span>
+                    <div style={{minWidth:0,flex:1}}>
+                      <div style={{color:C.text,fontSize:11,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{eq.nome}</div>
+                      <div style={{color:eq.status==="MANUTENÇÃO"?C.dangerLight:C.warningLight,fontSize:8.5,fontFamily:"monospace",fontWeight:700,letterSpacing:"0.05em",marginTop:1}}>{eq.status}{eq.notas.length>0?` · ${eq.notas.length} nota${eq.notas.length>1?"s":""}`:""}  </div>
+                    </div>
+                    <span style={{color:C.textDim,fontSize:13,flexShrink:0}}>›</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       })()}
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-        <span style={{color:"#5090FF",fontSize:9,fontWeight:900,letterSpacing:"0.1em"}}>01</span>
-        <span style={{color:"#5090FF",fontSize:11,fontWeight:800,letterSpacing:"0.08em",textTransform:"uppercase"}}>Gestão Operacional</span>
-        <div style={{flex:1,height:1,background:"linear-gradient(90deg,rgba(80,144,255,0.27),transparent)"}}/>
-      </div>
+      {/* ── Header + Chamados ── */}
       {(()=>{
         const chamA=(storageGet("chamados_h2")||[]).filter(c=>c.status==="aberto");
         const nIme=chamA.filter(c=>c.prazo==="Imediato").length;
         const nUrg=chamA.filter(c=>c.prazo==="Urgente").length;
         const nNor=chamA.length-nIme-nUrg;
-        const temC=chamA.length>0;
-        const corC=nIme>0?C.dangerLight:nUrg>0?"#FF8C00":temC?"#5090FF":C.accentLight;
         const grupos=[["M2",lista1],["M3",lista2],["Comum",lista3]].map(([sub,lst])=>({sub,n:(lst||[]).reduce((a,e)=>a+e.notas.length,0)}));
         const totalN=grupos.reduce((a,g)=>a+g.n,0);
-        const corN=totalN>0?C.warningLight:C.accentLight;
-        const clD=storageGet("cleaners_h2")||{M2:{},M3:{}};
-        const e2cl=Math.round((21-Object.keys(clD.M2||{}).length)/21*100);
-        const e3cl=Math.round((21-Object.keys(clD.M3||{}).length)/21*100);
-        const effCl=Math.round((e2cl+e3cl)/2);
-        const corCl=effCl>=90?C.accentLight:effCl>=70?C.warningLight:C.dangerLight;
-        const Dot=({c,v,l})=>(<span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:6,height:6,borderRadius:"50%",background:c,boxShadow:`0 0 4px ${c}`}}/><span style={{color:c,fontSize:9,fontWeight:800,fontFamily:"monospace"}}>{v}</span>{l&&<span style={{color:C.textDim,fontSize:8,letterSpacing:"0.04em"}}>{l}</span>}</span>);
-        const Btn=({onClick,cor,anim,title,num,children})=>(
-          <button onClick={onClick} style={{background:C.card,border:`1.5px solid ${cor}44`,borderTop:`2px solid ${cor}`,borderRadius:12,padding:"10px 10px",cursor:"pointer",textAlign:"left",transition:"all .2s",animation:anim||"none"}}
-            onMouseEnter={e=>{e.currentTarget.style.background=`${cor}0d`;}}
-            onMouseLeave={e=>{e.currentTarget.style.background=C.card;}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-              <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.1em",textTransform:"uppercase"}}>{title}</div>
-              <span style={{color:C.textDim,fontSize:13,lineHeight:1}}>›</span>
-            </div>
-            <div style={{color:cor,fontWeight:900,fontSize:22,fontFamily:"monospace",lineHeight:1.1,margin:"3px 0 5px"}}>{num}</div>
-            <div style={{display:"flex",gap:5,flexWrap:"wrap",minHeight:11}}>{children}</div>
-          </button>
-        );
+        const corC=nIme>0?C.dangerLight:nUrg>0?"#FF8C00":chamA.length>0?"#5090FF":C.accentLight;
         return(
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:14}}>
-            <Btn onClick={()=>setSubModulo("chamados")} cor={nIme>0?C.dangerLight:chamA.length>0||totalN>0?"#5090FF":C.accentLight} anim={nIme>0?"trava-pulse 1.8s ease-in-out infinite":undefined} title="Chamados & Notas" num={chamA.length}>
-              <div style={{display:"flex",flexDirection:"column",gap:2,width:"100%"}}>
-                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                  {temC?(<>{nIme>0&&<Dot c={C.dangerLight} v={nIme} l="IM"/>}{nUrg>0&&<Dot c="#FF8C00" v={nUrg} l="UR"/>}{nNor>0&&<Dot c="#5090FF" v={nNor} l="NO"/>}</>):(<span style={{color:C.accentLight,fontSize:8}}>✓ ok</span>)}
-                </div>
-                {totalN>0&&<div style={{display:"flex",alignItems:"center",gap:3}}><span style={{color:C.warningLight,fontSize:8,fontWeight:700}}>🗒 {totalN} nota{totalN>1?"s":""} registrada{totalN>1?"s":""}</span></div>}
+          <>
+            <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:6}}>
+              <h2 style={{color:C.white,fontSize:17,fontWeight:900,margin:0,letterSpacing:"0.04em"}}>GESTÃO DE ATIVOS</h2>
+              <span style={{color:C.textDim,fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase"}}>· {AREAS.find(a=>a.id===areaAtiva)?.label||""}</span>
+            </div>
+            <button onClick={()=>setTela("dashboard")} style={{...btnSec,padding:"5px 12px",fontSize:11,marginBottom:8}}>← Início</button>
+            <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"0 0 10px"}}/>
+            <button onClick={()=>setSubModulo("chamados")} style={{width:"100%",background:C.card,border:`1.5px solid ${corC}44`,borderTop:`2px solid ${corC}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",textAlign:"left",marginBottom:14,animation:nIme>0?"trava-pulse 1.8s ease-in-out infinite":"none"}}
+              onMouseEnter={e=>e.currentTarget.style.background=`${corC}0d`}
+              onMouseLeave={e=>e.currentTarget.style.background=C.card}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                <span style={{color:C.textDim,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"monospace"}}>Chamados & Notas</span>
+                <span style={{color:C.textDim,fontSize:13}}>›</span>
               </div>
-            </Btn>
-            <Btn onClick={()=>setSubModulo("cleaners")} cor={corCl} anim={effCl<70?"trava-pulse 1.8s ease-in-out infinite":undefined} title="Cleaners" num={effCl+"%"}>
-              <Dot c={e2cl>=70?C.accentLight:C.dangerLight} v={e2cl+"%"} l="M2"/>
-              <Dot c={e3cl>=70?C.accentLight:C.dangerLight} v={e3cl+"%"} l="M3"/>
-            </Btn>
-          </div>
+              <div style={{display:"flex",gap:16,alignItems:"flex-end"}}>
+                <div>
+                  <div style={{color:corC,fontWeight:900,fontSize:28,fontFamily:"monospace",lineHeight:1}}>{chamA.length}</div>
+                  <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em",marginTop:2}}>CHAMADOS</div>
+                </div>
+                {totalN>0&&<div>
+                  <div style={{color:C.warningLight,fontWeight:900,fontSize:28,fontFamily:"monospace",lineHeight:1}}>{totalN}</div>
+                  <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em",marginTop:2}}>NOTAS</div>
+                </div>}
+                <div style={{flex:1,display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
+                  {nIme>0&&<span style={{background:`${C.dangerLight}22`,border:`1px solid ${C.dangerLight}55`,color:C.dangerLight,borderRadius:20,padding:"2px 9px",fontSize:10,fontWeight:800,fontFamily:"monospace"}}>{nIme} IMEDIATO</span>}
+                  {nUrg>0&&<span style={{background:"rgba(255,140,0,0.12)",border:"1px solid rgba(255,140,0,0.4)",color:"#FF8C00",borderRadius:20,padding:"2px 9px",fontSize:10,fontWeight:800,fontFamily:"monospace"}}>{nUrg} URGENTE</span>}
+                  {nNor>0&&<span style={{background:"rgba(80,144,255,0.12)",border:"1px solid rgba(80,144,255,0.4)",color:"#5090FF",borderRadius:20,padding:"2px 9px",fontSize:10,fontWeight:800,fontFamily:"monospace"}}>{nNor} NORMAL</span>}
+                  {chamA.length===0&&totalN===0&&<span style={{color:C.accentLight,fontSize:10,fontWeight:700}}>✓ sem pendências</span>}
+                </div>
+              </div>
+            </button>
+          </>
         );
       })()}
       {/* Cards operacionais por máquina */}
