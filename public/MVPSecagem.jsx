@@ -1134,7 +1134,19 @@ const MOTIVOS_OC={
   vermelho:["Parada de máquina","Risco de vazamento","Queda de material","Projeção de produtos químicos","Trip na caldeira","Outro"],
 };
 
-function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorrencias, setOcorrencias }) {
+function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorrencias, setOcorrencias, perfil }) {
+  const [recon,setRecon]=useState(()=>storageGet("reconhecimentos_h2")||{});
+  React.useEffect(()=>{
+    const unsub=onSnapshot(doc(COL,"reconhecimentos_h2"),(snap)=>{
+      if(snap.exists()){const v=snap.data().val;if(v){setRecon(v);try{localStorage.setItem("reconhecimentos_h2",JSON.stringify(v));}catch{}}}
+    });
+    return ()=>unsub();
+  },[]);
+  const reconhecer=(chave,txt)=>{
+    const novo={...recon,[chave]:{txt,por:perfil?.nome||"—",matricula:perfil?.matricula||"—",em:new Date().toISOString()}};
+    setRecon(novo);
+    storageSet("reconhecimentos_h2",novo);
+  };
   const [showForm,setShowForm]=useState(false);
   const [popupChecks,setPopupChecks]=useState(null); // {maquina, detalhes:[{area,label,status}]}
   const [corOc,setCorOc]=useState(null);
@@ -1249,13 +1261,13 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
         const m3d=maqData("M3",[...eqState.m3,...eqState.cs_m3,...eqState.enf_m3]);
         /* requer atenção — lista priorizada */
         const atencao=[];
-        if(trocadorSujo)atencao.push({nivel:0,cor:C.dangerLight,icone:"🔥",txt:"TROCADOR DE CALOR SUJO — verificar imediatamente",blink:true,destino:"equipamentos"});
+        if(trocadorSujo)atencao.push({chave:"trocador",nivel:0,cor:C.dangerLight,icone:"🔥",txt:"TROCADOR DE CALOR SUJO — verificar imediatamente",blink:true,destino:"equipamentos"});
         const clD=storageGet("cleaners_h2")||{M2:{},M3:{}};
         // Cleaners não entra no top 3 — já tem card dedicado na home
-        chamAbertos.filter(c=>c.prazo==="Imediato").forEach(c=>atencao.push({nivel:1,cor:C.dangerLight,icone:"⛔",txt:`${c.equipamentoNome} — ${c.descricao||"chamado imediato"}`,destino:"equipamentos"}));
-        chamAbertos.filter(c=>c.prazo==="Urgente").forEach(c=>atencao.push({nivel:2,cor:"#FF8C00",icone:"⚠",txt:`${c.equipamentoNome} — ${c.descricao||"chamado urgente"}`,destino:"equipamentos"}));
-        eqCritico.forEach(e=>atencao.push({nivel:3,cor:C.dangerLight,icone:"🔧",txt:`${e.nome} — em manutenção`,destino:"equipamentos"}));
-        eqAlerta.slice(0,3).forEach(e=>atencao.push({nivel:4,cor:C.warningLight,icone:"⚡",txt:`${e.nome} — em alerta${e.notas.length>0?` · ${e.notas.length} nota${e.notas.length>1?"s":""}`:""}`,destino:"equipamentos"}));
+        chamAbertos.filter(c=>c.prazo==="Imediato").forEach(c=>atencao.push({chave:"cham:"+c.id,nivel:1,cor:C.dangerLight,icone:"⛔",txt:`${c.equipamentoNome} — ${c.descricao||"chamado imediato"}`,destino:"equipamentos"}));
+        chamAbertos.filter(c=>c.prazo==="Urgente").forEach(c=>atencao.push({chave:"cham:"+c.id,nivel:2,cor:"#FF8C00",icone:"⚠",txt:`${c.equipamentoNome} — ${c.descricao||"chamado urgente"}`,destino:"equipamentos"}));
+        eqCritico.forEach(e=>atencao.push({chave:"eq:"+e.id,nivel:3,cor:C.dangerLight,icone:"🔧",txt:`${e.nome} — em manutenção`,destino:"equipamentos"}));
+        eqAlerta.slice(0,3).forEach(e=>atencao.push({chave:"eqa:"+e.id,nivel:4,cor:C.warningLight,icone:"⚡",txt:`${e.nome} — em alerta${e.notas.length>0?` · ${e.notas.length} nota${e.notas.length>1?"s":""}`:""}`,destino:"equipamentos"}));
         const atencaoTop=atencao.sort((a,b)=>a.nivel-b.nivel).slice(0,3);
         /* passagem de turno */
         const herdados=chamAbertos.filter(c=>c.dataAbertura<hoje);
@@ -1283,33 +1295,35 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
           <div style={{marginBottom:16}}>
 
             {/* ── 00 PAINEL DE ALARMES · SDCD ── */}
-            <div style={{background:C.card,border:`1px solid ${atencao.length>0?C.dangerLight+"44":C.border}`,borderTop:`2px solid ${atencao.length>0?C.dangerLight:C.accentLight}`,borderRadius:12,padding:"11px 12px",marginBottom:10,boxShadow:atencao.some(a=>a.nivel<=3)?`0 0 10px ${C.dangerLight}22`:"none"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:atencao.length>0?8:0}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{color:C.textDim,fontSize:9,fontWeight:900,letterSpacing:"0.1em"}}>00</span>
-                  <span style={{color:atencao.length>0?C.dangerLight:C.textMuted,fontSize:11,fontWeight:800,letterSpacing:"0.08em",textTransform:"uppercase"}}>Painel de Alarmes</span>
+            {(()=>{
+              const vivos=[...atencao].filter(a=>!recon[a.chave]).sort((a,b)=>a.nivel-b.nivel);
+              const temCrit=vivos.some(a=>a.nivel<=3);
+              return(
+              <div style={{background:C.card,border:`1px solid ${vivos.length>0?C.dangerLight+"44":C.border}`,borderTop:`2px solid ${vivos.length>0?C.dangerLight:C.accentLight}`,borderRadius:12,padding:"10px 12px",marginBottom:10,boxShadow:temCrit?`0 0 10px ${C.dangerLight}22`:"none"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:vivos.length>0?8:0}}>
+                  <span style={{color:vivos.length>0?C.dangerLight:C.textDim,fontSize:9,fontFamily:"monospace",fontWeight:700,letterSpacing:"0.12em"}}>ALARMES</span>
+                  <div style={{minWidth:28,textAlign:"center",background:vivos.length>0?C.danger:C.tagBg,color:vivos.length>0?"#fff":C.textDim,fontFamily:"monospace",fontWeight:900,fontSize:13,borderRadius:5,padding:"1px 7px",animation:temCrit?"trava-pulse 1.6s ease-in-out infinite":"none"}}>{vivos.length}</div>
                 </div>
-                <div style={{minWidth:34,textAlign:"center",background:atencao.length>0?C.danger:C.tagBg,color:atencao.length>0?"#fff":C.textDim,fontFamily:"monospace",fontWeight:900,fontSize:15,borderRadius:6,padding:"2px 8px",animation:atencao.some(a=>a.nivel<=3)?"trava-pulse 1.6s ease-in-out infinite":"none"}}>{atencao.length}</div>
-              </div>
-              {atencao.length===0?(
-                <div style={{color:C.textDim,fontSize:10,fontFamily:"monospace",textAlign:"center",padding:"4px 0"}}>— sem alarmes ativos —</div>
-              ):(
-                <div style={{maxHeight:168,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
-                  {[...atencao].sort((a,b)=>a.nivel-b.nivel).map((a,i)=>{
-                    const tag=a.nivel===0?"TROCADOR":a.nivel===1?"IMEDIATO":a.nivel===2?"URGENTE":a.nivel===3?"MANUTENÇÃO":"ALERTA";
-                    return(
-                    <div key={i} onClick={()=>a.destino&&setTela(a.destino)} style={{display:"flex",alignItems:"flex-start",gap:8,background:C.tagBg,border:`1px solid ${a.cor}33`,borderLeft:`3px solid ${a.cor}`,borderRadius:7,padding:"6px 8px",cursor:a.destino?"pointer":"default"}}>
-                      <span style={{fontSize:13,lineHeight:1.2,flexShrink:0}}>{a.icone}</span>
-                      <div style={{minWidth:0,flex:1}}>
-                        <div style={{color:C.text,fontSize:11,fontWeight:600,lineHeight:1.25,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.txt}</div>
-                        <div style={{color:a.cor,fontSize:8.5,fontFamily:"monospace",fontWeight:700,letterSpacing:"0.05em",marginTop:1}}>{tag}</div>
-                      </div>
-                      <span style={{color:C.textDim,fontSize:13,flexShrink:0}}>›</span>
-                    </div>);
-                  })}
-                </div>
-              )}
-            </div>
+                {vivos.length===0?(
+                  <div style={{color:C.textDim,fontSize:10,fontFamily:"monospace",textAlign:"center",padding:"3px 0"}}>— sem alarmes ativos —</div>
+                ):(
+                  <div style={{maxHeight:168,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
+                    {vivos.map((a,i)=>{
+                      const tag=a.nivel===0?"TROCADOR":a.nivel===1?"IMEDIATO":a.nivel===2?"URGENTE":a.nivel===3?"MANUTENÇÃO":"ALERTA";
+                      return(
+                      <div key={a.chave||i} style={{display:"flex",alignItems:"center",gap:8,background:C.tagBg,border:`1px solid ${a.cor}33`,borderLeft:`3px solid ${a.cor}`,borderRadius:7,padding:"6px 8px"}}>
+                        <span style={{fontSize:13,lineHeight:1.2,flexShrink:0}}>{a.icone}</span>
+                        <div onClick={()=>a.destino&&setTela(a.destino)} style={{minWidth:0,flex:1,cursor:a.destino?"pointer":"default"}}>
+                          <div style={{color:C.text,fontSize:11,fontWeight:600,lineHeight:1.25,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.txt}</div>
+                          <div style={{color:a.cor,fontSize:8.5,fontFamily:"monospace",fontWeight:700,letterSpacing:"0.05em",marginTop:1}}>{tag}</div>
+                        </div>
+                        <button onClick={(e)=>{e.stopPropagation();reconhecer(a.chave,a.txt);}} style={{flexShrink:0,width:26,height:26,borderRadius:6,border:`1px solid ${a.cor}55`,background:`${a.cor}11`,color:a.cor,fontSize:13,fontWeight:900,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                      </div>);
+                    })}
+                  </div>
+                )}
+              </div>);
+            })()}
 
             {/* ── 01 STATUS OPERACIONAL ── */}
             <div style={{background:C.card,border:`1px solid ${stArea.cor}33`,borderTop:`2px solid ${stArea.cor}`,borderRadius:12,padding:"13px 14px",marginBottom:10}}>
@@ -4189,10 +4203,10 @@ export default function App() {
     {id:"configuracoes",label:"Config.",icon:"⚙️"},
   ].filter(n=>n.id!=="historico"||veHistorico);
   const renderTela=()=>{
-    if(tela==="dashboard")return <Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias}/>;
+    if(tela==="dashboard")return <Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil}/>;
     if(tela==="checklist")return <ChecklistTela onSalvar={salvarChecklist} historico={historico} perfil={perfil}/>;
     if(tela==="equipamentos")return <EquipamentosTela eqState={eqState} setEqState={setEqState} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} historico={historico} setTela={setTela}/>;
-    if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias}/>;
+    if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil}/>;
     if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout} onAbrirAdmin={()=>setAdminAberto(true)}/>;
     if(tela==="rotas")return <RotasTela historico={historico} onVoltar={()=>setTela("dashboard")}/>;
     if(tela==="cleaners")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>setTela("dashboard")} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><CleanersTela/></div>;
