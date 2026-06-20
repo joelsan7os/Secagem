@@ -133,28 +133,6 @@ export function CleanersTela(){
       </div>
       {subAba==="op"?(
         <>
-          {/* Status Geral */}
-          <div style={{background:C.card,border:`1px solid ${effCor(effGeral)}44`,borderTop:`2px solid ${effCor(effGeral)}`,borderRadius:12,padding:"13px 14px",marginBottom:12,animation:effGeral<CLEANERS_LIMITE?"trava-pulse 1.8s ease-in-out infinite":"none"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div>
-                <div style={{color:C.textDim,fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:5}}>Eficiência Cleaners</div>
-                <div style={{display:"flex",gap:12}}>
-                  {[["M2",e2],["M3",e3]].map(([m,v])=>(
-                    <span key={m} style={{display:"flex",alignItems:"center",gap:5}}>
-                      <span style={{width:7,height:7,borderRadius:"50%",background:effCor(v),boxShadow:`0 0 5px ${effCor(v)}`}}/>
-                      <span style={{color:C.textDim,fontSize:10,fontWeight:700}}>{m}</span>
-                      <span style={{color:effCor(v),fontSize:12,fontWeight:900,fontFamily:"monospace"}}>{v}%</span>
-                    </span>
-                  ))}
-                </div>
-                <div style={{color:C.textDim,fontSize:9,marginTop:5}}>{CLEANERS_TOTAL*2-Object.keys(dados.M2||{}).length-Object.keys(dados.M3||{}).length}/{CLEANERS_TOTAL*2} garrafas operando · limite {CLEANERS_LIMITE}%</div>
-              </div>
-              <div style={{textAlign:"right"}}>
-                <span style={{color:effCor(effGeral),fontWeight:900,fontSize:34,fontFamily:"monospace",lineHeight:1}}>{effGeral}%</span>
-                {effGeral<CLEANERS_LIMITE&&<div style={{color:C.dangerLight,fontSize:9,fontWeight:800,marginTop:3}}>⚠ ABAIXO DO LIMITE</div>}
-              </div>
-            </div>
-          </div>
           {/* ── GESTÃO CLEANERS ── */}
           {(()=>{
             const maqsFilt=selGest==="Ambas"?["M2","M3"]:[selGest];
