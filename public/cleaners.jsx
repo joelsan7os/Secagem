@@ -139,6 +139,32 @@ export function CleanersTela({eqState=[]}){
       </div>
       {subAba==="op"?(
         <>
+          {/* ── BARRA DE ALERTAS — PASSAGEM NA VÁLVULA ── */}
+          {(()=>{
+            const fmtG=key=>{const cfg=CLEANERS_CONFIG.find(c=>key?.startsWith(c.id+"_"));if(!cfg)return key||"?";return`G${key.replace(cfg.id+"_","")} · ${cfg.label}`;};
+            const alertas=[];
+            ["M2","M3"].forEach(mq=>Object.entries(dados[mq]||{}).forEach(([k,g])=>{if(temPassagem(g))alertas.push({key:k,mq,label:`${fmtG(k)} · ${mq}`});}));
+            if(alertas.length===0)return null;
+            return(
+              <div style={{background:"rgba(255,82,82,0.1)",border:"1.5px solid #FF5252",borderRadius:10,padding:"7px 10px",marginBottom:10,animation:"trava-pulse 1.4s ease-in-out infinite"}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
+                  <span style={{color:"#FF5252",fontSize:9,fontWeight:900,letterSpacing:"0.12em"}}>⚠ PASSAGEM NA VÁLVULA</span>
+                  <span style={{background:"#FF5252",color:"#fff",borderRadius:20,padding:"0px 6px",fontSize:9,fontWeight:900,fontFamily:"monospace"}}>{alertas.length}</span>
+                  <span style={{color:"#FF5252",fontSize:8,marginLeft:"auto",fontWeight:700}}>RISCO DE QUEIMADURA</span>
+                </div>
+                <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
+                  {alertas.map(({key,mq,label})=>{
+                    const estId=key.split("_")[0];const idx=parseInt(key.split("_")[1]);
+                    return(
+                      <button key={key} onClick={()=>{setMaq(mq);abrirModal(estId,idx);}} style={{flexShrink:0,background:"rgba(255,82,82,0.18)",border:"1px solid #FF525288",borderRadius:8,padding:"5px 10px",cursor:"pointer",color:"#FF5252",fontSize:10,fontWeight:800,whiteSpace:"nowrap"}}>
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
           {/* ── SELETOR DE DATA ── */}
           {(()=>{
             const isToday=snapData===hoje;
