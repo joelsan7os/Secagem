@@ -1426,37 +1426,75 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
               )}
             </div>
 
-            {/* ── 05 CLEANERS (card clicável → tela isolada) ── */}
+            {/* ── 05 CLEANERS ── */}
             {(()=>{
+              const histCl=storageGet("cleaners_hist_h2")||[];
               const effCl=(m)=>{const fora=Object.keys(clD[m]||{}).length;return Math.round((CLEANERS_TOTAL-fora)/CLEANERS_TOTAL*100);};
               const e2=effCl("M2"),e3=effCl("M3"),eg=Math.round((e2+e3)/2);
               const corCl=v=>v>=90?C.accentLight:v>=70?C.warningLight:C.dangerLight;
-              const foraM2=Object.keys(clD.M2||{}).length, foraM3=Object.keys(clD.M3||{}).length;
-              const critico=eg<70;
-              return (
-                <div onClick={()=>setTela("cleaners")} style={{background:critico?`${C.dangerLight}0a`:C.card,border:`1px solid ${critico?C.dangerLight+"44":C.border}`,borderTop:`2px solid ${corCl(eg)}`,borderRadius:12,padding:"13px 14px",marginBottom:10,cursor:"pointer",animation:critico?"trava-pulse 1.8s ease-in-out infinite":"none",boxShadow:critico?`0 0 10px ${C.dangerLight}22`:"none"}}>
+              const corEg=corCl(eg);
+              const totalBoth=CLEANERS_TOTAL*2;
+              const foraTotal=Object.keys(clD.M2||{}).length+Object.keys(clD.M3||{}).length;
+              const nOpTotal=totalBoth-foraTotal;
+              // sparkline 7 dias geral
+              const spDays=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
+              const snapSp={M2:{},M3:{}};
+              const sortedSp=[...histCl].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
+              const spVals=spDays.map(d=>{sortedSp.filter(ev=>ev.data===d).forEach(ev=>{if(!ev.maquina)return;if(ev.status==="REMOVIDA")snapSp[ev.maquina][ev.garrafa]=1;else delete snapSp[ev.maquina][ev.garrafa];});const fora=Object.keys(snapSp.M2||{}).length+Object.keys(snapSp.M3||{}).length;return Math.round((totalBoth-fora)/totalBoth*100);});
+              const SW=80,SH=22,smn=Math.max(0,Math.min(...spVals)-5),smx=Math.min(100,Math.max(...spVals)+5),srng=smx-smn||1;
+              const spts=spVals.map((v,i)=>`${(i/(spVals.length-1))*SW},${SH-(v-smn)/srng*SH}`).join(" ");
+              // gauge geral
+              const r=30,circ=2*Math.PI*r,fillOp=circ*(nOpTotal/totalBoth),fillFora=circ*(foraTotal/totalBoth);
+              return(
+                <div onClick={()=>setTela("cleaners")} style={{background:C.card,border:`1px solid ${corEg}33`,borderTop:`2px solid ${corEg}`,borderRadius:12,padding:"13px 14px",marginBottom:10,cursor:"pointer",boxShadow:`0 0 10px ${corEg}11`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                    <SecH n="05" t="Cleaners" cor={corCl(eg)}/>
-                    <span style={{color:corCl(eg),fontSize:11,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>abrir <span style={{fontSize:13,opacity:0.7}}>›</span></span>
+                    <SecH n="05" t="Cleaners" cor={corEg}/>
+                    <span style={{color:corEg,fontSize:11,fontWeight:700}}>abrir ›</span>
                   </div>
-                  <div style={{display:"flex",alignItems:"center",gap:12}}>
-                    {/* Eficiência geral grande */}
-                    <div style={{textAlign:"center",flexShrink:0}}>
-                      <div style={{color:corCl(eg),fontSize:34,fontWeight:900,lineHeight:1,textShadow:`0 0 14px ${corCl(eg)}55`}}>{eg}%</div>
-                      <div style={{color:C.textDim,fontSize:8,textTransform:"uppercase",marginTop:2,letterSpacing:"0.05em"}}>Eficiência</div>
+                  {/* gauge geral + sparkline */}
+                  <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+                    <svg width={70} height={70} viewBox="0 0 70 70">
+                      <circle cx="35" cy="35" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="7"/>
+                      <circle cx="35" cy="35" r={r} fill="none" stroke={C.accentLight} strokeWidth="7" strokeDasharray={`${fillOp} ${circ}`} strokeLinecap="butt" strokeDashoffset={circ*0.25} style={{filter:`drop-shadow(0 0 3px ${C.accentLight}66)`,transition:"stroke-dasharray .6s"}}/>
+                      {foraTotal>0&&<circle cx="35" cy="35" r={r} fill="none" stroke={C.warningLight} strokeWidth="7" strokeDasharray={`${fillFora} ${circ}`} strokeLinecap="butt" strokeDashoffset={circ*0.25-fillOp} style={{filter:`drop-shadow(0 0 3px ${C.warningLight}66)`,transition:"stroke-dasharray .6s"}}/>}
+                      <text x="35" y="32" textAnchor="middle" fontSize="14" fontWeight="900" fill={corEg} fontFamily="monospace">{eg}</text>
+                      <text x="35" y="43" textAnchor="middle" fontSize="8" fill={C.textDim}>%</text>
+                    </svg>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                        <span style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em"}}>7 DIAS</span>
+                        <span style={{color:corEg,fontFamily:"monospace",fontWeight:900,fontSize:10}}>{spVals[spVals.length-1]}%</span>
+                      </div>
+                      <svg width={SW} height={SH}>
+                        <polyline points={spts} fill="none" stroke={corEg} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${corEg}66)`}}/>
+                        <circle cx={SW} cy={SH-(spVals[spVals.length-1]-smn)/srng*SH} r="2.5" fill={corEg}/>
+                      </svg>
+                      <div style={{color:foraTotal>0?C.warningLight:C.textDim,fontSize:8,marginTop:3,fontFamily:"monospace"}}>{foraTotal>0?`${foraTotal} fora · ${nOpTotal}/${totalBoth} op`:"todas operando"}</div>
                     </div>
-                    {/* M2 e M3 */}
-                    <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                      {[{m:"M2",e:e2,fora:foraM2},{m:"M3",e:e3,fora:foraM3}].map(({m,e,fora})=>(
-                        <div key={m} style={{background:C.tagBg,borderRadius:8,padding:"7px 8px",textAlign:"center"}}>
-                          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-                            <span style={{color:C.textMuted,fontSize:10,fontWeight:700}}>{m}</span>
-                            <span style={{color:corCl(e),fontSize:15,fontWeight:900}}>{e}%</span>
+                  </div>
+                  {/* mini-tiles M2 e M3 */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                    {[{m:"M2",e:e2},{m:"M3",e:e3}].map(({m,e})=>{
+                      const fora=Object.keys(clD[m]||{}).length;
+                      const cor=corCl(e);
+                      const rM=16,circM=2*Math.PI*rM;
+                      const fillOpM=circM*((CLEANERS_TOTAL-fora)/CLEANERS_TOTAL);
+                      const fillForaM=circM*(fora/CLEANERS_TOTAL);
+                      return(
+                        <div key={m} style={{background:C.tagBg,border:`1px solid ${cor}33`,borderRadius:8,padding:"8px",display:"flex",alignItems:"center",gap:8}}>
+                          <svg width={40} height={40} viewBox="0 0 40 40">
+                            <circle cx="20" cy="20" r={rM} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5"/>
+                            <circle cx="20" cy="20" r={rM} fill="none" stroke={C.accentLight} strokeWidth="5" strokeDasharray={`${fillOpM} ${circM}`} strokeLinecap="butt" strokeDashoffset={circM*0.25}/>
+                            {fora>0&&<circle cx="20" cy="20" r={rM} fill="none" stroke={C.warningLight} strokeWidth="5" strokeDasharray={`${fillForaM} ${circM}`} strokeLinecap="butt" strokeDashoffset={circM*0.25-fillOpM}/>}
+                            <text x="20" y="23" textAnchor="middle" fontSize="8" fontWeight="900" fill={cor} fontFamily="monospace">{e}%</text>
+                          </svg>
+                          <div>
+                            <div style={{color:C.text,fontSize:11,fontWeight:800}}>{m}</div>
+                            <div style={{color:fora>0?C.warningLight:C.accentLight,fontSize:9,fontFamily:"monospace"}}>{fora>0?`${fora} fora`:"ok"}</div>
                           </div>
-                          <div style={{color:C.textDim,fontSize:8,marginTop:2}}>{fora>0?`${fora} fora`:"tudo operando"}</div>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
