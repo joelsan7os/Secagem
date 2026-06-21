@@ -2648,6 +2648,19 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
   const [modalObs,setModalObs]=useState(null);
   const [subModulo,setSubModulo]=useState("lista");
   const [showNotasHist,setShowNotasHist]=useState(false);
+  const [modalPendencia,setModalPendencia]=useState(null);
+  const [notaInput,setNotaInput]=useState("");
+  const [pendencias,setPendencias]=useState(()=>storageGet("pendencias_h2")||{});
+  const salvarPendencia=(eq,nota)=>{
+    const agora=new Date();
+    const data=agora.toISOString().slice(0,10);
+    const hora=`${String(agora.getHours()).padStart(2,"0")}:${String(agora.getMinutes()).padStart(2,"0")}`;
+    const cfg=storageGet("op_config")||{};
+    const nova={...pendencias,[eq.id]:{nota,abertoEm:data+"T"+hora,abertoBy:cfg.nomeOperador||"—",eqNome:eq.nome}};
+    setPendencias(nova);
+    storageSet("pendencias_h2",nova);
+    setModalPendencia(null);setNotaInput("");
+  };
 
   const listaAtualRaw=filtroSub==="Comum"?lista3:filtroSub==="M2"?lista1:lista2;
   const listaAtual=listaAtualRaw||[];
@@ -2754,16 +2767,52 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
     <div>
       {modalEq&&<ModalNotas eq={modalEq} onClose={()=>setModalEq(null)} onSave={salvarNotas}/>}
       {modalObs&&<ModalObservacao eq={modalObs} onClose={()=>setModalObs(null)} onSave={salvarObservacao}/>}
-      {/* ── FALHAS · Painel de Equipamentos ── */}
+      {modalPendencia&&(
+        <div onClick={()=>{setModalPendencia(null);setNotaInput("");}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:C.surface,border:`1px solid ${C.accentLight}33`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600}}>
+            <div style={{color:C.accentLight,fontWeight:800,fontSize:14,marginBottom:3}}>📋 Abrir chamado / nota</div>
+            <div style={{color:C.textDim,fontSize:11,marginBottom:12}}>{modalPendencia.nome}</div>
+            <input value={notaInput} onChange={e=>setNotaInput(e.target.value)} placeholder="Nº nota SAP ou chamado..." style={{...inputStyle,marginBottom:14,fontSize:15,fontFamily:"monospace",fontWeight:700}} autoFocus/>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{setModalPendencia(null);setNotaInput("");}} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
+              <button disabled={!notaInput.trim()} onClick={()=>salvarPendencia(modalPendencia,notaInput.trim())} style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:notaInput.trim()?C.blue:C.tagBg,border:"none",color:notaInput.trim()?"#fff":C.textDim,opacity:notaInput.trim()?1:0.5}}>Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── ALARMES + PENDÊNCIAS ── */}
       {(()=>{
         const todosA=[...(lista1||[]),...(lista2||[]),...(lista3||[])];
         const falhas=todosA.filter(e=>e.status!=="OP");
+        const alarmes=falhas.filter(e=>!pendencias[e.id]);
+        const pendsList=falhas.filter(e=>!!pendencias[e.id]);
         const nAl=falhas.filter(e=>e.status==="ALERTA").length;
         const nMn=falhas.filter(e=>e.status==="MANUTENÇÃO").length;
         const temCrit=nMn>0;
+        const ItemEq=({eq,isPend})=>{
+          const p=pendencias[eq.id];
+          const cor=eq.status==="MANUTENÇÃO"?C.dangerLight:C.warningLight;
+          return(
+            <div key={eq.id} style={{display:"flex",alignItems:"center",gap:8,background:C.tagBg,border:`1px solid ${cor}33`,borderLeft:`3px solid ${cor}`,borderRadius:7,padding:"7px 8px"}}>
+              <span style={{fontSize:12,flexShrink:0}}>{eq.status==="MANUTENÇÃO"?"🔧":"⚡"}</span>
+              <div onClick={()=>setSelId(eq.id)} style={{minWidth:0,flex:1,cursor:"pointer"}}>
+                <div style={{color:C.text,fontSize:11,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{eq.nome}</div>
+                {isPend?(
+                  <div style={{color:C.accentLight,fontSize:8.5,fontFamily:"monospace",fontWeight:700,marginTop:1}}>📋 {p?.nota} · {p?.abertoBy}</div>
+                ):(
+                  <div style={{color:cor,fontSize:8.5,fontFamily:"monospace",fontWeight:700,marginTop:1}}>{eq.status}</div>
+                )}
+              </div>
+              {!isPend&&(
+                <button onClick={e=>{e.stopPropagation();setModalPendencia(eq);setNotaInput("");}} style={{flexShrink:0,background:`${C.accentLight}18`,border:`1px solid ${C.accentLight}44`,borderRadius:7,padding:"4px 8px",cursor:"pointer",color:C.accentLight,fontSize:9,fontWeight:800,whiteSpace:"nowrap"}}>+ nota</button>
+              )}
+              <span onClick={()=>setSelId(eq.id)} style={{color:C.textDim,fontSize:13,flexShrink:0,cursor:"pointer"}}>›</span>
+            </div>
+          );
+        };
         return(
           <div style={{background:C.card,border:`1px solid ${falhas.length>0?C.dangerLight+"44":C.border}`,borderTop:`2px solid ${falhas.length>0?C.dangerLight:C.accentLight}`,borderRadius:12,padding:"10px 12px",marginBottom:10,boxShadow:temCrit?`0 0 10px ${C.dangerLight}22`:"none"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:falhas.length>0?8:4}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
               <span style={{color:falhas.length>0?C.dangerLight:C.textDim,fontSize:9,fontFamily:"monospace",fontWeight:700,letterSpacing:"0.12em"}}>FALHAS</span>
               <div style={{display:"flex",gap:10,alignItems:"center"}}>
                 {[{v:nAl,l:"ALERTA",c:C.warningLight},{v:nMn,l:"MANUT",c:C.dangerLight}].map(({v,l,c})=>(
@@ -2778,17 +2827,19 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
             {falhas.length===0?(
               <div style={{color:C.textDim,fontSize:10,fontFamily:"monospace",textAlign:"center",padding:"3px 0"}}>— todos os equipamentos operacionais —</div>
             ):(
-              <div style={{maxHeight:156,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
-                {[...falhas].sort((a,b)=>a.status==="MANUTENÇÃO"&&b.status!=="MANUTENÇÃO"?-1:1).map(eq=>(
-                  <div key={eq.id} onClick={()=>setSelId(eq.id)} style={{display:"flex",alignItems:"center",gap:8,background:C.tagBg,border:`1px solid ${eq.status==="MANUTENÇÃO"?C.dangerLight+"33":C.warningLight+"33"}`,borderLeft:`3px solid ${eq.status==="MANUTENÇÃO"?C.dangerLight:C.warningLight}`,borderRadius:7,padding:"6px 8px",cursor:"pointer"}}>
-                    <span style={{fontSize:12,flexShrink:0}}>{eq.status==="MANUTENÇÃO"?"🔧":"⚡"}</span>
-                    <div style={{minWidth:0,flex:1}}>
-                      <div style={{color:C.text,fontSize:11,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{eq.nome}</div>
-                      <div style={{color:eq.status==="MANUTENÇÃO"?C.dangerLight:C.warningLight,fontSize:8.5,fontFamily:"monospace",fontWeight:700,letterSpacing:"0.05em",marginTop:1}}>{eq.status}{eq.notas.length>0?` · ${eq.notas.length} nota${eq.notas.length>1?"s":""}`:""}  </div>
-                    </div>
-                    <span style={{color:C.textDim,fontSize:13,flexShrink:0}}>›</span>
-                  </div>
-                ))}
+              <div style={{display:"flex",flexDirection:"column",gap:5,maxHeight:220,overflowY:"auto"}}>
+                {alarmes.length>0&&(
+                  <>
+                    <div style={{color:C.dangerLight,fontSize:8,fontWeight:800,letterSpacing:"0.1em",marginBottom:2}}>ALARMES ({alarmes.length})</div>
+                    {[...alarmes].sort((a,b)=>a.status==="MANUTENÇÃO"&&b.status!=="MANUTENÇÃO"?-1:1).map(eq=><ItemEq key={eq.id} eq={eq} isPend={false}/>)}
+                  </>
+                )}
+                {pendsList.length>0&&(
+                  <>
+                    <div style={{color:"#5090FF",fontSize:8,fontWeight:800,letterSpacing:"0.1em",marginTop:alarmes.length>0?6:0,marginBottom:2}}>PENDÊNCIAS ({pendsList.length})</div>
+                    {pendsList.map(eq=><ItemEq key={eq.id} eq={eq} isPend={true}/>)}
+                  </>
+                )}
               </div>
             )}
           </div>
