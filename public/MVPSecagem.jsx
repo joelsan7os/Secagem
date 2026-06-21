@@ -1463,7 +1463,9 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
               const efLinePath=bPath(efPtsArr);
               const efAreaPath=efLinePath+` L${SW},${HU} L0,${HU} Z`;
               const hasSd=sdVals.some(v=>v!==null);
-              const sdPtsArr=sdVals.map((v,i)=>v!==null?`${xOf(i)},${ySd(v)}`:null).filter(Boolean);
+              const firstSdVal=sdVals.find(v=>v!==null);
+              const sdValsFilled=firstSdVal!=null?sdVals.map((v,i)=>v!==null?v:(i<sdVals.findIndex(x=>x!==null)?firstSdVal:null)):sdVals;
+              const sdPtsArr=sdValsFilled.map((v,i)=>v!==null?`${xOf(i)},${ySd(v)}`:null).filter(Boolean);
               const sdLinePath=bPath(sdPtsArr);
               // último sedim
               const lastSedim=sedimAll.length>0?sedimAll[sedimAll.length-1]:null;
@@ -1518,7 +1520,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                       {hasSd&&<text x={SW-2} y={H_SPLIT-2} textAnchor="end" fontSize="7" fill={C.warningLight} fontFamily="monospace" fontWeight="700">mL/L</text>}
                       {/* área e linha eficiência bezier */}
                       <path d={efAreaPath} fill="url(#spFillH)" opacity={0.7}/>
-                      <path d={efLinePath} fill="none" stroke={corEg} strokeWidth="2" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${corEg}88)`}}/>
+                      <path d={efLinePath} fill="none" stroke={C.accentLight} strokeWidth="2" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${C.accentLight}88)`}}/>
                       <circle cx={xOf(spVals.length-1)} cy={yEf(spVals[spVals.length-1])} r="3" fill={corEg} style={{filter:`drop-shadow(0 0 4px ${corEg})`}}/>
                       {/* linha sedimentáveis bezier */}
                       {hasSd&&sdLinePath&&<path d={sdLinePath} fill="none" stroke={C.warningLight} strokeWidth="2" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${C.warningLight}66)`}}/>}
