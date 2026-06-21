@@ -1525,33 +1525,28 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                       {hasSd&&<span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:12,height:2,background:C.warningLight,display:"inline-block",borderRadius:1}}/><span style={{color:C.textDim,fontSize:7}}>Sedim. mL/L</span></span>}
                     </div>
                   </div>
-                  {/* M2 e M3 */}
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                    {[{m:"M2",e:e2},{m:"M3",e:e3}].map(({m,e})=>{
-                      const fora=Object.keys(clD[m]||{}).length;
-                      const nOp=CLEANERS_TOTAL-fora;
-                      const cor=corCl(e);
-                      const rM=20,circM=2*Math.PI*rM;
-                      const fillOpM=circM*(nOp/CLEANERS_TOTAL);
-                      const fillForaM=circM*(fora/CLEANERS_TOTAL);
-                      return(
-                        <div key={m} style={{background:`${cor}09`,border:`1px solid ${cor}33`,borderLeft:`3px solid ${cor}`,borderRadius:10,padding:"9px 10px",display:"flex",alignItems:"center",gap:10}}>
-                          <svg width={50} height={50} viewBox="0 0 50 50" style={{flexShrink:0}}>
-                            <circle cx="25" cy="25" r={rM} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6"/>
-                            <circle cx="25" cy="25" r={rM} fill="none" stroke={C.accentLight} strokeWidth="6" strokeDasharray={`${fillOpM} ${circM}`} strokeLinecap="butt" strokeDashoffset={circM*0.25} style={{filter:`drop-shadow(0 0 3px ${C.accentLight}88)`}}/>
-                            {fora>0&&<circle cx="25" cy="25" r={rM} fill="none" stroke={C.warningLight} strokeWidth="6" strokeDasharray={`${fillForaM} ${circM}`} strokeLinecap="butt" strokeDashoffset={circM*0.25-fillOpM} style={{filter:`drop-shadow(0 0 3px ${C.warningLight}88)`}}/>}
-                            <text x="25" y="28" textAnchor="middle" fontSize="10" fontWeight="900" fill={cor} fontFamily="monospace">{e}%</text>
-                          </svg>
-                          <div>
-                            <div style={{color:C.white,fontWeight:900,fontSize:13,letterSpacing:"0.06em"}}>{m}</div>
-                            <div style={{color:cor,fontFamily:"monospace",fontWeight:800,fontSize:11}}>{nOp}/{CLEANERS_TOTAL}<span style={{color:C.textDim,fontWeight:400,fontSize:9}}> op</span></div>
-                            {fora>0&&<div style={{color:C.warningLight,fontSize:9,fontFamily:"monospace"}}>{fora} fora</div>}
-                            {fora===0&&<div style={{color:C.accentLight,fontSize:9}}>✓ todas op.</div>}
-                          </div>
+                  {/* rodapé: movimentações 10d */}
+                  {(()=>{
+                    const d10=new Date();d10.setDate(d10.getDate()-10);const d10s=d10.toISOString().slice(0,10);
+                    const mov=(storageGet("cleaners_hist_h2")||[]).filter(h=>h.status==="REMOVIDA"&&h.data>=d10s).length;
+                    const ret=(storageGet("cleaners_hist_h2")||[]).filter(h=>h.status==="OPERANDO"&&h.data>=d10s).length;
+                    return(
+                      <div style={{display:"flex",gap:6,marginTop:2}}>
+                        <div style={{flex:1,background:C.tagBg,borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{color:C.warningLight,fontFamily:"monospace",fontWeight:900,fontSize:18,lineHeight:1}}>{mov}</span>
+                          <span style={{color:C.textDim,fontSize:8,letterSpacing:"0.06em",lineHeight:1.3}}>retiradas<br/>10 dias</span>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <div style={{flex:1,background:C.tagBg,borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{color:C.accentLight,fontFamily:"monospace",fontWeight:900,fontSize:18,lineHeight:1}}>{ret}</span>
+                          <span style={{color:C.textDim,fontSize:8,letterSpacing:"0.06em",lineHeight:1.3}}>retornos<br/>10 dias</span>
+                        </div>
+                        <div style={{flex:1,background:C.tagBg,borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{color:foraTotal>0?C.warningLight:C.accentLight,fontFamily:"monospace",fontWeight:900,fontSize:18,lineHeight:1}}>{foraTotal}</span>
+                          <span style={{color:C.textDim,fontSize:8,letterSpacing:"0.06em",lineHeight:1.3}}>fora<br/>agora</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })()}
