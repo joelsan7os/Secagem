@@ -284,27 +284,33 @@ export function CleanersTela({eqState=[]}){
           {(()=>{
             const histAll=storageGet("cleaners_hist_h2")||[];
             const sedimAll=storageGet("cleaners_sedim_h2")||[];
-            const days=Array.from({length:10},(_,i)=>{const d=new Date();d.setDate(d.getDate()-9+i);return d.toISOString().slice(0,10);});
-            // eficiência geral por dia
-            const snapEf={M2:{},M3:{}};
-            const sortedEf=[...histAll].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
-            const effVals=days.map(d=>{sortedEf.filter(ev=>ev.data===d).forEach(ev=>{if(!ev.maquina)return;if(ev.status==="REMOVIDA")snapEf[ev.maquina][ev.garrafa]=1;else delete snapEf[ev.maquina][ev.garrafa];});const fora=Object.keys(snapEf.M2||{}).length+Object.keys(snapEf.M3||{}).length;return Math.round(((CLEANERS_TOTAL*2)-fora)/(CLEANERS_TOTAL*2)*100);});
-            // sedimentáveis por dia (último valor do dia)
-            const sedimVals=days.map(d=>{const dayRecs=sedimAll.filter(s=>s.data===d);return dayRecs.length>0?dayRecs[dayRecs.length-1].valor:null;});
+            // 30 pontos: 10 dias × 3 turnos (fim de cada turno)
+            const shiftBounds=[];
+            for(let day=0;day<10;day++){const d=new Date();d.setDate(d.getDate()-9+day);const ds=d.toISOString().slice(0,10);for(const h of[8,16,24]){const nd=h===24;const bd=nd?new Date(d.getTime()+86400000).toISOString().slice(0,10):ds;const bh=nd?"00:00":String(h).padStart(2,"0")+":00";shiftBounds.push({ts:bd+"T"+bh,label:ds});}}
+            const sortedEf=[...histAll].sort((a,b)=>(a.data+(a.hora||"00:00")).localeCompare(b.data+(b.hora||"00:00")));
+            const snapEf={M2:{},M3:{}};let eIdx=0;
+            const effVals=shiftBounds.map(({ts})=>{while(eIdx<sortedEf.length){const ev=sortedEf[eIdx];const evTs=ev.data+"T"+(ev.hora||"00:00");if(evTs>ts)break;if(ev.maquina&&snapEf[ev.maquina]){if(ev.status==="REMOVIDA")snapEf[ev.maquina][ev.garrafa]=1;else delete snapEf[ev.maquina][ev.garrafa];}eIdx++;}const fora=Object.keys(snapEf.M2||{}).length+Object.keys(snapEf.M3||{}).length;return Math.round(((CLEANERS_TOTAL*2)-fora)/(CLEANERS_TOTAL*2)*100);});
+            // sedimentáveis por turno (último antes do fim do turno)
+            const sedimVals=shiftBounds.map(({ts})=>{const recs=sedimAll.filter(s=>s.data+"T"+(s.hora||"00:00")<=ts);return recs.length>0?recs[recs.length-1].valor:null;});
             const hasSedim=sedimVals.some(v=>v!==null);
             const lastSedim=sedimAll.length>0?sedimAll[sedimAll.length-1]:null;
             const corSedim=lastSedim?(lastSedim.valor<150?C.accentLight:lastSedim.valor<=250?C.warningLight:C.dangerLight):C.textDim;
-            // SVG dual-line chart
-            const W=280,H=70;
+            // SVG split chart + bezier
+            const W=280,H=78;
+            const HU=Math.round(H*0.43),HG=Math.round(H*0.14),HL=H-HU-HG;
+            const divY=HU+HG/2;
             const efMin=Math.max(0,Math.min(...effVals)-5),efMax=Math.min(100,Math.max(...effVals)+5),efRng=efMax-efMin||1;
             const sdMax=Math.max(300,...sedimVals.filter(v=>v!==null))+30;
-            const xOf=(i)=>(i/(days.length-1))*W;
-            const yEf=(v)=>H-(v-efMin)/efRng*H;
-            const ySd=(v)=>H-(v/sdMax)*H;
-            const efPts=effVals.map((v,i)=>`${xOf(i)},${yEf(v)}`).join(" ");
-            const sdPts=sedimVals.map((v,i)=>v!==null?`${xOf(i)},${ySd(v)}`:null).filter(Boolean).join(" ");
-            // faixas sedim (y positions)
-            const y150=ySd(150),y250=ySd(250);
+            const xOf=(i)=>(i/(shiftBounds.length-1))*W;
+            const yEf=(v)=>HU-((v-efMin)/efRng)*HU;
+            const ySd=(v)=>HU+HG+(v/sdMax)*HL;
+            // bezier helper
+            const bPath=(pts)=>{if(pts.length<2)return"";const p=pts.map(s=>{const[x,y]=s.split(",").map(Number);return{x,y};});let d=`M${p[0].x},${p[0].y}`;for(let i=1;i<p.length;i++){const c=(p[i-1].x+p[i].x)/2;d+=` C${c},${p[i-1].y} ${c},${p[i].y} ${p[i].x},${p[i].y}`;}return d;};
+            const efPtsArr=effVals.map((v,i)=>`${xOf(i)},${yEf(v)}`);
+            const efLinePath=bPath(efPtsArr);
+            const efAreaPath=efLinePath+` L${W},${HU} L0,${HU} Z`;
+            const sdPtsArr=sedimVals.map((v,i)=>v!==null?`${xOf(i)},${ySd(v)}`:null).filter(Boolean);
+            const sdLinePath=bPath(sdPtsArr);
             return(
               <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`2px solid ${C.accentLight}`,borderRadius:12,padding:"11px 14px",marginBottom:8}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -313,26 +319,22 @@ export function CleanersTela({eqState=[]}){
                 </div>
                 <div style={{overflowX:"auto"}}>
                   <svg width={W} height={H} style={{display:"block"}}>
-                    {/* faixas sedimentáveis */}
-                    <rect x={0} y={0} width={W} height={y250} fill="rgba(255,82,82,0.06)"/>
-                    <rect x={0} y={y250} width={W} height={y150-y250} fill="rgba(255,193,7,0.06)"/>
-                    <rect x={0} y={y150} width={W} height={H-y150} fill="rgba(0,230,118,0.06)"/>
-                    {/* linhas de referência */}
-                    <line x1={0} y1={y250} x2={W} y2={y250} stroke={C.dangerLight} strokeWidth="0.5" strokeDasharray="3,3" opacity={0.4}/>
-                    <line x1={0} y1={y150} x2={W} y2={y150} stroke={C.accentLight} strokeWidth="0.5" strokeDasharray="3,3" opacity={0.4}/>
-                    {/* linha eficiência */}
-                    <polyline points={efPts} fill="none" stroke={C.accentLight} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${C.accentLight}66)`}}/>
-                    {/* linha sedimentáveis */}
-                    {hasSedim&&sdPts&&<polyline points={sdPts} fill="none" stroke={C.warningLight} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="5,3" style={{filter:`drop-shadow(0 0 3px ${C.warningLight}66)`}}/>}
-                    {/* dot último dia eficiência */}
-                    <circle cx={xOf(days.length-1)} cy={yEf(effVals[effVals.length-1])} r="3" fill={C.accentLight}/>
-                    {/* dot último sedim */}
-                    {lastSedim&&sedimVals[sedimVals.length-1]!==null&&<circle cx={xOf(days.length-1)} cy={ySd(sedimVals[sedimVals.length-1])} r="3" fill={C.warningLight}/>}
+                    <defs><linearGradient id="efFillTr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.accentLight} stopOpacity="0.28"/><stop offset="100%" stopColor={C.accentLight} stopOpacity="0.02"/></linearGradient></defs>
+                    <rect x={0} y={0} width={W} height={HU} fill="rgba(0,230,118,0.03)" rx="2"/>
+                    <rect x={0} y={HU+HG} width={W} height={HL} fill="rgba(255,193,7,0.03)" rx="2"/>
+                    <line x1={0} y1={divY} x2={W} y2={divY} stroke="rgba(255,255,255,0.1)" strokeWidth="1" strokeDasharray="4,4"/>
+                    <path d={efAreaPath} fill="url(#efFillTr)" opacity={0.7}/>
+                    <path d={efLinePath} fill="none" stroke={C.accentLight} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${C.accentLight}88)`}}/>
+                    {hasSedim&&sdLinePath&&<path d={sdLinePath} fill="none" stroke={C.warningLight} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${C.warningLight}66)`}}/>}
+                    <circle cx={xOf(effVals.length-1)} cy={yEf(effVals[effVals.length-1])} r="3" fill={C.accentLight} style={{filter:`drop-shadow(0 0 4px ${C.accentLight})`}}/>
+                    {hasSedim&&sdPtsArr.length>0&&<circle cx={sdPtsArr[sdPtsArr.length-1].split(",")[0]} cy={sdPtsArr[sdPtsArr.length-1].split(",")[1]} r="3" fill={C.warningLight} style={{filter:`drop-shadow(0 0 4px ${C.warningLight})`}}/> }
+                    <text x={W-2} y={10} textAnchor="end" fontSize="7" fill={C.accentLight} fontFamily="monospace" fontWeight="700">EF%</text>
+                    {hasSedim&&<text x={W-2} y={H-3} textAnchor="end" fontSize="7" fill={C.warningLight} fontFamily="monospace" fontWeight="700">mL/L</text>}
                   </svg>
                 </div>
-                <div style={{display:"flex",gap:12,marginTop:6}}>
-                  <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:16,height:2,background:C.accentLight,display:"inline-block",borderRadius:1}}/><span style={{color:C.textDim,fontSize:8}}>Eficiência %</span></span>
-                  <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:16,height:2,background:C.warningLight,display:"inline-block",borderRadius:1,opacity:0.8}}/><span style={{color:C.textDim,fontSize:8}}>Sedimentáveis mL/L</span></span>
+                <div style={{display:"flex",gap:12,marginTop:5}}>
+                  <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:14,height:2,background:C.accentLight,display:"inline-block",borderRadius:1}}/><span style={{color:C.textDim,fontSize:8}}>Eficiência %</span></span>
+                  <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:14,height:2,background:C.warningLight,display:"inline-block",borderRadius:1}}/><span style={{color:C.textDim,fontSize:8}}>Sedimentáveis mL/L</span></span>
                 </div>
               </div>
             );
