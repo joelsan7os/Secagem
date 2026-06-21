@@ -1370,7 +1370,6 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                       {l:"Status",v:afetada?(mCor==="vermelho"?"Parada":"Interferência"):d.ok?"Normal":d.cr>0?"Crítico":"Atenção",c:afetada?ledCor:d.ok?C.accentLight:d.cr>0?C.dangerLight:C.warningLight},
                       {l:"Alertas",v:d.al,c:d.al>0?C.warningLight:C.text},
                       {l:"Críticos",v:d.cr,c:d.cr>0?C.dangerLight:C.text},
-                      {l:"Checklists",v:`${d.cumpridas}/${d.totalAreas}`,c:d.cumpridas>=d.totalAreas?C.accentLight:C.warningLight,clickDetalhe:d.detalhes},
                     ].map(({l,v,c,clickDetalhe})=>(
                       <div key={l} onClick={()=>clickDetalhe&&setPopupChecks({maquina:m,detalhes:clickDetalhe})} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"3px 0",borderBottom:`1px solid ${C.border}22`,cursor:clickDetalhe?"pointer":"default"}}>
                         <span style={{color:C.textDim,fontSize:9,textTransform:"uppercase"}}>{l}</span>
