@@ -1654,6 +1654,9 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
   const addFotoEnf=(id,src)=>{setFotos(p=>({...p,[id]:[...(p[id]||[]),src]}));setSalvo(false);};
   const remFotoEnf=(id,idx)=>{setFotos(p=>({...p,[id]:(p[id]||[]).filter((_,i)=>i!==idx)}));setSalvo(false);};
   const [obs,setObs]=useState("");
+  const [lote,setLote]=useState("");
+  const [unidade,setUnidade]=useState("");
+  const [unitFoto,setUnitFoto]=useState([]);
   const [salvo,setSalvo]=useState(false);
   const items=checklistEnfardamento;
   const secoes=items.reduce((acc,i)=>{if(!acc[i.secao])acc[i.secao]=[];acc[i.secao].push(i);return acc;},{});
@@ -1662,7 +1665,7 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
   const alertas=items.filter(i=>i.alertOpcoes?.includes(respostas[i.id])).length;
   const linhaInfo=LINHAS.find(l=>l.id===linha);
   const handleSalvar=()=>{
-    const registro={id:Date.now(),tipoId:"enf_qualidade",tipoLabel:"Check List Qualidade",maquina:linhaInfo?.maquina||"M2",linha,turno,hora,letra,data:hoje,opPU:opArea,matricula:matriculaEnf,opPainel:opPainelLocal,noks:alertas,total:items.length,items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:respostas[i.id]||"",fotos:fotos[i.id]||[]})),obs};
+    const registro={id:Date.now(),tipoId:"enf_qualidade",tipoLabel:"Check List Qualidade",maquina:linhaInfo?.maquina||"M2",linha,turno,hora,letra,data:hoje,opPU:opArea,matricula:matriculaEnf,opPainel:opPainelLocal,noks:alertas,total:items.length,unit:{lote,unidade,foto:unitFoto},items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:respostas[i.id]||"",fotos:fotos[i.id]||[]})),obs};
     onSalvar(registro);setSalvo(true);
   };
   return (
@@ -1707,6 +1710,44 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
               </button>;
             })}
           </div>
+        </div>
+        {/* ── UNIT INSPECIONADA ── */}
+        <div style={{background:C.tagBg,border:`1px solid ${C.accentLight}33`,borderTop:`2px solid ${C.accentLight}`,borderRadius:10,padding:"11px 12px",marginBottom:12}}>
+          <div style={{color:C.accentLight,fontSize:10,fontWeight:800,letterSpacing:"0.08em",marginBottom:8,textTransform:"uppercase"}}>📦 Unit Inspecionada</div>
+          {/* dados automáticos */}
+          <div style={{display:"flex",flexWrap:"wrap",gap:"4px 14px",marginBottom:10}}>
+            {[["Ano",String(new Date().getFullYear())],["Mês",String(new Date().getMonth()+1).padStart(2,"0")],["Dia",String(new Date().getDate()).padStart(2,"0")],["Máq",linhaInfo?.maquina||maquina],["Linha",linha],["Hora",hora]].map(([l,v])=>(
+              <div key={l} style={{display:"flex",alignItems:"baseline",gap:4}}>
+                <span style={{color:C.textDim,fontSize:8,letterSpacing:"0.06em",textTransform:"uppercase"}}>{l}</span>
+                <span style={{color:C.text,fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{v}</span>
+              </div>
+            ))}
+          </div>
+          {/* lote + unidade manuais + foto */}
+          <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+            <div style={{flex:1}}>
+              <label style={{color:C.textDim,fontSize:9,textTransform:"uppercase",display:"block",marginBottom:3,letterSpacing:"0.08em"}}>Lote</label>
+              <input value={lote} onChange={e=>{setLote(e.target.value);setSalvo(false);}} placeholder="ex: 25" style={{...inputStyle,fontSize:13,padding:"7px 10px",fontFamily:"monospace"}}/>
+            </div>
+            <div style={{flex:1}}>
+              <label style={{color:C.textDim,fontSize:9,textTransform:"uppercase",display:"block",marginBottom:3,letterSpacing:"0.08em"}}>Unidade</label>
+              <input value={unidade} onChange={e=>{setUnidade(e.target.value);setSalvo(false);}} placeholder="ex: 004" style={{...inputStyle,fontSize:13,padding:"7px 10px",fontFamily:"monospace"}}/>
+            </div>
+            <label style={{flexShrink:0,width:42,height:38,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:18}}>
+              📷
+              <input type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f){const rd=new FileReader();rd.onload=()=>{setUnitFoto(p=>[...p,rd.result]);setSalvo(false);};rd.readAsDataURL(f);}}}/>
+            </label>
+          </div>
+          {unitFoto.length>0&&(
+            <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+              {unitFoto.map((src,i)=>(
+                <div key={i} style={{position:"relative"}}>
+                  <img src={src} style={{width:48,height:48,objectFit:"cover",borderRadius:6,border:`1px solid ${C.border}`}}/>
+                  <button onClick={()=>setUnitFoto(p=>p.filter((_,x)=>x!==i))} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:C.danger,border:"none",color:"#fff",fontSize:11,cursor:"pointer",lineHeight:1}}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
           <div>
