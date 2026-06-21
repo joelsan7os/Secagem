@@ -2773,7 +2773,8 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
     return(
       <div>
         <button onClick={()=>setSubModulo("lista")} style={{...btnSec,marginBottom:14}}>← Voltar</button>
-        <h2 style={{color:C.white,fontSize:17,fontWeight:900,margin:"0 0 14px",letterSpacing:"0.04em"}}>PENDÊNCIAS</h2>
+        <h2 style={{color:C.white,fontSize:17,fontWeight:900,margin:"0 0 10px",letterSpacing:"0.04em"}}>PENDÊNCIAS</h2>
+        <button onClick={()=>setSubModulo("chamados")} style={{...btnPrim,width:"100%",padding:"11px",marginBottom:14,fontSize:12}}>+ Abrir Chamado / Nota SAP →</button>
         {/* Chamados */}
         <div style={{color:C.dangerLight,fontSize:9,fontWeight:800,letterSpacing:"0.1em",marginBottom:6}}>CHAMADOS ({chamA.length})</div>
         {chamA.length===0?<div style={{color:C.textDim,fontSize:10,marginBottom:12,fontStyle:"italic"}}>— nenhum chamado aberto —</div>:(
@@ -2785,21 +2786,6 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
                   <span style={{background:`${corPrazo(c.prazo)}22`,border:`1px solid ${corPrazo(c.prazo)}55`,color:corPrazo(c.prazo),borderRadius:20,padding:"1px 7px",fontSize:9,fontWeight:800}}>{c.prazo}</span>
                 </div>
                 {c.descricao&&<div style={{color:C.textDim,fontSize:10}}>{c.descricao}</div>}
-              </div>
-            ))}
-          </div>
-        )}
-        {/* Notas */}
-        <div style={{color:C.warningLight,fontSize:9,fontWeight:800,letterSpacing:"0.1em",marginBottom:6}}>NOTAS ({notasA.length})</div>
-        {notasA.length===0?<div style={{color:C.textDim,fontSize:10,marginBottom:12,fontStyle:"italic"}}>— nenhuma nota registrada —</div>:(
-          <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:14}}>
-            {notasA.map((n,i)=>(
-              <div key={i} style={{background:C.card,border:`1px solid ${C.warningLight}33`,borderLeft:`3px solid ${C.warningLight}`,borderRadius:8,padding:"8px 10px"}}>
-                <div style={{color:C.text,fontWeight:700,fontSize:11,marginBottom:2}}>{n.eqNome}</div>
-                <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                  {n.num&&<span style={{color:C.warningLight,fontFamily:"monospace",fontSize:10,fontWeight:700}}>{n.num}</span>}
-                  <span style={{color:C.textDim,fontSize:10}}>{n.desc}</span>
-                </div>
               </div>
             ))}
           </div>
