@@ -3698,6 +3698,7 @@ function ConfiguracoesTela({ perfil, onLogout, onAbrirAdmin }) {
       try{localStorage.removeItem(k);}catch{}
       try{await deleteDoc(doc(COL,k));}catch{}
     }
+    try{await setDoc(doc(COL,"app_control"),{reset_ts:new Date().toISOString(),by:perfil?.matricula||"—"});}catch{}
     setResetando(false);setResetOk(true);
     setTimeout(()=>{try{location.reload();}catch{}},1500);
   };
@@ -4369,6 +4370,20 @@ export default function App() {
   React.useEffect(()=>{
     const unsub=onSnapshot(doc(COL,"ocorrencias_h2"),(snap)=>{
       if(snap.exists()){const d=snap.data().val;if(d)setOcorrencias(d);}
+    });
+    return ()=>unsub();
+  },[]);
+  React.useEffect(()=>{
+    const CHAVES_ALL=["historico_h2","ocorrencias_h2","eqstate_h2","chamados_h2","cleaners_h2","cleaners_estoque_h2","cleaners_hist_h2","justificativas_h2","notas_hist_h2","cleaners_sedim_h2","pendencias_h2","reconhecimentos_h2","comp_em_h2"];
+    const unsub=onSnapshot(doc(COL,"app_control"),(snap)=>{
+      if(!snap.exists())return;
+      const {reset_ts}=snap.data();
+      const local_ts=localStorage.getItem("last_reset_ts");
+      if(reset_ts&&reset_ts!==local_ts){
+        CHAVES_ALL.forEach(k=>{try{localStorage.removeItem(k);}catch{}});
+        localStorage.setItem("last_reset_ts",reset_ts);
+        try{location.reload();}catch{}
+      }
     });
     return ()=>unsub();
   },[]);
