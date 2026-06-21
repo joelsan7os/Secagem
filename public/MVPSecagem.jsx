@@ -871,6 +871,7 @@ import { COL, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "./firebase";
 import { TelaAuth, usePerfilAtivo, FUNCOES, validarPin } from "./auth";
 import { PainelAdmin } from "./admin";
 import { CleanersTela, RelatorioCleaners, CLEANERS_TOTAL } from "./cleaners";
+import { BarcodeModal } from "./barcode";
 
 // Leitura imediata do aparelho (não trava a tela esperando a nuvem)
 const storageGet = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
@@ -1654,6 +1655,7 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
   const [unidade,setUnidade]=useState("");
   const [unitFoto,setUnitFoto]=useState([]);
   const [salvo,setSalvo]=useState(false);
+  const [barcodeAtivo,setBarcodeAtivo]=useState(false);
   const items=checklistEnfardamento;
   const secoes=items.reduce((acc,i)=>{if(!acc[i.secao])acc[i.secao]=[];acc[i.secao].push(i);return acc;},{});
   const setResp=(id,val)=>{setRespostas(p=>({...p,[id]:val}));setSalvo(false);};
@@ -1732,6 +1734,11 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
           </div>
         </div>
       </div>
+        {/* ── VALIDAÇÃO DE FARDOS ── */}
+        <button onClick={()=>setBarcodeAtivo(true)} style={{width:"100%",padding:"11px 14px",borderRadius:10,cursor:"pointer",border:`1px solid ${C.border}`,background:C.tagBg,color:C.accentLight,fontSize:13,fontWeight:700,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          📦 Validação de Fardos (Lado A / Lado B)
+        </button>
+        {barcodeAtivo&&<BarcodeModal linha={linha} onFechar={()=>setBarcodeAtivo(false)}/>}
         {/* ── UNIT INSPECIONADA ── */}
         <div style={{background:C.tagBg,border:`1px solid ${unitOk?C.accentLight+"66":C.accentLight+"33"}`,borderTop:`2px solid ${unitOk?C.accentLight:C.warningLight}`,borderRadius:10,padding:"11px 12px",marginBottom:12}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
