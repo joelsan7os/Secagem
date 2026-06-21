@@ -2763,6 +2763,65 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
   const chamadosAbertos=(storageGet("chamados_h2")||[]).filter(c=>c.status==="aberto").length;
   if(subModulo==="chamados") return <ChamadosTela eqState={eqState} setEqState={setEqState} areaAtiva={areaAtiva} onVoltar={()=>setSubModulo("lista")}/>;
   if(subModulo==="cleaners") return <div><button onClick={()=>setSubModulo("lista")} style={{...btnSec,marginBottom:14}}>← Voltar</button><CleanersTela/></div>;
+  if(subModulo==="pendencias"){
+    const todosA=[...(lista1||[]),...(lista2||[]),...(lista3||[])];
+    const chamA=(storageGet("chamados_h2")||[]).filter(c=>c.status==="aberto");
+    const notasA=todosA.flatMap(e=>(e.notas||[]).map(n=>({...n,eqNome:e.nome,eqId:e.id})));
+    const tratativa=Object.entries(pendencias).map(([id,p])=>({...p,eqId:id})).filter(p=>{const eq=todosA.find(e=>e.id===p.eqId);return eq&&eq.status!=="OP";});
+    const fmtTs=ts=>{if(!ts)return"—";const[d,t]=(ts||"").split("T");if(!d)return"—";const[y,m,dia]=d.split("-");return`${dia}/${m} ${(t||"").slice(0,5)}`;};
+    const corPrazo=p=>p==="Imediato"?C.dangerLight:p==="Urgente"?"#FF8C00":"#5090FF";
+    return(
+      <div>
+        <button onClick={()=>setSubModulo("lista")} style={{...btnSec,marginBottom:14}}>← Voltar</button>
+        <h2 style={{color:C.white,fontSize:17,fontWeight:900,margin:"0 0 14px",letterSpacing:"0.04em"}}>PENDÊNCIAS</h2>
+        {/* Chamados */}
+        <div style={{color:C.dangerLight,fontSize:9,fontWeight:800,letterSpacing:"0.1em",marginBottom:6}}>CHAMADOS ({chamA.length})</div>
+        {chamA.length===0?<div style={{color:C.textDim,fontSize:10,marginBottom:12,fontStyle:"italic"}}>— nenhum chamado aberto —</div>:(
+          <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:14}}>
+            {chamA.map((c,i)=>(
+              <div key={i} style={{background:C.card,border:`1px solid ${corPrazo(c.prazo)}33`,borderLeft:`3px solid ${corPrazo(c.prazo)}`,borderRadius:8,padding:"8px 10px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+                  <span style={{color:C.text,fontWeight:700,fontSize:11}}>{c.equipamentoNome||"—"}</span>
+                  <span style={{background:`${corPrazo(c.prazo)}22`,border:`1px solid ${corPrazo(c.prazo)}55`,color:corPrazo(c.prazo),borderRadius:20,padding:"1px 7px",fontSize:9,fontWeight:800}}>{c.prazo}</span>
+                </div>
+                {c.descricao&&<div style={{color:C.textDim,fontSize:10}}>{c.descricao}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Notas */}
+        <div style={{color:C.warningLight,fontSize:9,fontWeight:800,letterSpacing:"0.1em",marginBottom:6}}>NOTAS ({notasA.length})</div>
+        {notasA.length===0?<div style={{color:C.textDim,fontSize:10,marginBottom:12,fontStyle:"italic"}}>— nenhuma nota registrada —</div>:(
+          <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:14}}>
+            {notasA.map((n,i)=>(
+              <div key={i} style={{background:C.card,border:`1px solid ${C.warningLight}33`,borderLeft:`3px solid ${C.warningLight}`,borderRadius:8,padding:"8px 10px"}}>
+                <div style={{color:C.text,fontWeight:700,fontSize:11,marginBottom:2}}>{n.eqNome}</div>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  {n.num&&<span style={{color:C.warningLight,fontFamily:"monospace",fontSize:10,fontWeight:700}}>{n.num}</span>}
+                  <span style={{color:C.textDim,fontSize:10}}>{n.desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Em tratativa */}
+        <div style={{color:"#5090FF",fontSize:9,fontWeight:800,letterSpacing:"0.1em",marginBottom:6}}>EM TRATATIVA ({tratativa.length})</div>
+        {tratativa.length===0?<div style={{color:C.textDim,fontSize:10,fontStyle:"italic"}}>— nenhum item em tratativa —</div>:(
+          <div style={{display:"flex",flexDirection:"column",gap:5}}>
+            {tratativa.map((p,i)=>(
+              <div key={i} style={{background:C.card,border:"1px solid #5090FF33",borderLeft:"3px solid #5090FF",borderRadius:8,padding:"8px 10px"}}>
+                <div style={{color:C.text,fontWeight:700,fontSize:11,marginBottom:2}}>{p.eqNome||"—"}</div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  {p.nota?<span style={{color:C.accentLight,fontFamily:"monospace",fontSize:10,fontWeight:700}}>📋 {p.nota}</span>:<span style={{color:"#5090FF",fontSize:9}}>sem nº SAP</span>}
+                  <span style={{color:C.textDim,fontSize:9}}>· {p.abertoBy} · {fmtTs(p.abertoEm)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
     <div>
       {modalEq&&<ModalNotas eq={modalEq} onClose={()=>setModalEq(null)} onSave={salvarNotas}/>}
@@ -2848,7 +2907,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
             </div>
             <button onClick={()=>setTela("dashboard")} style={{...btnSec,padding:"5px 12px",fontSize:11,marginBottom:8}}>← Início</button>
             <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"0 0 10px"}}/>
-            <button onClick={()=>setSubModulo("chamados")} style={{width:"100%",background:C.card,border:`1.5px solid ${corC}44`,borderTop:`2px solid ${corC}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",textAlign:"left",marginBottom:14,animation:nIme>0?"trava-pulse 1.8s ease-in-out infinite":"none"}}
+            <button onClick={()=>setSubModulo("pendencias")} style={{width:"100%",background:C.card,border:`1.5px solid ${corC}44`,borderTop:`2px solid ${corC}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",textAlign:"left",marginBottom:14,animation:nIme>0?"trava-pulse 1.8s ease-in-out infinite":"none"}}
               onMouseEnter={e=>e.currentTarget.style.background=`${corC}0d`}
               onMouseLeave={e=>e.currentTarget.style.background=C.card}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
