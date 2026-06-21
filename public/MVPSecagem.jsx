@@ -1437,30 +1437,34 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
               const totalBoth=CLEANERS_TOTAL*2;
               const foraTotal=Object.keys(clD.M2||{}).length+Object.keys(clD.M3||{}).length;
               const nOpTotal=totalBoth-foraTotal;
-              // sparkline 7 dias + delta
-              const spDays=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
-              const snapSp={M2:{},M3:{}};
-              const sortedSp=[...histCl].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
-              const spVals=spDays.map(d=>{sortedSp.filter(ev=>ev.data===d).forEach(ev=>{if(!ev.maquina)return;if(ev.status==="REMOVIDA")snapSp[ev.maquina][ev.garrafa]=1;else delete snapSp[ev.maquina][ev.garrafa];});const fora=Object.keys(snapSp.M2||{}).length+Object.keys(snapSp.M3||{}).length;return Math.round((totalBoth-fora)/totalBoth*100);});
+              // 30 pontos: 7 dias × 3 turnos + bezier
+              const spBounds=[];
+              for(let day=0;day<7;day++){const d=new Date();d.setDate(d.getDate()-6+day);const ds=d.toISOString().slice(0,10);for(const h of[8,16,24]){const nd=h===24;const bd=nd?new Date(d.getTime()+86400000).toISOString().slice(0,10):ds;const bh=nd?"00:00":String(h).padStart(2,"0")+":00";spBounds.push({ts:bd+"T"+bh,ds});}}
+              const sortedSp=[...histCl].sort((a,b)=>(a.data+(a.hora||"00:00")).localeCompare(b.data+(b.hora||"00:00")));
+              const snapSp={M2:{},M3:{}};let spIdx=0;
+              const spVals=spBounds.map(({ts})=>{while(spIdx<sortedSp.length){const ev=sortedSp[spIdx];const evTs=ev.data+"T"+(ev.hora||"00:00");if(evTs>ts)break;if(ev.maquina&&snapSp[ev.maquina]){if(ev.status==="REMOVIDA")snapSp[ev.maquina][ev.garrafa]=1;else delete snapSp[ev.maquina][ev.garrafa];}spIdx++;}const fora=Object.keys(snapSp.M2||{}).length+Object.keys(snapSp.M3||{}).length;return Math.round((totalBoth-fora)/totalBoth*100);});
               const delta=spVals[spVals.length-1]-spVals[0];
               const deltaStr=delta>0?`↗ +${delta}%`:delta<0?`↘ ${delta}%`:"→ estável";
               const deltaCol=delta>0?C.accentLight:delta<0?C.warningLight:C.textDim;
               // gauge geral
               const r=38,circ=2*Math.PI*r,fillOp=circ*(nOpTotal/totalBoth),fillFora=circ*(foraTotal/totalBoth);
-              // split chart: cima = eficiência, baixo = sedimentáveis
+              // split chart bezier
               const SW=260,H_SPLIT=72;
               const HU=Math.round(H_SPLIT*0.43),HG=Math.round(H_SPLIT*0.14),HL=H_SPLIT-HU-HG;
               const divY=HU+HG/2;
               const smn=Math.max(0,Math.min(...spVals)-8),smx=Math.min(100,Math.max(...spVals)+8),srng=smx-smn||1;
-              const xOf=(i)=>(i/(spVals.length-1))*SW;
+              const xOf=(i)=>(i/(spBounds.length-1))*SW;
               const yEf=(v)=>HU-((v-smn)/srng)*HU;
-              const sdVals=spDays.map(d=>{const recs=sedimAll.filter(s=>s.data===d);return recs.length>0?recs[recs.length-1].valor:null;});
+              const sdVals=spBounds.map(({ts})=>{const recs=sedimAll.filter(s=>s.data+"T"+(s.hora||"00:00")<=ts);return recs.length>0?recs[recs.length-1].valor:null;});
               const sdMax=Math.max(300,...sdVals.filter(v=>v!==null))+30;
               const ySd=(v)=>HU+HG+(v/sdMax)*HL;
-              const efLineStr=spVals.map((v,i)=>`${xOf(i)},${yEf(v)}`).join(" ");
-              const efAreaStr=`0,${HU} ${efLineStr} ${SW},${HU}`;
+              const bPath=(pts)=>{if(pts.length<2)return"";const p=pts.map(s=>{const[x,y]=s.split(",").map(Number);return{x,y};});let d=`M${p[0].x},${p[0].y}`;for(let i=1;i<p.length;i++){const c=(p[i-1].x+p[i].x)/2;d+=` C${c},${p[i-1].y} ${c},${p[i].y} ${p[i].x},${p[i].y}`;}return d;};
+              const efPtsArr=spVals.map((v,i)=>`${xOf(i)},${yEf(v)}`);
+              const efLinePath=bPath(efPtsArr);
+              const efAreaPath=efLinePath+` L${SW},${HU} L0,${HU} Z`;
               const hasSd=sdVals.some(v=>v!==null);
-              const sdPts=sdVals.map((v,i)=>v!==null?`${xOf(i)},${ySd(v)}`:null).filter(Boolean).join(" ");
+              const sdPtsArr=sdVals.map((v,i)=>v!==null?`${xOf(i)},${ySd(v)}`:null).filter(Boolean);
+              const sdLinePath=bPath(sdPtsArr);
               // último sedim
               const lastSedim=sedimAll.length>0?sedimAll[sedimAll.length-1]:null;
               const corSedim=lastSedim?(lastSedim.valor<150?C.accentLight:lastSedim.valor<=250?C.warningLight:C.dangerLight):null;
@@ -1512,13 +1516,13 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                       {/* labels */}
                       <text x={SW-2} y={9} textAnchor="end" fontSize="7" fill={corEg} fontFamily="monospace" fontWeight="700">EF%</text>
                       {hasSd&&<text x={SW-2} y={H_SPLIT-2} textAnchor="end" fontSize="7" fill={C.warningLight} fontFamily="monospace" fontWeight="700">mL/L</text>}
-                      {/* área e linha eficiência */}
-                      <polygon points={efAreaStr} fill="url(#spFillH)"/>
-                      <polyline points={efLineStr} fill="none" stroke={corEg} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${corEg}88)`}}/>
+                      {/* área e linha eficiência bezier */}
+                      <path d={efAreaPath} fill="url(#spFillH)" opacity={0.7}/>
+                      <path d={efLinePath} fill="none" stroke={corEg} strokeWidth="2" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${corEg}88)`}}/>
                       <circle cx={xOf(spVals.length-1)} cy={yEf(spVals[spVals.length-1])} r="3" fill={corEg} style={{filter:`drop-shadow(0 0 4px ${corEg})`}}/>
-                      {/* linha sedimentáveis */}
-                      {hasSd&&sdPts&&<polyline points={sdPts} fill="none" stroke={C.warningLight} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${C.warningLight}66)`}}/>}
-                      {hasSd&&sdVals[sdVals.length-1]!==null&&<circle cx={xOf(sdVals.length-1)} cy={ySd(sdVals[sdVals.length-1])} r="3" fill={C.warningLight} style={{filter:`drop-shadow(0 0 4px ${C.warningLight})`}}/>}
+                      {/* linha sedimentáveis bezier */}
+                      {hasSd&&sdLinePath&&<path d={sdLinePath} fill="none" stroke={C.warningLight} strokeWidth="2" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${C.warningLight}66)`}}/>}
+                      {hasSd&&sdPtsArr.length>0&&<circle cx={sdPtsArr[sdPtsArr.length-1].split(",")[0]} cy={sdPtsArr[sdPtsArr.length-1].split(",")[1]} r="3" fill={C.warningLight} style={{filter:`drop-shadow(0 0 4px ${C.warningLight})`}}/>}
                     </svg>
                     <div style={{display:"flex",gap:10,padding:"3px 2px 0"}}>
                       <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:12,height:2,background:corEg,display:"inline-block",borderRadius:1}}/><span style={{color:C.textDim,fontSize:7}}>Eficiência %</span></span>
