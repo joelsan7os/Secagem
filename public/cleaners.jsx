@@ -309,7 +309,9 @@ export function CleanersTela({eqState=[]}){
             const efPtsArr=effVals.map((v,i)=>`${xOf(i)},${yEf(v)}`);
             const efLinePath=bPath(efPtsArr);
             const efAreaPath=efLinePath+` L${W},${HU} L0,${HU} Z`;
-            const sdPtsArr=sedimVals.map((v,i)=>v!==null?`${xOf(i)},${ySd(v)}`:null).filter(Boolean);
+            const firstSdVal=sedimVals.find(v=>v!==null);
+            const sdValsFilled=firstSdVal!=null?sedimVals.map((v,i)=>v!==null?v:(i<sedimVals.findIndex(x=>x!==null)?firstSdVal:null)):sedimVals;
+            const sdPtsArr=sdValsFilled.map((v,i)=>v!==null?`${xOf(i)},${ySd(v)}`:null).filter(Boolean);
             const sdLinePath=bPath(sdPtsArr);
             return(
               <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`2px solid ${C.accentLight}`,borderRadius:12,padding:"11px 14px",marginBottom:8}}>
