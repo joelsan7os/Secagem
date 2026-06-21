@@ -2853,7 +2853,9 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
         const nNor=chamA.length-nIme-nUrg;
         const grupos=[["M2",lista1],["M3",lista2],["Comum",lista3]].map(([sub,lst])=>({sub,n:(lst||[]).reduce((a,e)=>a+e.notas.length,0)}));
         const totalN=grupos.reduce((a,g)=>a+g.n,0);
-        const corC=nIme>0?C.dangerLight:nUrg>0?"#FF8C00":chamA.length>0?"#5090FF":C.accentLight;
+        const nTratativa=Object.keys(pendencias).filter(id=>{const todosA=[...(lista1||[]),...(lista2||[]),...(lista3||[])];return todosA.some(e=>e.id===id&&e.status!=="OP");}).length;
+        const totalPend=chamA.length+totalN+nTratativa;
+        const corC=nIme>0?C.dangerLight:nUrg>0?"#FF8C00":totalPend>0?"#5090FF":C.accentLight;
         return(
           <>
             <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:6}}>
@@ -2865,26 +2867,20 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
             <button onClick={()=>setSubModulo("chamados")} style={{width:"100%",background:C.card,border:`1.5px solid ${corC}44`,borderTop:`2px solid ${corC}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",textAlign:"left",marginBottom:14,animation:nIme>0?"trava-pulse 1.8s ease-in-out infinite":"none"}}
               onMouseEnter={e=>e.currentTarget.style.background=`${corC}0d`}
               onMouseLeave={e=>e.currentTarget.style.background=C.card}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                <span style={{color:C.textDim,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"monospace"}}>Chamados & Notas</span>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                <span style={{color:C.textDim,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"monospace"}}>Pendências</span>
                 <span style={{color:C.textDim,fontSize:13}}>›</span>
               </div>
-              <div style={{display:"flex",gap:16,alignItems:"flex-end"}}>
-                <div>
-                  <div style={{color:corC,fontWeight:900,fontSize:28,fontFamily:"monospace",lineHeight:1}}>{chamA.length}</div>
-                  <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em",marginTop:2}}>CHAMADOS</div>
-                </div>
-                {totalN>0&&<div>
-                  <div style={{color:C.warningLight,fontWeight:900,fontSize:28,fontFamily:"monospace",lineHeight:1}}>{totalN}</div>
-                  <div style={{color:C.textDim,fontSize:8,letterSpacing:"0.08em",marginTop:2}}>NOTAS</div>
-                </div>}
-                <div style={{flex:1,display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
-                  {nIme>0&&<span style={{background:`${C.dangerLight}22`,border:`1px solid ${C.dangerLight}55`,color:C.dangerLight,borderRadius:20,padding:"2px 9px",fontSize:10,fontWeight:800,fontFamily:"monospace"}}>{nIme} IMEDIATO</span>}
-                  {nUrg>0&&<span style={{background:"rgba(255,140,0,0.12)",border:"1px solid rgba(255,140,0,0.4)",color:"#FF8C00",borderRadius:20,padding:"2px 9px",fontSize:10,fontWeight:800,fontFamily:"monospace"}}>{nUrg} URGENTE</span>}
-                  {nNor>0&&<span style={{background:"rgba(80,144,255,0.12)",border:"1px solid rgba(80,144,255,0.4)",color:"#5090FF",borderRadius:20,padding:"2px 9px",fontSize:10,fontWeight:800,fontFamily:"monospace"}}>{nNor} NORMAL</span>}
-                  {chamA.length===0&&totalN===0&&<span style={{color:C.accentLight,fontSize:10,fontWeight:700}}>✓ sem pendências</span>}
-                </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                {[{v:chamA.length,l:"CHAMADOS",c:corC,sub:nIme>0?`${nIme} IM · ${nUrg} UR`:nUrg>0?`${nUrg} URGENTE`:null},{v:totalN,l:"NOTAS",c:C.warningLight,sub:null},{v:nTratativa,l:"EM TRATATIVA",c:"#5090FF",sub:null}].map(({v,l,c,sub})=>(
+                  <div key={l} style={{textAlign:"center"}}>
+                    <div style={{color:v>0?c:C.textDim,fontWeight:900,fontSize:26,fontFamily:"monospace",lineHeight:1}}>{v}</div>
+                    <div style={{color:C.textDim,fontSize:7.5,letterSpacing:"0.07em",marginTop:3}}>{l}</div>
+                    {sub&&<div style={{color:c,fontSize:8,fontWeight:700,marginTop:2,fontFamily:"monospace"}}>{sub}</div>}
+                  </div>
+                ))}
               </div>
+              {totalPend===0&&<div style={{color:C.accentLight,fontSize:10,fontWeight:700,textAlign:"center",marginTop:6}}>✓ sem pendências</div>}
             </button>
           </>
         );
