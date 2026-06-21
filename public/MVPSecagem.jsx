@@ -1447,11 +1447,20 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
               const deltaCol=delta>0?C.accentLight:delta<0?C.warningLight:C.textDim;
               // gauge geral
               const r=38,circ=2*Math.PI*r,fillOp=circ*(nOpTotal/totalBoth),fillFora=circ*(foraTotal/totalBoth);
-              // sparkline path + area fill
-              const SW=260,SH=44,smn=Math.max(0,Math.min(...spVals)-8),smx=Math.min(100,Math.max(...spVals)+8),srng=smx-smn||1;
-              const spPts=spVals.map((v,i)=>`${(i/(spVals.length-1))*SW},${SH-(v-smn)/srng*SH}`);
-              const lineStr=spPts.join(" ");
-              const areaStr=`0,${SH} ${lineStr} ${SW},${SH}`;
+              // split chart: cima = eficiência, baixo = sedimentáveis
+              const SW=260,H_SPLIT=72;
+              const HU=Math.round(H_SPLIT*0.43),HG=Math.round(H_SPLIT*0.14),HL=H_SPLIT-HU-HG;
+              const divY=HU+HG/2;
+              const smn=Math.max(0,Math.min(...spVals)-8),smx=Math.min(100,Math.max(...spVals)+8),srng=smx-smn||1;
+              const xOf=(i)=>(i/(spVals.length-1))*SW;
+              const yEf=(v)=>HU-((v-smn)/srng)*HU;
+              const sdVals=spDays.map(d=>{const recs=sedimAll.filter(s=>s.data===d);return recs.length>0?recs[recs.length-1].valor:null;});
+              const sdMax=Math.max(300,...sdVals.filter(v=>v!==null))+30;
+              const ySd=(v)=>HU+HG+(v/sdMax)*HL;
+              const efLineStr=spVals.map((v,i)=>`${xOf(i)},${yEf(v)}`).join(" ");
+              const efAreaStr=`0,${HU} ${efLineStr} ${SW},${HU}`;
+              const hasSd=sdVals.some(v=>v!==null);
+              const sdPts=sdVals.map((v,i)=>v!==null?`${xOf(i)},${ySd(v)}`:null).filter(Boolean).join(" ");
               // último sedim
               const lastSedim=sedimAll.length>0?sedimAll[sedimAll.length-1]:null;
               const corSedim=lastSedim?(lastSedim.valor<150?C.accentLight:lastSedim.valor<=250?C.warningLight:C.dangerLight):null;
@@ -1486,19 +1495,35 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                       </div>
                     </div>
                   </div>
-                  {/* sparkline full-width com area */}
-                  <div style={{marginBottom:10,borderRadius:8,overflow:"hidden",background:"rgba(255,255,255,0.02)",padding:"4px 0 0"}}>
-                    <svg width="100%" height={SH} viewBox={`0 0 ${SW} ${SH}`} preserveAspectRatio="none">
+                  {/* split chart eficiência / sedimentáveis */}
+                  <div style={{marginBottom:10,borderRadius:8,overflow:"hidden",background:"rgba(255,255,255,0.02)",padding:"4px 4px 2px"}}>
+                    <svg width="100%" height={H_SPLIT} viewBox={`0 0 ${SW} ${H_SPLIT}`} preserveAspectRatio="none">
                       <defs>
-                        <linearGradient id="spFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={corEg} stopOpacity="0.25"/>
+                        <linearGradient id="spFillH" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={corEg} stopOpacity="0.22"/>
                           <stop offset="100%" stopColor={corEg} stopOpacity="0.02"/>
                         </linearGradient>
                       </defs>
-                      <polygon points={areaStr} fill="url(#spFill)"/>
-                      <polyline points={lineStr} fill="none" stroke={corEg} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${corEg}88)`}}/>
-                      <circle cx={SW} cy={SH-(spVals[spVals.length-1]-smn)/srng*SH} r="3.5" fill={corEg} style={{filter:`drop-shadow(0 0 4px ${corEg})`}}/>
+                      {/* zonas */}
+                      <rect x={0} y={0} width={SW} height={HU} fill="rgba(0,230,118,0.03)"/>
+                      <rect x={0} y={HU+HG} width={SW} height={HL} fill="rgba(255,193,7,0.03)"/>
+                      {/* divisor */}
+                      <line x1={0} y1={divY} x2={SW} y2={divY} stroke="rgba(255,255,255,0.1)" strokeWidth="1" strokeDasharray="4,4"/>
+                      {/* labels */}
+                      <text x={SW-2} y={9} textAnchor="end" fontSize="7" fill={corEg} fontFamily="monospace" fontWeight="700">EF%</text>
+                      {hasSd&&<text x={SW-2} y={H_SPLIT-2} textAnchor="end" fontSize="7" fill={C.warningLight} fontFamily="monospace" fontWeight="700">mL/L</text>}
+                      {/* área e linha eficiência */}
+                      <polygon points={efAreaStr} fill="url(#spFillH)"/>
+                      <polyline points={efLineStr} fill="none" stroke={corEg} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${corEg}88)`}}/>
+                      <circle cx={xOf(spVals.length-1)} cy={yEf(spVals[spVals.length-1])} r="3" fill={corEg} style={{filter:`drop-shadow(0 0 4px ${corEg})`}}/>
+                      {/* linha sedimentáveis */}
+                      {hasSd&&sdPts&&<polyline points={sdPts} fill="none" stroke={C.warningLight} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${C.warningLight}66)`}}/>}
+                      {hasSd&&sdVals[sdVals.length-1]!==null&&<circle cx={xOf(sdVals.length-1)} cy={ySd(sdVals[sdVals.length-1])} r="3" fill={C.warningLight} style={{filter:`drop-shadow(0 0 4px ${C.warningLight})`}}/>}
                     </svg>
+                    <div style={{display:"flex",gap:10,padding:"3px 2px 0"}}>
+                      <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:12,height:2,background:corEg,display:"inline-block",borderRadius:1}}/><span style={{color:C.textDim,fontSize:7}}>Eficiência %</span></span>
+                      {hasSd&&<span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:12,height:2,background:C.warningLight,display:"inline-block",borderRadius:1}}/><span style={{color:C.textDim,fontSize:7}}>Sedim. mL/L</span></span>}
+                    </div>
                   </div>
                   {/* M2 e M3 */}
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
