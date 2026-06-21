@@ -863,6 +863,7 @@ const CATALOGO = [
   { id:"rejeicao",         label:"Diagnóstico Rejeição",icon:"⚠️",desc:"Fluxo de diagnóstico — Faca circular / Facão / Transversal",porMaquina:false,tipo:"rejeicao",area:"cs",getItems:()=>[] },
   { id:"enf_qualidade",    label:"Check List Qualidade",icon:"", desc:"Qualidade do fardo — todas as linhas",                 porMaquina:false, tipo:"enf",      area:"enf", getItems:()=>checklistEnfardamento },
   { id:"rota_enf",         label:"Rota Enfardamento",   icon:"", desc:"Inspeção por turno — todos os equipamentos",           porMaquina:true,  tipo:"rota_enf", area:"enf", getItems:()=>checklistRotaEnfardamento },
+  { id:"barcode_enf",      label:"Validação de Fardos", icon:"📦", desc:"Leitura de código de barras — Lado A / Lado B",        porMaquina:false, tipo:"barcode_enf",area:"enf", getItems:()=>[] },
 ];
 
 
@@ -1633,6 +1634,37 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
   );
 }
 
+// ─── BarcodeSeletorTela ───────────────────────────────────────────────────────
+function BarcodeSeletorTela() {
+  const [linha,setLinha]=React.useState("L4");
+  const [aberto,setAberto]=React.useState(false);
+  const linhas=["L4","L5","L6","L7","L8"];
+  const maqDaLinha=(l)=>["L4","L5"].includes(l)?"M2":"M3";
+  return (
+    <div>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid #00E676`,borderRadius:12,padding:16,marginBottom:14}}>
+        <div style={{color:"#B5C6DA",fontSize:10,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Selecione a Linha</div>
+        <div style={{display:"flex",gap:8,marginBottom:16}}>
+          {linhas.map(l=>{
+            const ativo=linha===l;
+            const maq=maqDaLinha(l);
+            return(
+              <button key={l} onClick={()=>setLinha(l)} style={{flex:1,padding:"10px 4px",borderRadius:10,cursor:"pointer",border:`2px solid ${ativo?"rgba(255,255,255,0.55)":"rgba(60,255,140,0.15)"}`,background:ativo?"#0E2847":"rgba(255,255,255,0.04)",color:ativo?"#fff":"#B5C6DA",fontWeight:ativo?800:500,fontSize:13,transition:"all .15s",boxShadow:ativo?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>
+                {l}
+                <div style={{fontSize:8,opacity:.6,marginTop:2,fontWeight:400}}>{maq}</div>
+              </button>
+            );
+          })}
+        </div>
+        <button onClick={()=>setAberto(true)} style={{width:"100%",padding:"14px",borderRadius:12,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#006B2E,#00E676)",color:"#fff",fontSize:15,fontWeight:800,letterSpacing:"0.05em",boxShadow:"0 0 16px rgba(0,230,118,0.4)"}}>
+          📷 Iniciar Validação — {linha}
+        </button>
+      </div>
+      {aberto&&<BarcodeModal linha={linha} onFechar={()=>setAberto(false)}/>}
+    </div>
+  );
+}
+
 // ─── EnfardamentoTela ────────────────────────────────────────────────────────
 function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, data }) {
   const agora=new Date();
@@ -1655,7 +1687,6 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
   const [unidade,setUnidade]=useState("");
   const [unitFoto,setUnitFoto]=useState([]);
   const [salvo,setSalvo]=useState(false);
-  const [barcodeAtivo,setBarcodeAtivo]=useState(false);
   const items=checklistEnfardamento;
   const secoes=items.reduce((acc,i)=>{if(!acc[i.secao])acc[i.secao]=[];acc[i.secao].push(i);return acc;},{});
   const setResp=(id,val)=>{setRespostas(p=>({...p,[id]:val}));setSalvo(false);};
@@ -1734,11 +1765,6 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
           </div>
         </div>
       </div>
-        {/* ── VALIDAÇÃO DE FARDOS ── */}
-        <button onClick={()=>setBarcodeAtivo(true)} style={{width:"100%",padding:"11px 14px",borderRadius:10,cursor:"pointer",border:`1px solid ${C.border}`,background:C.tagBg,color:C.accentLight,fontSize:13,fontWeight:700,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-          📦 Validação de Fardos (Lado A / Lado B)
-        </button>
-        {barcodeAtivo&&<BarcodeModal linha={linha} onFechar={()=>setBarcodeAtivo(false)}/>}
         {/* ── UNIT INSPECIONADA ── */}
         <div style={{background:C.tagBg,border:`1px solid ${unitOk?C.accentLight+"66":C.accentLight+"33"}`,borderTop:`2px solid ${unitOk?C.accentLight:C.warningLight}`,borderRadius:10,padding:"11px 12px",marginBottom:12}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -2373,6 +2399,8 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
         <RotaEnfardamentoTela onSalvar={onSalvar} maquina={maquina} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):tipo?.tipo==="enf"?(
         <EnfardamentoTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
+      ):tipo?.tipo==="barcode_enf"?(
+        <BarcodeSeletorTela/>
       ):tipo?.tipo==="rejeicao"?(
         <RejeicaoTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):tipo?.tipo==="wft"?(
