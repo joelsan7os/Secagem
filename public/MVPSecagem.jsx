@@ -2780,40 +2780,22 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
           </div>
         </div>
       )}
-      {/* ── ALARMES + PENDÊNCIAS ── */}
+      {/* ── ALARMES ── */}
       {(()=>{
         const todosA=[...(lista1||[]),...(lista2||[]),...(lista3||[])];
         const falhas=todosA.filter(e=>e.status!=="OP");
         const alarmes=falhas.filter(e=>!pendencias[e.id]);
-        const pendsList=falhas.filter(e=>!!pendencias[e.id]);
         const nAl=falhas.filter(e=>e.status==="ALERTA").length;
         const nMn=falhas.filter(e=>e.status==="MANUTENÇÃO").length;
         const temCrit=nMn>0;
-        const ItemEq=({eq,isPend})=>{
-          const p=pendencias[eq.id];
-          const cor=eq.status==="MANUTENÇÃO"?C.dangerLight:C.warningLight;
-          return(
-            <div key={eq.id} style={{display:"flex",alignItems:"center",gap:8,background:C.tagBg,border:`1px solid ${cor}33`,borderLeft:`3px solid ${cor}`,borderRadius:7,padding:"7px 8px"}}>
-              <span style={{fontSize:12,flexShrink:0}}>{eq.status==="MANUTENÇÃO"?"🔧":"⚡"}</span>
-              <div onClick={()=>setSelId(eq.id)} style={{minWidth:0,flex:1,cursor:"pointer"}}>
-                <div style={{color:C.text,fontSize:11,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{eq.nome}</div>
-                {isPend?(
-                  <div style={{color:C.accentLight,fontSize:8.5,fontFamily:"monospace",fontWeight:700,marginTop:1}}>📋 {p?.nota} · {p?.abertoBy}</div>
-                ):(
-                  <div style={{color:cor,fontSize:8.5,fontFamily:"monospace",fontWeight:700,marginTop:1}}>{eq.status}</div>
-                )}
-              </div>
-              {!isPend&&(
-                <button onClick={e=>{e.stopPropagation();setModalPendencia(eq);setNotaInput("");}} style={{flexShrink:0,background:`${C.accentLight}18`,border:`1px solid ${C.accentLight}44`,borderRadius:7,padding:"4px 8px",cursor:"pointer",color:C.accentLight,fontSize:9,fontWeight:800,whiteSpace:"nowrap"}}>+ nota</button>
-              )}
-              <span onClick={()=>setSelId(eq.id)} style={{color:C.textDim,fontSize:13,flexShrink:0,cursor:"pointer"}}>›</span>
-            </div>
-          );
+        const dispensar=(eq)=>{
+          const nova={...pendencias,[eq.id]:{nota:"",abertoEm:new Date().toISOString(),abertoBy:(storageGet("op_config")||{}).nomeOperador||"—",eqNome:eq.nome,tipo:"tratativa"}};
+          setPendencias(nova);storageSet("pendencias_h2",nova);
         };
         return(
-          <div style={{background:C.card,border:`1px solid ${falhas.length>0?C.dangerLight+"44":C.border}`,borderTop:`2px solid ${falhas.length>0?C.dangerLight:C.accentLight}`,borderRadius:12,padding:"10px 12px",marginBottom:10,boxShadow:temCrit?`0 0 10px ${C.dangerLight}22`:"none"}}>
+          <div style={{background:C.card,border:`1px solid ${alarmes.length>0?C.dangerLight+"44":C.border}`,borderTop:`2px solid ${alarmes.length>0?C.dangerLight:C.accentLight}`,borderRadius:12,padding:"10px 12px",marginBottom:10,boxShadow:temCrit?`0 0 10px ${C.dangerLight}22`:"none"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <span style={{color:falhas.length>0?C.dangerLight:C.textDim,fontSize:9,fontFamily:"monospace",fontWeight:700,letterSpacing:"0.12em"}}>FALHAS</span>
+              <span style={{color:alarmes.length>0?C.dangerLight:C.textDim,fontSize:9,fontFamily:"monospace",fontWeight:700,letterSpacing:"0.12em"}}>ALARMES</span>
               <div style={{display:"flex",gap:10,alignItems:"center"}}>
                 {[{v:nAl,l:"ALERTA",c:C.warningLight},{v:nMn,l:"MANUT",c:C.dangerLight}].map(({v,l,c})=>(
                   <span key={l} style={{display:"flex",alignItems:"center",gap:4}}>
@@ -2824,22 +2806,24 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
                 ))}
               </div>
             </div>
-            {falhas.length===0?(
-              <div style={{color:C.textDim,fontSize:10,fontFamily:"monospace",textAlign:"center",padding:"3px 0"}}>— todos os equipamentos operacionais —</div>
+            {alarmes.length===0?(
+              <div style={{color:C.textDim,fontSize:10,fontFamily:"monospace",textAlign:"center",padding:"3px 0"}}>— sem alarmes ativos —</div>
             ):(
-              <div style={{display:"flex",flexDirection:"column",gap:5,maxHeight:220,overflowY:"auto"}}>
-                {alarmes.length>0&&(
-                  <>
-                    <div style={{color:C.dangerLight,fontSize:8,fontWeight:800,letterSpacing:"0.1em",marginBottom:2}}>ALARMES ({alarmes.length})</div>
-                    {[...alarmes].sort((a,b)=>a.status==="MANUTENÇÃO"&&b.status!=="MANUTENÇÃO"?-1:1).map(eq=><ItemEq key={eq.id} eq={eq} isPend={false}/>)}
-                  </>
-                )}
-                {pendsList.length>0&&(
-                  <>
-                    <div style={{color:"#5090FF",fontSize:8,fontWeight:800,letterSpacing:"0.1em",marginTop:alarmes.length>0?6:0,marginBottom:2}}>PENDÊNCIAS ({pendsList.length})</div>
-                    {pendsList.map(eq=><ItemEq key={eq.id} eq={eq} isPend={true}/>)}
-                  </>
-                )}
+              <div style={{display:"flex",flexDirection:"column",gap:5,maxHeight:200,overflowY:"auto"}}>
+                {[...alarmes].sort((a,b)=>a.status==="MANUTENÇÃO"&&b.status!=="MANUTENÇÃO"?-1:1).map(eq=>{
+                  const cor=eq.status==="MANUTENÇÃO"?C.dangerLight:C.warningLight;
+                  return(
+                    <div key={eq.id} style={{display:"flex",alignItems:"center",gap:6,background:C.tagBg,border:`1px solid ${cor}33`,borderLeft:`3px solid ${cor}`,borderRadius:7,padding:"7px 8px"}}>
+                      <span style={{fontSize:12,flexShrink:0}}>{eq.status==="MANUTENÇÃO"?"🔧":"⚡"}</span>
+                      <div onClick={()=>setSelId(eq.id)} style={{minWidth:0,flex:1,cursor:"pointer"}}>
+                        <div style={{color:C.text,fontSize:11,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{eq.nome}</div>
+                        <div style={{color:cor,fontSize:8.5,fontFamily:"monospace",fontWeight:700,marginTop:1}}>{eq.status}</div>
+                      </div>
+                      <button onClick={e=>{e.stopPropagation();setModalPendencia(eq);setNotaInput("");}} style={{flexShrink:0,background:`${C.accentLight}15`,border:`1px solid ${C.accentLight}44`,borderRadius:7,padding:"4px 7px",cursor:"pointer",color:C.accentLight,fontSize:9,fontWeight:800,whiteSpace:"nowrap"}}>+ nota</button>
+                      <button onClick={e=>{e.stopPropagation();dispensar(eq);}} style={{flexShrink:0,width:26,height:26,borderRadius:6,border:`1px solid ${cor}55`,background:`${cor}11`,color:cor,fontSize:13,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
