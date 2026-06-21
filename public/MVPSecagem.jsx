@@ -3686,7 +3686,7 @@ function ConfiguracoesTela({ perfil, onLogout, onAbrirAdmin }) {
   const [resetErro,setResetErro]=useState("");
   const [resetando,setResetando]=useState(false);
   const [resetOk,setResetOk]=useState(false);
-  const CHAVES_RESET=["historico_h2","ocorrencias_h2","eqstate_h2","chamados_h2","cleaners_h2","cleaners_estoque_h2","cleaners_hist_h2","justificativas_h2","notas_hist_h2"];
+  const CHAVES_RESET=["historico_h2","ocorrencias_h2","eqstate_h2","chamados_h2","cleaners_h2","cleaners_estoque_h2","cleaners_hist_h2","justificativas_h2","notas_hist_h2","cleaners_sedim_h2","pendencias_h2","reconhecimentos_h2","comp_em_h2"];
   const executarReset=async()=>{
     setResetErro("");
     if(resetPin.length!==4){setResetErro("Digite seu PIN de 4 dígitos.");return;}
