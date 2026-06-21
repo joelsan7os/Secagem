@@ -1661,7 +1661,9 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
   const items=checklistEnfardamento;
   const secoes=items.reduce((acc,i)=>{if(!acc[i.secao])acc[i.secao]=[];acc[i.secao].push(i);return acc;},{});
   const setResp=(id,val)=>{setRespostas(p=>({...p,[id]:val}));setSalvo(false);};
-  const respondidos=items.filter(i=>respostas[i.id]).length;
+  const unitOk=lote.trim()!==""&&unidade.trim()!=="";
+  const respondidos=items.filter(i=>respostas[i.id]).length+(unitOk?1:0);
+  const totalItens=items.length+1;
   const alertas=items.filter(i=>i.alertOpcoes?.includes(respostas[i.id])).length;
   const linhaInfo=LINHAS.find(l=>l.id===linha);
   const handleSalvar=()=>{
@@ -1712,8 +1714,11 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
           </div>
         </div>
         {/* ── UNIT INSPECIONADA ── */}
-        <div style={{background:C.tagBg,border:`1px solid ${C.accentLight}33`,borderTop:`2px solid ${C.accentLight}`,borderRadius:10,padding:"11px 12px",marginBottom:12}}>
-          <div style={{color:C.accentLight,fontSize:10,fontWeight:800,letterSpacing:"0.08em",marginBottom:8,textTransform:"uppercase"}}>📦 Unit Inspecionada</div>
+        <div style={{background:C.tagBg,border:`1px solid ${unitOk?C.accentLight+"66":C.accentLight+"33"}`,borderTop:`2px solid ${unitOk?C.accentLight:C.warningLight}`,borderRadius:10,padding:"11px 12px",marginBottom:12}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <span style={{color:unitOk?C.accentLight:C.warningLight,fontSize:10,fontWeight:800,letterSpacing:"0.08em",textTransform:"uppercase"}}>📦 Unit Inspecionada</span>
+            <span style={{color:unitOk?C.accentLight:C.textDim,fontSize:12,fontWeight:900}}>{unitOk?"✓":"○"}</span>
+          </div>
           {/* dados automáticos */}
           <div style={{display:"flex",flexWrap:"wrap",gap:"4px 14px",marginBottom:10}}>
             {[["Ano",String(new Date().getFullYear())],["Mês",String(new Date().getMonth()+1).padStart(2,"0")],["Dia",String(new Date().getDate()).padStart(2,"0")],["Máq",linhaInfo?.maquina||maquina],["Linha",linha],["Hora",hora]].map(([l,v])=>(
@@ -1764,11 +1769,11 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
             <span style={{color:C.textMuted,fontSize:10,textTransform:"uppercase"}}>Progresso</span>
             <span style={{display:"flex",gap:10,alignItems:"center"}}>
               {alertas>0&&<span style={{color:C.dangerLight,fontSize:10,fontWeight:700}}>⚠ {alertas} alerta{alertas>1?"s":""}</span>}
-              <span style={{color:C.white,fontSize:11,fontWeight:700}}>{respondidos}/{items.length}</span>
+              <span style={{color:C.white,fontSize:11,fontWeight:700}}>{respondidos}/{totalItens}</span>
             </span>
           </div>
           <div style={{background:C.tagBg,borderRadius:4,height:6,overflow:"hidden"}}>
-            <div style={{height:"100%",borderRadius:4,transition:"width .3s",width:`${(respondidos/items.length)*100}%`,background:alertas>0?C.dangerLight:respondidos===items.length?C.accentLight:C.accent}}/>
+            <div style={{height:"100%",borderRadius:4,transition:"width .3s",width:`${(respondidos/totalItens)*100}%`,background:alertas>0?C.dangerLight:respondidos===totalItens?C.accentLight:C.accent}}/>
           </div>
         </div>
       </div>
@@ -3619,7 +3624,7 @@ function HistoricoTela({ historico, areaAtiva }) {
       </div>
       <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"8px 0 12px"}}/>
       <div style={{display:"flex",gap:6,marginBottom:14}}>
-        {[{id:"reg",l:"📋 REGISTROS"},{id:"ana",l:"📊 EFICIÊNCIA"},{id:"clean",l:"🌀 CLEANERS"}].map(a=>(
+        {[{id:"reg",l:"📋 REGISTROS"},{id:"ana",l:"📊 EFICIÊNCIA"}].map(a=>(
           <button key={a.id} onClick={()=>setAbaHist(a.id)} style={{flex:1,padding:"8px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.03em",background:abaHist===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${abaHist===a.id?"rgba(255,255,255,0.55)":C.border}`,color:abaHist===a.id?"#fff":C.textMuted,boxShadow:abaHist===a.id?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>{a.l}</button>
         ))}
       </div>
@@ -3627,8 +3632,6 @@ function HistoricoTela({ historico, areaAtiva }) {
         <div>
           <GraficoEficiencia historico={historico}/>
         </div>
-      ):abaHist==="clean"?(
-        <RelatorioCleaners/>
       ):(
       <>
       {(()=>{
@@ -4254,10 +4257,19 @@ function RotasTela({ historico, onVoltar }) {
     return "nao_feito";
   };
 
+  const pushHistJust=(area,rotaId,maquina,motivo,outro,label)=>{
+    try{
+      const hist=storageGet("historico_h2")||[];
+      const reg={id:Date.now()+Math.floor(Math.random()*1000),tipoId:"justificativa",tipoLabel:"Justificativa",rotaRef:rotaId,rotaLabel:label||rotaId,area,maquina:maquina||null,linha:null,turno,letra,hora,data:hoje,motivo,outro:outro||"",operador:cfg.nomeOperador||"",matricula:cfg.matricula||"",noks:0,total:0,justificativa:true};
+      storageSet("historico_h2",[...hist,reg]);
+    }catch{}
+  };
   const justificar=(area,rotaId,maquina,motivo,outro)=>{
     const novas=[...justificativas.filter(j=>!(j.data===hoje&&j.turno===turno&&j.letra===letra&&j.rotaId===rotaId&&j.area===area&&j.maquina===(maquina||null))),
       {id:Date.now(),data:hoje,turno,letra,area,rotaId,maquina:maquina||null,motivo,outro,operador:cfg.nomeOperador||"",matricula:cfg.matricula||"",hora}];
     salvar(novas);
+    const lbl=(ROTAS_CONFIG[area]?.rotas||[]).find(r=>r.id===rotaId&&r.maquina===(maquina||r.maquina))?.label;
+    pushHistJust(area,rotaId,maquina,motivo,outro,lbl);
   };
 
   const justificarTodas=(area,motivo,outro)=>{
@@ -4267,6 +4279,7 @@ function RotasTela({ historico, onVoltar }) {
       if(getStatus(area,r.id,r.maquina)!=="feito"){
         novas=novas.filter(j=>!(j.data===hoje&&j.turno===turno&&j.letra===letra&&j.rotaId===r.id&&j.area===area&&j.maquina===(r.maquina||null)));
         novas.push({id:Date.now()+Math.random(),data:hoje,turno,letra,area,rotaId:r.id,maquina:r.maquina||null,motivo,outro,operador:cfg.nomeOperador||"",matricula:cfg.matricula||"",hora});
+        pushHistJust(area,r.id,r.maquina,motivo,outro,r.label);
       }
     });
     salvar(novas);
