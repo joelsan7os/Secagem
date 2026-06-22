@@ -685,6 +685,8 @@ const checklistCortadeiraM2 = [
     ref:"1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5", unit:"bar", tipo:"faquinhas",
     refs:["1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5"],
     faixas:[[1.5,2.5,"Normal","green"],[2.5,3.5,"Atenção","yellow"],[3.5,4.0,"Crítico","red"]] },
+  { id:"cs2_34", secao:"Faquinhas",  item:"Corte do Facão por Fardo (1 a 12)",
+    ref:"OK", unit:"nível", tipo:"facao_fardos", fardos:12 },
   // EXTRA ────────────────────────────────────────────────────────────────────
   { id:"cs2_32", secao:"Extra",      item:"Atuadores reparados disponíveis na área",
     ref:"—",         unit:"qtde",   tipo:"valor" },
@@ -770,6 +772,8 @@ const checklistCortadeiraM3 = [
     ref:"1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5", unit:"bar", tipo:"faquinhas",
     refs:["1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5"],
     faixas:[[1.5,2.5,"Normal","green"],[2.5,3.5,"Atenção","yellow"],[3.5,4.0,"Crítico","red"]] },
+  { id:"cs3_34", secao:"Faquinhas",  item:"Corte do Facão por Fardo (1 a 12)",
+    ref:"OK", unit:"nível", tipo:"facao_fardos", fardos:12 },
   // EXTRA ────────────────────────────────────────────────────────────────────
   { id:"cs3_32", secao:"Extra",      item:"Atuadores reparados disponíveis na área",
     ref:"—",         unit:"qtde",   tipo:"valor" },
@@ -2237,6 +2241,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
   // Verifica se um item está preenchido (trata duplo_valor, valor_direto, faquinhas)
   const itemPreenchido=(i)=>{
     if(i.tipo==="faquinhas")return true; // grupo de conferência: já validado por padrão
+    if(i.tipo==="facao_fardos")return true; // grupo de conferência por fardo
     if(i.tipo==="duplo_valor"){
       const f=valores[i.id+"_f"], c=valores[i.id+"_c"];
       return f!==undefined&&f!==""&&c!==undefined&&c!==""; // só verde com os dois
@@ -2542,6 +2547,41 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                                   <button onClick={()=>adj(+step)} style={{width:22,height:22,borderRadius:5,border:`1px solid ${C.border}`,background:C.tagBg,color:C.text,fontSize:14,fontWeight:700,cursor:"pointer",lineHeight:1,padding:0}}>+</button>
                                 </div>
                                 <div style={{fontSize:7,color:cor||C.textDim,marginTop:1,fontWeight:700}}>{st==="normal"?"N":st==="atencao"?"A":st==="critico"?"C":ref}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {/* Facão por fardo: grade de níveis OK/Baixo/Médio/Alto */}
+                      {item.tipo==="facao_fardos"&&(
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
+                          {Array.from({length:item.fardos||12}).map((_,fi)=>{
+                            const key=item.id+"_"+fi;
+                            const val=valores[key]||"";
+                            const NIVEIS=[
+                              {id:"ok",label:"OK",cor:"#00E676"},
+                              {id:"baixo",label:"Baixo",cor:"#FFC107"},
+                              {id:"medio",label:"Médio",cor:"#FF8C00"},
+                              {id:"alto",label:"Alto",cor:"#FF5252"},
+                            ];
+                            const atual=NIVEIS.find(n=>n.id===val);
+                            return(
+                              <div key={fi} style={{textAlign:"center",background:C.tagBg,border:`1px solid ${atual?atual.cor+"66":C.border}`,borderRadius:8,padding:"6px 7px"}}>
+                                <div style={{color:atual?atual.cor:C.textMuted,fontSize:9,fontWeight:800,marginBottom:4}}>Fardo {fi+1}</div>
+                                <div style={{display:"flex",gap:3}}>
+                                  {NIVEIS.map(n=>{
+                                    const ativo=val===n.id;
+                                    return(
+                                      <button key={n.id} onClick={()=>{setValores(p=>({...p,[key]:ativo?"":n.id}));setSalvo(false);}}
+                                        style={{width:24,height:22,borderRadius:5,cursor:"pointer",fontSize:8,fontWeight:800,lineHeight:1,padding:0,
+                                          background:ativo?n.cor:C.surface,border:`1px solid ${ativo?n.cor:C.border}`,
+                                          color:ativo?"#fff":n.cor,transition:"all .12s"}}>
+                                        {n.label.slice(0,1)}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                {atual&&<div style={{fontSize:7,color:atual.cor,marginTop:3,fontWeight:700}}>{atual.label}</div>}
                               </div>
                             );
                           })}
