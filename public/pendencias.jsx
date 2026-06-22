@@ -46,10 +46,10 @@ function proximaParadaLabel(iso) {
 }
 
 const JANELAS = [
-  { id:"pu",   label:"Parte Úmida",   cor:"#00E676", impacto:"IMPACTO DIRETO", impCor:"#FF5252", desc:"Parada de máquina" },
-  { id:"cs",   label:"Cortadeira",    cor:"#5090FF", impacto:"PROGRAMÁVEL",    impCor:"#5090FF", desc:"PP — faquinhas, facão" },
-  { id:"enf",  label:"Enfardamento",  cor:"#A87DF0", impacto:"PROGRAMÁVEL",    impCor:"#A87DF0", desc:"PP de linha L4–L8" },
-  { id:"clean",label:"Cleaners",      cor:"#00E5D1", impacto:"IMPACTO DIRETO", impCor:"#FF5252", desc:"Isolamento / válvula" },
+  { id:"pu",   label:"Parte Úmida",        cor:"#00E676", impacto:"IMPACTO DIRETO", impCor:"#FF5252", desc:"Parada de máquina" },
+  { id:"clean",label:"Cleaners",           cor:"#00E5D1", impacto:"IMPACTO DIRETO", impCor:"#FF5252", desc:"Isolamento / válvula" },
+  { id:"cs",   label:"Secador/Cortadeira", cor:"#5090FF", impacto:"PROGRAMÁVEL",    impCor:"#5090FF", desc:"PP — faquinhas, facão, secador" },
+  { id:"enf",  label:"Enfardamento",       cor:"#A87DF0", impacto:"PROGRAMÁVEL",    impCor:"#A87DF0", desc:"PP de linha L4–L8" },
 ];
 const MAQUINAS = ["M2","M3"];
 const PESO_PRAZO = { "Imediato":0, "Urgente":1, "Normal":2, "Programável":3, "":4 };
@@ -66,7 +66,7 @@ const CRIT_COR = { "Crítica":"#FF5252", "Média":"#FFC107", "Baixa":"#00E676" }
 
 function areaParaJanela(area) {
   const a = (area||"").toLowerCase();
-  if (a === "cortadeira" || a === "cs") return "cs";
+  if (a === "cortadeira" || a === "cs" || a === "secador") return "cs";
   if (a === "enfardamento" || a === "enf") return "enf";
   if (a === "cleaners") return "clean";
   return "pu";
@@ -384,7 +384,6 @@ function MuralInterno({ eqState = {}, onVoltar }) {
     );
   }
 
-  const rankAreas = [...JANELAS].sort((a,b)=>(porJanela[b.id]?.length||0)-(porJanela[a.id]?.length||0));
   const janSel = JANELAS.find(j=>j.id===sel) || JANELAS[0];
   const arrSel = porJanela[sel]||[];
   const origensTab = ["Todas", ...Object.keys(origensDe(arrSel))];
@@ -394,10 +393,10 @@ function MuralInterno({ eqState = {}, onVoltar }) {
     <div style={{ padding:"16px 16px 80px" }}>
       <button onClick={onVoltar} style={{ background:C.tagBg, border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:9, padding:"9px 14px", cursor:"pointer", fontSize:12, fontWeight:700, marginBottom:14 }}>← Início</button>
 
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16, flexWrap:"wrap", gap:10 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14, flexWrap:"wrap", gap:10 }}>
         <div>
           <h2 style={{ color:C.text, fontSize:21, fontWeight:900, margin:"0 0 4px", letterSpacing:"0.02em" }}>MURAL DE OPORTUNIDADES</h2>
-          <p style={{ color:C.textMuted, fontSize:12, margin:0 }}>Oportunidades por área · M2 e M3 lado a lado</p>
+          <p style={{ color:C.textMuted, fontSize:12, margin:0 }}>Selecione a área · M2 e M3 lado a lado</p>
         </div>
         <div style={{ display:"flex", gap:8 }}>
           <button onClick={()=>setAddOpen(true)} style={{ padding:"9px 14px", borderRadius:9, border:`1px solid ${C.border}`, background:C.tagBg, color:C.text, fontSize:12, fontWeight:700, cursor:"pointer" }}>+ Adicionar</button>
@@ -407,44 +406,61 @@ function MuralInterno({ eqState = {}, onVoltar }) {
         </div>
       </div>
 
-      <div style={{ marginBottom:12 }}><AreaCard jan={janSel} grande/></div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:12, marginBottom:20 }}>
-        {JANELAS.filter(j=>j.id!==sel).map(jan => <AreaCard key={jan.id} jan={jan}/>)}
-      </div>
-
-      {/* Ranking */}
-      <div style={{ marginBottom:20 }}>
-        <h3 style={{ color:C.text, fontSize:16, fontWeight:800, margin:"0 0 3px" }}>🏆 Ranking de Prioridade</h3>
-        <p style={{ color:C.textDim, fontSize:11, margin:"0 0 12px" }}>Ordenado por volume e criticidade</p>
-        {rankAreas.map((jan, idx) => {
+      {/* ════ SELETORES DE ÁREA (fixos no topo) ════ */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:8, marginBottom:16 }}>
+        {JANELAS.map(jan => {
           const qtd = porJanela[jan.id]?.length||0;
-          const podioCor = idx===0?"#FFD700":idx===1?"#C0C0C0":idx===2?"#CD7F32":C.textDim;
-          const m2 = itensMaq(jan.id,"M2").length, m3 = itensMaq(jan.id,"M3").length;
+          const ativo = sel===jan.id;
           return (
-            <div key={jan.id} onClick={()=>{ setSel(jan.id); setTabOrigem("Todas"); }}
-              className="mural-item" style={{ animationDelay:`${idx*0.05}s`, cursor:"pointer",
-                background:sel===jan.id?`${jan.cor}10`:C.card, border:`1px solid ${sel===jan.id?jan.cor+"66":C.border}`,
-                borderRadius:12, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12 }}>
-              <div style={{ width:30, height:30, borderRadius:8, flexShrink:0, background:`${podioCor}22`, border:`1.5px solid ${podioCor}`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:13, fontFamily:"monospace", color:podioCor }}>{idx+1}</div>
-              <span className={qtd>0?"mural-led":""} style={{ width:9, height:9, borderRadius:"50%", background:jan.cor, flexShrink:0, boxShadow:`0 0 8px ${jan.cor}` }}/>
-              <div style={{ flex:1 }}>
-                <div style={{ color:C.text, fontWeight:800, fontSize:14 }}>{jan.label}</div>
-                <div style={{ display:"flex", gap:8, marginTop:2 }}>
-                  <span style={{ color:C.textDim, fontSize:10, fontFamily:"monospace" }}>M2: {m2}</span>
-                  <span style={{ color:C.textDim, fontSize:10, fontFamily:"monospace" }}>M3: {m3}</span>
-                </div>
+            <button key={jan.id} onClick={()=>{ setSel(jan.id); setTabOrigem("Todas"); }}
+              style={{ position:"relative", cursor:"pointer", textAlign:"center", padding:"11px 6px", borderRadius:12,
+                background: ativo?`${jan.cor}1a`:"rgba(255,255,255,0.025)",
+                border:`1.5px solid ${ativo?jan.cor:C.border}`,
+                boxShadow: ativo?`0 4px 14px ${jan.cor}33`:"none", transition:"all .18s" }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:5, marginBottom:5 }}>
+                <span className={qtd>0?"mural-led":""} style={{ width:8, height:8, borderRadius:"50%", background:qtd>0?jan.cor:C.textDim, boxShadow:qtd>0?`0 0 7px ${jan.cor}`:"none" }}/>
+                <span style={{ fontSize:24, fontWeight:900, fontFamily:"monospace", lineHeight:1, color:qtd>0?(ativo?jan.cor:C.text):C.textDim }}>{qtd}</span>
               </div>
-              <div style={{ textAlign:"right" }}>
-                <div style={{ color:C.text, fontSize:20, fontWeight:900, fontFamily:"monospace", lineHeight:1 }}>{qtd}</div>
-                <div style={{ color:C.textDim, fontSize:9 }}>total</div>
-              </div>
-              <span style={{ color:jan.cor, fontSize:16 }}>›</span>
-            </div>
+              <div style={{ color:ativo?jan.cor:C.textMuted, fontSize:10, fontWeight:800, lineHeight:1.15 }}>{jan.label}</div>
+            </button>
           );
         })}
       </div>
 
-      {/* Tabela */}
+      {/* ════ PAINEL ÚNICO DA ÁREA SELECIONADA ════ */}
+      <div style={{ marginBottom:14 }}><AreaCard jan={janSel} grande/></div>
+
+      {/* Ranking interno da área */}
+      {arrSel.length>0 && (
+        <div style={{ marginBottom:14 }}>
+          <h3 style={{ color:C.text, fontSize:14, fontWeight:800, margin:"0 0 3px" }}>🏆 Prioridade — {janSel.label}</h3>
+          <p style={{ color:C.textDim, fontSize:10, margin:"0 0 10px" }}>Ordenado por criticidade · {arrSel.length} oportunidade{arrSel.length!==1?"s":""}</p>
+          {arrSel.slice(0,3).map((p, idx) => {
+            const podioCor = idx===0?"#FFD700":idx===1?"#C0C0C0":"#CD7F32";
+            const crit = criticidade(p);
+            return (
+              <div key={p.chave} className="mural-item" style={{ animationDelay:`${idx*0.05}s`,
+                background:C.card, border:`1px solid ${C.border}`, borderLeft:`3px solid ${podioCor}`,
+                borderRadius:11, padding:"10px 12px", marginBottom:7, display:"flex", alignItems:"center", gap:11 }}>
+                <div style={{ width:26, height:26, borderRadius:7, flexShrink:0, background:`${podioCor}22`, border:`1.5px solid ${podioCor}`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:12, fontFamily:"monospace", color:podioCor }}>{idx+1}</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ color:C.text, fontWeight:700, fontSize:13, lineHeight:1.3 }}>{p.titulo}</div>
+                  <div style={{ display:"flex", gap:8, marginTop:2, alignItems:"center" }}>
+                    <span style={{ color:corOrig(p.origem), fontSize:9, fontWeight:700 }}>{p.origem}</span>
+                    {p.maquina && <span style={{ color:C.textDim, fontSize:9, fontFamily:"monospace", fontWeight:700 }}>{p.maquina}</span>}
+                  </div>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:5, flexShrink:0 }}>
+                  <span style={{ width:7, height:7, borderRadius:"50%", background:CRIT_COR[crit] }}/>
+                  <span style={{ color:CRIT_COR[crit], fontSize:10, fontWeight:700 }}>{crit}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Tabela completa da área */}
       <div style={{ background:"rgba(10,25,41,0.7)", border:`1px solid ${C.border}`, borderRadius:16, overflow:"hidden" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 16px 0" }}>
           <span style={{ color:janSel.cor, fontSize:15, fontWeight:800 }}>{janSel.label.toUpperCase()}</span>
