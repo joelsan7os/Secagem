@@ -53,7 +53,7 @@ function areaParaJanela(area) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-export function MuralOportunidades({ eqState = {}, onVoltar }) {
+function MuralInterno({ eqState = {}, onVoltar }) {
   const cfg = storageGet("op_config") || {};
   const operador = cfg.nomeOperador || "";
 
@@ -75,64 +75,67 @@ export function MuralOportunidades({ eqState = {}, onVoltar }) {
   // ── Coletar pendências automáticas ──────────────────────────────────────────
   const pendencias = React.useMemo(() => {
     const lista = [];
-
-    // 1. Chamados abertos
-    (chamados||[]).filter(c => c.status === "aberto").forEach(c => {
-      const jan = c.condicao === "Parada de máquina" ? "pu" : areaParaJanela(c.area);
-      lista.push({
-        chave: "cham:"+c.id, janela: jan, origem: "Chamado",
-        titulo: c.equipamentoNome || "Equipamento", tag: c.equipamentoTag || "",
-        descricao: c.descricao || "", nota: c.notaSAP || "", prazo: c.prazo || "",
-        disciplina: c.disciplina || "", maquina: c.maquina || "", area: c.area || "",
-        data: c.dataAbertura || "", operador: c.operador || "", tipo: "auto",
+    try {
+      // 1. Chamados abertos
+      (Array.isArray(chamados)?chamados:[]).filter(c => c && c.status === "aberto").forEach(c => {
+        const jan = c.condicao === "Parada de máquina" ? "pu" : areaParaJanela(c.area);
+        lista.push({
+          chave: "cham:"+c.id, janela: jan, origem: "Chamado",
+          titulo: c.equipamentoNome || "Equipamento", tag: c.equipamentoTag || "",
+          descricao: c.descricao || "", nota: c.notaSAP || "", prazo: c.prazo || "",
+          disciplina: c.disciplina || "", maquina: c.maquina || "", area: c.area || "",
+          data: c.dataAbertura || "", operador: c.operador || "", tipo: "auto",
+        });
       });
-    });
 
-    // 2. Válvula com passagem (cleaners)
-    ["M2","M3"].forEach(mq => {
-      const garrafas = cleaners?.[mq] || {};
-      Object.entries(garrafas).forEach(([key, g]) => {
-        const ms = g?.motivos || (g?.motivo ? [g.motivo] : []);
-        if (ms.includes("Válvula com passagem")) {
-          lista.push({
-            chave: `pass:${mq}:${key}`, janela: "clean", origem: "Cleaners",
-            titulo: `Válvula c/ passagem — ${key}`, tag: mq,
-            descricao: "Válvula com passagem — só resolve com cleaners isolado ou máquina parada",
-            nota: "", prazo: "Urgente", disciplina: "Mecânica", maquina: mq, area: "Cleaners",
-            data: g?.data || "", operador: g?.operador || "", tipo: "auto",
-            multiJanela: ["clean","pu"], // resolve em isolamento OU quebra
-          });
-        }
+      // 2. Válvula com passagem (cleaners)
+      ["M2","M3"].forEach(mq => {
+        const garrafas = (cleaners && cleaners[mq]) || {};
+        Object.entries(garrafas).forEach(([key, g]) => {
+          const ms = g?.motivos || (g?.motivo ? [g.motivo] : []);
+          if (Array.isArray(ms) && ms.includes("Válvula com passagem")) {
+            lista.push({
+              chave: `pass:${mq}:${key}`, janela: "clean", origem: "Cleaners",
+              titulo: `Válvula c/ passagem — ${key}`, tag: mq,
+              descricao: "Válvula com passagem — só resolve com cleaners isolado ou máquina parada",
+              nota: "", prazo: "Urgente", disciplina: "Mecânica", maquina: mq, area: "Cleaners",
+              data: g?.data || "", operador: g?.operador || "", tipo: "auto",
+              multiJanela: ["clean","pu"],
+            });
+          }
+        });
       });
-    });
 
-    // 3. Equipamentos fora de operação (ALERTA / MANUTENÇÃO)
-    const todosEq = [
-      ...(eqState.comum||[]), ...(eqState.m2||[]), ...(eqState.m3||[]),
-      ...(eqState.cs_m2||[]), ...(eqState.cs_m3||[]),
-      ...(eqState.enf_m2||[]), ...(eqState.enf_m3||[]),
-    ];
-    todosEq.filter(e => e.status === "MANUTENÇÃO" || e.status === "ALERTA").forEach(e => {
-      lista.push({
-        chave: "eq:"+e.id, janela: areaParaJanela(e.area), origem: "Equipamento",
-        titulo: e.nome || "Equipamento", tag: e.tag || "",
-        descricao: e.status === "MANUTENÇÃO" ? "Em manutenção / fora de operação" : "Em alerta",
-        nota: "", prazo: e.status === "MANUTENÇÃO" ? "Urgente" : "Normal",
-        disciplina: "", maquina: e.sub || "", area: e.area || "",
-        data: "", operador: "", tipo: "auto",
+      // 3. Equipamentos fora de operação (ALERTA / MANUTENÇÃO)
+      const es = eqState || {};
+      const todosEq = [
+        ...(Array.isArray(es.comum)?es.comum:[]), ...(Array.isArray(es.m2)?es.m2:[]), ...(Array.isArray(es.m3)?es.m3:[]),
+        ...(Array.isArray(es.cs_m2)?es.cs_m2:[]), ...(Array.isArray(es.cs_m3)?es.cs_m3:[]),
+        ...(Array.isArray(es.enf_m2)?es.enf_m2:[]), ...(Array.isArray(es.enf_m3)?es.enf_m3:[]),
+      ];
+      todosEq.filter(e => e && (e.status === "MANUTENÇÃO" || e.status === "ALERTA")).forEach(e => {
+        lista.push({
+          chave: "eq:"+e.id, janela: areaParaJanela(e.area), origem: "Equipamento",
+          titulo: e.nome || "Equipamento", tag: e.tag || "",
+          descricao: e.status === "MANUTENÇÃO" ? "Em manutenção / fora de operação" : "Em alerta",
+          nota: "", prazo: e.status === "MANUTENÇÃO" ? "Urgente" : "Normal",
+          disciplina: "", maquina: e.sub || "", area: e.area || "",
+          data: "", operador: "", tipo: "auto",
+        });
       });
-    });
 
-    // 4. Pendências manuais (abertas)
-    (manuais||[]).filter(p => p.status !== "resolvida").forEach(p => {
-      lista.push({
-        chave: "man:"+p.id, id: p.id, janela: p.janela, origem: "Manual",
-        titulo: p.descricao, tag: "", descricao: p.descricao,
-        nota: p.nota || "", prazo: "", disciplina: "", maquina: "", area: "",
-        data: p.data || "", operador: p.operador || "", tipo: "manual",
+      // 4. Pendências manuais (abertas)
+      (Array.isArray(manuais)?manuais:[]).filter(p => p && p.status !== "resolvida").forEach(p => {
+        lista.push({
+          chave: "man:"+p.id, id: p.id, janela: p.janela, origem: "Manual",
+          titulo: p.descricao, tag: "", descricao: p.descricao,
+          nota: p.nota || "", prazo: "", disciplina: "", maquina: "", area: "",
+          data: p.data || "", operador: p.operador || "", tipo: "manual",
+        });
       });
-    });
-
+    } catch (err) {
+      console.error("Erro ao montar pendências:", err);
+    }
     return lista;
   }, [chamados, cleaners, eqState, manuais]);
 
@@ -298,5 +301,34 @@ export function MuralOportunidades({ eqState = {}, onVoltar }) {
         );
       })}
     </div>
+  );
+}
+
+// ─── Error Boundary — captura erros e mostra na tela (não deixa app preto) ────
+class MuralErrorBoundary extends React.Component {
+  constructor(props){ super(props); this.state={erro:null}; }
+  static getDerivedStateFromError(erro){ return {erro}; }
+  componentDidCatch(erro,info){ console.error("Mural crash:",erro,info); }
+  render(){
+    if(this.state.erro){
+      return (
+        <div style={{padding:"16px 16px 80px"}}>
+          <button onClick={this.props.onVoltar} style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button>
+          <div style={{background:C.card,border:`1px solid ${C.dangerLight}44`,borderLeft:`3px solid ${C.dangerLight}`,borderRadius:12,padding:16}}>
+            <div style={{color:C.dangerLight,fontWeight:800,fontSize:14,marginBottom:8}}>⚠ Erro ao carregar o Mural</div>
+            <pre style={{color:C.textMuted,fontSize:11,whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0,fontFamily:"monospace"}}>{String(this.state.erro?.message||this.state.erro)}</pre>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export function MuralOportunidades(props){
+  return (
+    <MuralErrorBoundary onVoltar={props.onVoltar}>
+      <MuralInterno {...props}/>
+    </MuralErrorBoundary>
   );
 }
