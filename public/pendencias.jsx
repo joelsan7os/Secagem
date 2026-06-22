@@ -460,23 +460,39 @@ function MuralInterno({ eqState = {}, onVoltar }) {
               const cc = critCount(arr);
               const ativo = selMaq===mq;
               const corM = mq==="M2" ? "#00F0FF" : "#C77DFF";
+              const segs = [
+                { v:cc.crit, cor:"#FF5252" },
+                { v:cc.med,  cor:"#FFC107" },
+                { v:cc.baixa,cor:"#00E676" },
+              ];
               return (
                 <button key={mq} onClick={()=>setSelMaq(ativo?null:mq)}
-                  className={ativo?"mural-breathe":""} style={{ "--gc":`${corM}44`, flex:1, cursor:"pointer", textAlign:"left",
-                    background: ativo?`${corM}1a`:"rgba(10,25,41,0.7)", border:`1.5px solid ${ativo?corM:C.border}`,
-                    borderRadius:14, padding:"13px 14px", transition:"all .18s" }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                    <span style={{ color:ativo?corM:C.text, fontSize:15, fontWeight:900, fontFamily:"monospace", ...(ativo?neon(corM):{}) }}>{mq}{ativo?" ●":""}</span>
-                    <span style={{ fontSize:26, fontWeight:900, fontFamily:"monospace", lineHeight:1, color:arr.length>0?(ativo?corM:C.text):C.textDim, ...(arr.length>0?neon(corM):{}) }}>{arr.length}</span>
-                  </div>
-                  <div style={{ display:"flex", gap:10 }}>
-                    {[["Alta",cc.crit,"#FF5252"],["Méd",cc.med,"#FFC107"],["Bax",cc.baixa,"#00E676"]].map(([l,v,co])=>(
-                      <div key={l} style={{ display:"flex", alignItems:"center", gap:4 }}>
-                        <span style={{ width:6, height:6, borderRadius:"50%", background:co, boxShadow:`0 0 6px ${co}` }}/>
-                        <span style={{ color:C.text, fontSize:11, fontWeight:700 }}>{v}</span>
-                        <span style={{ color:C.textDim, fontSize:9 }}>{l}</span>
+                  className={ativo?"mural-breathe":""} style={{ "--gc":`${corM}55`, flex:1, cursor:"pointer", textAlign:"left", position:"relative", overflow:"hidden",
+                    background: `linear-gradient(155deg, ${corM}12, rgba(7,24,40,0.97))`,
+                    border:`1.5px solid ${ativo?corM:corM+"44"}`,
+                    borderRadius:16, padding:"14px 15px", transition:"all .18s",
+                    boxShadow: ativo?`0 8px 28px ${corM}33`:`0 4px 16px ${corM}11` }}>
+                  {/* linha de luz no topo */}
+                  <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:`linear-gradient(90deg, ${corM}, transparent)` }}/>
+                  {/* blueprint sutil */}
+                  <div style={{ position:"absolute", inset:0, pointerEvents:"none", opacity:0.3, backgroundImage:`radial-gradient(${corM}1a 1px, transparent 1px)`, backgroundSize:"16px 16px" }}/>
+                  <div style={{ position:"relative" }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+                      <span style={{ color:ativo?corM:C.text, fontSize:15, fontWeight:900, fontFamily:"monospace", letterSpacing:"0.05em", ...(neon(corM)) }}>{mq}{ativo?" ●":""}</span>
+                      <span className={arr.length>0?"mural-led":""} style={{ "--lc":corM, width:9, height:9, borderRadius:"50%", background:arr.length>0?corM:C.textDim, boxShadow:arr.length>0?`0 0 8px ${corM}`:"none" }}/>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                      <DonutGauge total={arr.length} segs={segs} cor={corM} size={64}/>
+                      <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+                        {[["Alta",cc.crit,"#FF5252"],["Méd",cc.med,"#FFC107"],["Bax",cc.baixa,"#00E676"]].map(([l,v,co])=>(
+                          <div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                            <span style={{ width:7, height:7, borderRadius:"50%", background:co, boxShadow:v>0?`0 0 6px ${co}`:"none" }}/>
+                            <span style={{ color:v>0?C.text:C.textDim, fontSize:12, fontWeight:800 }}>{v}</span>
+                            <span style={{ color:C.textDim, fontSize:9 }}>{l}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </button>
               );
