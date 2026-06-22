@@ -253,6 +253,10 @@ function MuralInterno({ eqState = {}, onVoltar }) {
   }, [pendencias]);
 
   const totalGlobal = JANELAS.reduce((acc,j)=>acc+(porJanela[j.id]?.length||0),0);
+  // total por máquina somando todas as áreas (para seletor M2/M3/Geral)
+  const totalMaqGlobal = (mq) => JANELAS.reduce((acc,j)=>acc+(porJanela[j.id]||[]).filter(p=>mq==="Geral"?true:(p.maquina===mq||(!p.maquina&&mq==="M2"))).length, 0);
+  // qtd de uma área respeitando a máquina fixada
+  const qtdAreaMaq = (janId) => (porJanela[janId]||[]).filter(p=>!selMaq?true:(p.maquina===selMaq||(!p.maquina&&selMaq==="M2"))).length;
 
   // helpers por máquina
   const itensMaq = (janId, mq) => (porJanela[janId]||[]).filter(p => p.maquina===mq || (!p.maquina && mq==="M2"));
@@ -315,17 +319,11 @@ function MuralInterno({ eqState = {}, onVoltar }) {
     const segs = Object.keys(origens).map(o=>({ v:origens[o], cor:corOrig(o) }));
     const tempo = tempoMaq(jan.id, mq);
     const parada = proximaParadaLabel(paradas[`${jan.id}:${mq}`]);
-    const evidencia = selMaq === mq;
 
     return (
-      <div onClick={(e)=>{ e.stopPropagation(); setSelMaq(evidencia?null:mq); }}
-        style={{ flex:1, minWidth:0, cursor:"pointer", transition:"all .18s",
-          background: evidencia?`${jan.cor}14`:"rgba(4,17,29,0.5)",
-          border:`1.5px solid ${evidencia?jan.cor:C.border}`, borderRadius:11, padding:"11px 12px",
-          boxShadow: evidencia?`0 4px 16px ${jan.cor}33`:"none",
-          transform: evidencia?"translateY(-2px)":"none" }}>
+      <div style={{ flex:1, minWidth:0, background:"rgba(4,17,29,0.5)", border:`1px solid ${C.border}`, borderRadius:11, padding:"11px 12px" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-          <span style={{ color:evidencia?jan.cor:C.text, fontSize:12, fontWeight:800, fontFamily:"monospace", letterSpacing:"0.05em" }}>{mq}{evidencia?" ●":""}</span>
+          <span style={{ color:C.text, fontSize:12, fontWeight:800, fontFamily:"monospace", letterSpacing:"0.05em" }}>{mq}</span>
           <span className={qtd>0?"mural-led":""} style={{ width:8, height:8, borderRadius:"50%", background:qtd>0?jan.cor:C.textDim, boxShadow:qtd>0?`0 0 6px ${jan.cor}`:"none" }}/>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -378,9 +376,9 @@ function MuralInterno({ eqState = {}, onVoltar }) {
           </div>
           <span style={{ background:`${jan.impCor}1f`, border:`1px solid ${jan.impCor}55`, color:jan.impCor, borderRadius:6, padding:"2px 8px", fontSize:8, fontWeight:800 }}>{jan.impacto}</span>
         </div>
-        {/* M2 + M3 lado a lado */}
+        {/* M2 + M3 lado a lado (ou só a máquina fixada) */}
         <div style={{ display:"flex", gap:9 }}>
-          {MAQUINAS.map(mq => <MaqBlock key={mq} jan={jan} mq={mq} grande={grande}/>)}
+          {(selMaq?[selMaq]:MAQUINAS).map(mq => <MaqBlock key={mq} jan={jan} mq={mq} grande={grande}/>)}
         </div>
         {/* ações */}
         <div style={{ display:"flex", gap:8, marginTop:12, paddingTop:11, borderTop:`1px solid ${C.border}` }}>
@@ -414,13 +412,33 @@ function MuralInterno({ eqState = {}, onVoltar }) {
         </div>
       </div>
 
-      {/* ════ SELETORES DE ÁREA (fixos no topo) ════ */}
+      {/* ════ SELETOR DE MÁQUINA (M2 / M3 / Geral) — fixo no topo ════ */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12 }}>
+        {[["M2","M2"],["M3","M3"],["Geral",null]].map(([lbl,val]) => {
+          const ativo = selMaq===val;
+          const qtd = totalMaqGlobal(lbl);
+          return (
+            <button key={lbl} onClick={()=>setSelMaq(val)}
+              style={{ cursor:"pointer", textAlign:"center", padding:"10px 6px", borderRadius:12,
+                background: ativo?"rgba(80,144,255,0.16)":"rgba(255,255,255,0.025)",
+                border:`1.5px solid ${ativo?"#5090FF":C.border}`,
+                boxShadow: ativo?"0 4px 14px rgba(80,144,255,0.3)":"none", transition:"all .18s" }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                <span style={{ fontSize:15, fontWeight:900, fontFamily:"monospace", color:ativo?"#5090FF":C.text }}>{lbl}</span>
+                <span style={{ fontSize:13, fontWeight:800, fontFamily:"monospace", color:qtd>0?(ativo?"#5090FF":C.textMuted):C.textDim }}>({qtd})</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ════ SELETORES DE ÁREA (respeitam a máquina fixa) ════ */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:8, marginBottom:16 }}>
         {JANELAS.map(jan => {
-          const qtd = porJanela[jan.id]?.length||0;
+          const qtd = qtdAreaMaq(jan.id);
           const ativo = sel===jan.id;
           return (
-            <button key={jan.id} onClick={()=>{ setSel(jan.id); setTabOrigem("Todas"); setSelMaq(null); }}
+            <button key={jan.id} onClick={()=>{ setSel(jan.id); setTabOrigem("Todas"); }}
               style={{ position:"relative", cursor:"pointer", textAlign:"center", padding:"11px 6px", borderRadius:12,
                 background: ativo?`${jan.cor}1a`:"rgba(255,255,255,0.025)",
                 border:`1.5px solid ${ativo?jan.cor:C.border}`,
