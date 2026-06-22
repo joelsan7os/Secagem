@@ -121,6 +121,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
   const [historico, setHistorico] = React.useState(() => storageGet("historico_h2") || []);
   const [paradas, setParadas]   = React.useState(() => storageGet("paradas_h2") || {});
   const [sel, setSel]           = React.useState("pu");
+  const [selMaq, setSelMaq]     = React.useState(null);  // null=ambas, "M2", "M3"
   const [tabOrigem, setTabOrigem] = React.useState("Todas");
   const [addOpen, setAddOpen]   = React.useState(false);
   const [agOpen, setAgOpen]     = React.useState(null);   // {janId} ao agendar
@@ -314,11 +315,17 @@ function MuralInterno({ eqState = {}, onVoltar }) {
     const segs = Object.keys(origens).map(o=>({ v:origens[o], cor:corOrig(o) }));
     const tempo = tempoMaq(jan.id, mq);
     const parada = proximaParadaLabel(paradas[`${jan.id}:${mq}`]);
+    const evidencia = selMaq === mq;
 
     return (
-      <div style={{ flex:1, minWidth:0, background:"rgba(4,17,29,0.5)", border:`1px solid ${C.border}`, borderRadius:11, padding:"11px 12px" }}>
+      <div onClick={()=>setSelMaq(evidencia?null:mq)}
+        style={{ flex:1, minWidth:0, cursor:"pointer", transition:"all .18s",
+          background: evidencia?`${jan.cor}14`:"rgba(4,17,29,0.5)",
+          border:`1.5px solid ${evidencia?jan.cor:C.border}`, borderRadius:11, padding:"11px 12px",
+          boxShadow: evidencia?`0 4px 16px ${jan.cor}33`:"none",
+          transform: evidencia?"translateY(-2px)":"none" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-          <span style={{ color:C.text, fontSize:12, fontWeight:800, fontFamily:"monospace", letterSpacing:"0.05em" }}>{mq}</span>
+          <span style={{ color:evidencia?jan.cor:C.text, fontSize:12, fontWeight:800, fontFamily:"monospace", letterSpacing:"0.05em" }}>{mq}{evidencia?" ●":""}</span>
           <span className={qtd>0?"mural-led":""} style={{ width:8, height:8, borderRadius:"50%", background:qtd>0?jan.cor:C.textDim, boxShadow:qtd>0?`0 0 6px ${jan.cor}`:"none" }}/>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -358,7 +365,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
     const qtd = arr.length;
     const ativo = sel === jan.id;
     return (
-      <div onClick={()=>{ setSel(jan.id); setTabOrigem("Todas"); }}
+      <div onClick={()=>{ setSel(jan.id); setTabOrigem("Todas"); setSelMaq(null); }}
         style={{ position:"relative", overflow:"hidden", cursor:"pointer",
           background: ativo?`linear-gradient(155deg, ${jan.cor}10, rgba(7,24,40,0.96))`:"rgba(10,25,41,0.7)",
           border:`1.5px solid ${ativo?jan.cor+"88":C.border}`, borderRadius:16, padding:15,
@@ -378,14 +385,15 @@ function MuralInterno({ eqState = {}, onVoltar }) {
         {/* ações */}
         <div style={{ display:"flex", gap:8, marginTop:12, paddingTop:11, borderTop:`1px solid ${C.border}` }}>
           <button onClick={(e)=>{ e.stopPropagation(); setAgOpen({janId:jan.id}); setAgMaq("M2"); }} style={{ flex:1, background:C.tagBg, border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:8, padding:"7px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📅 Agendar parada</button>
-          <button onClick={()=>{ setSel(jan.id); setTabOrigem("Todas"); }} style={{ flex:1, background:`${jan.cor}14`, border:`1px solid ${jan.cor}44`, color:jan.cor, borderRadius:8, padding:"7px", fontSize:11, fontWeight:700, cursor:"pointer" }}>Ver oportunidades ›</button>
+          <button onClick={()=>{ setSel(jan.id); setTabOrigem("Todas"); setSelMaq(null); }} style={{ flex:1, background:`${jan.cor}14`, border:`1px solid ${jan.cor}44`, color:jan.cor, borderRadius:8, padding:"7px", fontSize:11, fontWeight:700, cursor:"pointer" }}>Ver oportunidades ›</button>
         </div>
       </div>
     );
   }
 
   const janSel = JANELAS.find(j=>j.id===sel) || JANELAS[0];
-  const arrSel = porJanela[sel]||[];
+  const arrSelTodas = porJanela[sel]||[];
+  const arrSel = selMaq ? arrSelTodas.filter(p => p.maquina===selMaq || (!p.maquina && selMaq==="M2")) : arrSelTodas;
   const origensTab = ["Todas", ...Object.keys(origensDe(arrSel))];
   const arrFiltrado = tabOrigem==="Todas" ? arrSel : arrSel.filter(p=>p.origem===tabOrigem);
 
@@ -412,7 +420,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
           const qtd = porJanela[jan.id]?.length||0;
           const ativo = sel===jan.id;
           return (
-            <button key={jan.id} onClick={()=>{ setSel(jan.id); setTabOrigem("Todas"); }}
+            <button key={jan.id} onClick={()=>{ setSel(jan.id); setTabOrigem("Todas"); setSelMaq(null); }}
               style={{ position:"relative", cursor:"pointer", textAlign:"center", padding:"11px 6px", borderRadius:12,
                 background: ativo?`${jan.cor}1a`:"rgba(255,255,255,0.025)",
                 border:`1.5px solid ${ativo?jan.cor:C.border}`,
@@ -464,7 +472,13 @@ function MuralInterno({ eqState = {}, onVoltar }) {
       <div style={{ background:"rgba(10,25,41,0.7)", border:`1px solid ${C.border}`, borderRadius:16, overflow:"hidden" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 16px 0" }}>
           <span style={{ color:janSel.cor, fontSize:15, fontWeight:800 }}>{janSel.label.toUpperCase()}</span>
-          <span style={{ background:`${janSel.impCor}1f`, border:`1px solid ${janSel.impCor}55`, color:janSel.impCor, borderRadius:6, padding:"2px 8px", fontSize:8, fontWeight:800 }}>{janSel.impacto}</span>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ color:selMaq?janSel.cor:C.textDim, fontSize:10, fontWeight:700, fontFamily:"monospace" }}>
+              {selMaq ? `▶ ${selMaq}` : "M2 + M3"}
+            </span>
+            {selMaq && <button onClick={()=>setSelMaq(null)} style={{ background:"none", border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:6, padding:"2px 8px", fontSize:9, cursor:"pointer" }}>limpar</button>}
+            <span style={{ background:`${janSel.impCor}1f`, border:`1px solid ${janSel.impCor}55`, color:janSel.impCor, borderRadius:6, padding:"2px 8px", fontSize:8, fontWeight:800 }}>{janSel.impacto}</span>
+          </div>
         </div>
         <div style={{ display:"flex", gap:4, padding:"10px 16px 0", borderBottom:`1px solid ${C.border}`, overflowX:"auto" }}>
           {origensTab.map(o => {
