@@ -1,12 +1,11 @@
 // ─── pendencias.jsx — Mural de Oportunidades · Secagem H2 · Indústria 5.0 ─────
-// Card "torre de controle": glassmorphism, blueprint grid, tiles-reatores com
-// led-pulse, hero number animado, ranking de prioridade em cascata.
-// Fontes automáticas (só leitura): chamados, válvula c/ passagem, equip. fora.
+// Cards de área com donut gauge, breakdown por origem, badges de criticidade,
+// ranking com pódio, tabela com abas. Adaptado mobile (empilha).
+// Fontes auto (leitura): chamados, válvula c/ passagem, equip. fora.
 // Fonte manual (editável): pendencias_h2. Exporta .xlsx via SheetJS (CDN).
 import * as React from "react";
 import { COL, doc, setDoc, getDoc } from "./firebase";
 
-// ── Paleta ────────────────────────────────────────────────────────────────────
 const C = {
   bg:"#04111D", surface:"#071828", card:"#0A1929",
   accent:"#00E676", accentLight:"#00E676", accentDark:"#006B2E",
@@ -18,7 +17,6 @@ const C = {
 };
 const inputStyle={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",color:"#fff",fontSize:14,outline:"none"};
 
-// ── Storage helpers ───────────────────────────────────────────────────────────
 const storageGet = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const storageSet = (k, v) => {
   try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
@@ -29,21 +27,28 @@ const cloudGet = async (k) => {
   return storageGet(k);
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const hoje      = () => new Date().toISOString().slice(0,10);
 const horaAtual = () => new Date().toTimeString().slice(0,5);
 const fmtData   = d => { if(!d) return "—"; const [y,m,dd]=d.split("-"); return `${dd}/${m}/${y}`; };
 
-// ── Janelas de oportunidade (cor por área, sem emoji) ─────────────────────────
+// ── Janelas (cor + tipo de impacto) ───────────────────────────────────────────
 const JANELAS = [
-  { id:"pu",   label:"Parte Úmida",   sigla:"PU",  cor:"#FF5252", desc:"Parada de máquina" },
-  { id:"cs",   label:"Cortadeira",    sigla:"CS",  cor:"#5090FF", desc:"PP — faquinhas, facão" },
-  { id:"enf",  label:"Enfardamento",  sigla:"ENF", cor:"#FFC107", desc:"PP de linha L4–L8" },
-  { id:"clean",label:"Cleaners",      sigla:"CLN", cor:"#00E5D1", desc:"Isolamento / válvula" },
+  { id:"pu",   label:"Parte Úmida",   cor:"#00E676", impacto:"IMPACTO DIRETO", impCor:"#FF5252", desc:"Parada de máquina" },
+  { id:"cs",   label:"Cortadeira",    cor:"#5090FF", impacto:"PROGRAMÁVEL",    impCor:"#5090FF", desc:"PP — faquinhas, facão" },
+  { id:"enf",  label:"Enfardamento",  cor:"#A87DF0", impacto:"PROGRAMÁVEL",    impCor:"#A87DF0", desc:"PP de linha L4–L8" },
+  { id:"clean",label:"Cleaners",      cor:"#00E5D1", impacto:"IMPACTO DIRETO", impCor:"#FF5252", desc:"Isolamento / válvula" },
 ];
 
-// Peso de prioridade (menor = mais urgente, sobe no ranking)
 const PESO_PRAZO = { "Imediato":0, "Urgente":1, "Normal":2, "Programável":3, "":4 };
+
+// Criticidade: Imediato→Crítica, Urgente/Cleaners→Média-alta, Normal→Média, Programável→Baixa
+function criticidade(p) {
+  if (p.prazo==="Imediato" || p.descricao?.includes("manutenção")) return "Crítica";
+  if (p.prazo==="Urgente" || p.origem==="Cleaners") return "Crítica";
+  if (p.prazo==="Normal" || p.prazo==="") return "Média";
+  return "Baixa";
+}
+const CRIT_COR = { "Crítica":"#FF5252", "Média":"#FFC107", "Baixa":"#00E676" };
 
 function areaParaJanela(area) {
   const a = (area||"").toLowerCase();
@@ -52,26 +57,50 @@ function areaParaJanela(area) {
   if (a === "cleaners") return "clean";
   return "pu";
 }
-
-// Score de prioridade para ranking (menor = mais crítico)
 function scorePrioridade(p) {
   let s = (PESO_PRAZO[p.prazo] ?? 4) * 100;
-  if (p.origem === "Cleaners") s -= 50;        // válvula c/ passagem = dor principal
+  if (p.origem === "Cleaners") s -= 50;
   if (p.descricao?.includes("manutenção")) s -= 20;
   return s;
 }
 
-// ── Animações CSS ─────────────────────────────────────────────────────────────
 const STYLES = `
-@keyframes mural-led { 0%,100%{opacity:1;box-shadow:0 0 0 0 var(--lc);} 50%{opacity:.55;box-shadow:0 0 0 5px transparent;} }
+@keyframes mural-led { 0%,100%{opacity:1;} 50%{opacity:.5;} }
 @keyframes mural-stagger { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:none;} }
-@keyframes mural-crit { 0%,100%{box-shadow:inset 3px 0 0 0 var(--cc),0 0 0 0 rgba(255,82,82,.5);} 50%{box-shadow:inset 3px 0 0 0 var(--cc),-2px 0 8px 0 rgba(255,82,82,.4);} }
-@keyframes mural-sev { 0%,100%{opacity:.85;} 50%{opacity:1;} }
+@keyframes mural-dash { from{stroke-dashoffset:var(--circ);} to{stroke-dashoffset:var(--off);} }
 .mural-led { animation: mural-led 1.8s ease-in-out infinite; }
 .mural-item { animation: mural-stagger .3s ease backwards; }
-.mural-crit { animation: mural-crit 1.4s ease-in-out infinite; }
-.mural-sev-pulse { animation: mural-sev 1.5s ease-in-out infinite; }
+.mural-ring { animation: mural-dash 1s ease forwards; }
 `;
+
+// ── Donut gauge (SVG puro) ────────────────────────────────────────────────────
+function DonutGauge({ total, segs, cor }) {
+  const R=46, SW=10, circ=2*Math.PI*R;
+  let acc=0;
+  const partes = segs.filter(s=>s.v>0);
+  return (
+    <div style={{ position:"relative", width:120, height:120, flexShrink:0 }}>
+      <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform:"rotate(-90deg)" }}>
+        <circle cx="60" cy="60" r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={SW}/>
+        {partes.map((s,i) => {
+          const frac = total>0 ? s.v/total : 0;
+          const len = frac*circ;
+          const off = -acc*circ;
+          acc += frac;
+          return (
+            <circle key={i} cx="60" cy="60" r={R} fill="none" stroke={s.cor} strokeWidth={SW}
+              strokeDasharray={`${len} ${circ-len}`} strokeDashoffset={off} strokeLinecap="round"
+              style={{ filter:`drop-shadow(0 0 4px ${s.cor}88)` }}/>
+          );
+        })}
+      </svg>
+      <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+        <span style={{ fontSize:34, fontWeight:900, fontFamily:"monospace", lineHeight:1, color:cor, textShadow:`0 0 14px ${cor}66` }}>{total}</span>
+        <span style={{ color:C.textDim, fontSize:8, letterSpacing:"0.18em", marginTop:2 }}>TOTAL</span>
+      </div>
+    </div>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 function MuralInterno({ eqState = {}, onVoltar }) {
@@ -81,13 +110,13 @@ function MuralInterno({ eqState = {}, onVoltar }) {
   const [manuais, setManuais]   = React.useState(() => storageGet("pendencias_h2") || []);
   const [chamados, setChamados] = React.useState(() => storageGet("chamados_h2") || []);
   const [cleaners, setCleaners] = React.useState(() => storageGet("cleaners_h2") || {M2:{},M3:{}});
-  const [sel, setSel]           = React.useState(null);   // área selecionada
+  const [sel, setSel]           = React.useState("pu");
+  const [tabOrigem, setTabOrigem] = React.useState("Todas");
   const [addOpen, setAddOpen]   = React.useState(false);
   const [exportando, setExportando] = React.useState(false);
   const [janelaAdd, setJanelaAdd]   = React.useState("pu");
   const [descAdd, setDescAdd]       = React.useState("");
   const [notaAdd, setNotaAdd]       = React.useState("");
-  const [heroAnim, setHeroAnim]     = React.useState(0);   // count-up
 
   React.useEffect(() => {
     if (!document.getElementById("mural-styles")) {
@@ -98,7 +127,6 @@ function MuralInterno({ eqState = {}, onVoltar }) {
     cloudGet("cleaners_h2").then(d => { if (d) setCleaners(d); });
   }, []);
 
-  // ── Coletar pendências (lógica preservada + blindada) ───────────────────────
   const pendencias = React.useMemo(() => {
     const lista = [];
     try {
@@ -145,34 +173,35 @@ function MuralInterno({ eqState = {}, onVoltar }) {
     return lista;
   }, [chamados, cleaners, eqState, manuais]);
 
-  // Agrupar por janela
   const porJanela = React.useMemo(() => {
     const g = { pu:[], cs:[], enf:[], clean:[] };
     pendencias.forEach(p => {
       if (p.multiJanela) p.multiJanela.forEach(j => g[j]?.push(p));
       else g[p.janela]?.push(p);
     });
-    // ordenar cada área por prioridade
     Object.keys(g).forEach(k => g[k].sort((a,b)=>scorePrioridade(a)-scorePrioridade(b)));
     return g;
   }, [pendencias]);
 
   const totalGlobal = JANELAS.reduce((acc,j)=>acc+(porJanela[j.id]?.length||0),0);
-  const criticos = pendencias.filter(p=>p.prazo==="Imediato"||p.prazo==="Urgente"||p.origem==="Cleaners").length;
-  // severidade 0..1
-  const severidade = totalGlobal===0?0:Math.min(1, criticos/Math.max(totalGlobal,1) + (criticos>0?0.2:0));
-  const sevCor = severidade>0.5?C.dangerLight:severidade>0.2?C.warningLight:C.accentLight;
 
-  // Count-up do hero
-  React.useEffect(() => {
-    let raf, ini=null; const dur=600; const alvo=totalGlobal;
-    const tick=(t)=>{ if(ini===null)ini=t; const p=Math.min(1,(t-ini)/dur);
-      setHeroAnim(Math.round(alvo*p)); if(p<1)raf=requestAnimationFrame(tick); };
-    raf=requestAnimationFrame(tick);
-    return ()=>cancelAnimationFrame(raf);
-  }, [totalGlobal]);
+  // contagem de criticidade por área
+  function critCount(janId) {
+    const arr = porJanela[janId]||[];
+    return {
+      crit: arr.filter(p=>criticidade(p)==="Crítica").length,
+      med:  arr.filter(p=>criticidade(p)==="Média").length,
+      baixa:arr.filter(p=>criticidade(p)==="Baixa").length,
+    };
+  }
+  // breakdown por origem (pra donut e tabela)
+  function origensDe(janId) {
+    const arr = porJanela[janId]||[];
+    const m = {};
+    arr.forEach(p => { m[p.origem]=(m[p.origem]||0)+1; });
+    return m;
+  }
 
-  // ── Ações ───────────────────────────────────────────────────────────────────
   function addManual() {
     if (!descAdd.trim()) return;
     const nova = { id:Date.now(), janela:janelaAdd, descricao:descAdd.trim(), nota:notaAdd.trim(), data:hoje(), hora:horaAtual(), operador, status:"aberta" };
@@ -191,11 +220,11 @@ function MuralInterno({ eqState = {}, onVoltar }) {
       const linhas = [];
       JANELAS.forEach(jan => (porJanela[jan.id]||[]).forEach((p,i) => linhas.push({
         "Área":jan.label, "Rank":i+1, "Origem":p.origem, "Pendência":p.titulo, "TAG":p.tag,
-        "Descrição":p.descricao, "Nota SAP":p.nota, "Prazo":p.prazo, "Disciplina":p.disciplina,
-        "Máquina":p.maquina, "Data":fmtData(p.data), "Operador":p.operador,
+        "Criticidade":criticidade(p), "Descrição":p.descricao, "Nota SAP":p.nota, "Prazo":p.prazo,
+        "Disciplina":p.disciplina, "Máquina":p.maquina, "Data":fmtData(p.data), "Operador":p.operador,
       })));
       const ws = window.XLSX.utils.json_to_sheet(linhas);
-      ws["!cols"]=[{wch:16},{wch:6},{wch:12},{wch:32},{wch:18},{wch:40},{wch:14},{wch:12},{wch:14},{wch:8},{wch:12},{wch:16}];
+      ws["!cols"]=[{wch:16},{wch:6},{wch:12},{wch:32},{wch:18},{wch:12},{wch:40},{wch:14},{wch:12},{wch:14},{wch:8},{wch:12},{wch:16}];
       const wb = window.XLSX.utils.book_new();
       window.XLSX.utils.book_append_sheet(wb, ws, "Oportunidades");
       window.XLSX.writeFile(wb, `Mural_Oportunidades_${hoje()}.xlsx`);
@@ -209,149 +238,197 @@ function MuralInterno({ eqState = {}, onVoltar }) {
     } else gerar();
   }
 
-  const lista = sel ? (porJanela[sel]||[]) : [];
-  const janSel = JANELAS.find(j=>j.id===sel);
+  // ── Card de área grande ─────────────────────────────────────────────────────
+  function AreaCard({ jan, grande }) {
+    const arr = porJanela[jan.id]||[];
+    const qtd = arr.length;
+    const cc = critCount(jan.id);
+    const origens = origensDe(jan.id);
+    const ativo = sel === jan.id;
+    const origNomes = Object.keys(origens);
+    const segs = origNomes.map(o => ({
+      v:origens[o],
+      cor: o==="Chamado"?"#5090FF":o==="Cleaners"?"#00E5D1":o==="Equipamento"?C.warningLight:C.accentLight
+    }));
 
-  // ── Item do ranking ─────────────────────────────────────────────────────────
-  function RankItem({ p, idx }) {
-    const critico = p.prazo==="Imediato"||p.prazo==="Urgente"||p.origem==="Cleaners";
-    const corOrigem = p.origem==="Chamado"?"#5090FF":p.origem==="Cleaners"?"#00E5D1":p.origem==="Equipamento"?C.warningLight:C.accentLight;
-    const podio = idx<3;
-    const podioCor = idx===0?"#FFD700":idx===1?"#C0C0C0":"#CD7F32";
     return (
-      <div className={"mural-item"+(critico?" mural-crit":"")}
-        style={{ "--cc":corOrigem, animationDelay:`${idx*0.05}s`,
-          background:C.card, border:`1px solid ${C.border}`,
-          borderLeft:critico?undefined:`3px solid ${corOrigem}`,
-          borderRadius:11, padding:"11px 13px", marginBottom:8, display:"flex", gap:11, alignItems:"flex-start" }}>
-        {/* Rank badge */}
-        <div style={{ flexShrink:0, width:30, height:30, borderRadius:8,
-          background:podio?`${podioCor}22`:C.tagBg, border:`1.5px solid ${podio?podioCor:C.border}`,
-          display:"flex", alignItems:"center", justifyContent:"center",
-          fontWeight:900, fontSize:13, fontFamily:"monospace", color:podio?podioCor:C.textMuted }}>
-          {idx+1}
+      <div onClick={()=>{ setSel(jan.id); setTabOrigem("Todas"); }}
+        style={{ position:"relative", overflow:"hidden", cursor:"pointer",
+          background: ativo?`linear-gradient(155deg, ${jan.cor}10, rgba(7,24,40,0.96))`:"rgba(10,25,41,0.7)",
+          border:`1.5px solid ${ativo?jan.cor+"88":C.border}`, borderRadius:16, padding:16,
+          boxShadow: ativo?`0 8px 28px ${jan.cor}22`:"none", transition:"all .2s",
+          minHeight: grande?undefined:140 }}>
+        {/* linha de luz topo */}
+        <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:`linear-gradient(90deg, ${jan.cor}, transparent)` }}/>
+        {/* header */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
+          <span style={{ color:jan.cor, fontSize:grande?17:14, fontWeight:800, letterSpacing:"0.03em" }}>{jan.label.toUpperCase()}</span>
+          <span style={{ background:`${jan.impCor}1f`, border:`1px solid ${jan.impCor}55`, color:jan.impCor, borderRadius:6, padding:"2px 8px", fontSize:8, fontWeight:800, letterSpacing:"0.06em" }}>{jan.impacto}</span>
         </div>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:3, alignItems:"center" }}>
-            <span style={{ background:`${corOrigem}1f`, border:`1px solid ${corOrigem}55`, color:corOrigem, borderRadius:5, padding:"1px 7px", fontSize:9, fontWeight:800, letterSpacing:"0.04em" }}>{p.origem}</span>
-            {p.prazo && <span style={{ color:critico?C.dangerLight:C.textDim, fontSize:9, fontWeight:700 }}>{p.prazo}</span>}
-            {p.multiJanela && <span style={{ color:"#00E5D1", fontSize:9, fontWeight:700 }}>↔ 2 janelas</span>}
+
+        {grande ? (
+          <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+            <div style={{ flex:1 }}>
+              <div style={{ color:C.textMuted, fontSize:11, marginBottom:4 }}>Total de oportunidades</div>
+              <div style={{ fontSize:48, fontWeight:900, fontFamily:"monospace", lineHeight:1, color:C.text }}>{qtd}</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:5, marginTop:12 }}>
+                {[["Críticas",cc.crit,"#FF5252"],["Médias",cc.med,"#FFC107"],["Baixas",cc.baixa,"#00E676"]].map(([l,v,co])=>(
+                  <div key={l} style={{ display:"flex", alignItems:"center", gap:7 }}>
+                    <span style={{ width:8, height:8, borderRadius:"50%", background:co, boxShadow:`0 0 6px ${co}88` }}/>
+                    <span style={{ color:C.text, fontSize:13, fontWeight:800 }}>{v}</span>
+                    <span style={{ color:C.textMuted, fontSize:11 }}>{l}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <DonutGauge total={qtd} segs={segs} cor={jan.cor}/>
+            {/* breakdown origens */}
+            <div style={{ display:"flex", flexDirection:"column", gap:12, minWidth:80 }}>
+              {origNomes.length>0 ? origNomes.map(o=>{
+                const co = o==="Chamado"?"#5090FF":o==="Cleaners"?"#00E5D1":o==="Equipamento"?C.warningLight:C.accentLight;
+                const pct = qtd>0?Math.round(origens[o]/qtd*100):0;
+                return (
+                  <div key={o}>
+                    <div style={{ color:C.textMuted, fontSize:10 }}>{o}</div>
+                    <div style={{ color:C.text, fontSize:22, fontWeight:900, fontFamily:"monospace", lineHeight:1 }}>{origens[o]}</div>
+                    <div style={{ color:co, fontSize:11, fontWeight:700 }}>{pct}%</div>
+                  </div>
+                );
+              }) : <div style={{ color:C.textDim, fontSize:10 }}>—</div>}
+            </div>
           </div>
-          <div style={{ color:C.text, fontWeight:700, fontSize:13, lineHeight:1.3 }}>{p.titulo}</div>
-          {p.tag && <code style={{ color:C.textMuted, fontSize:10, fontFamily:"monospace" }}>{p.tag}</code>}
-          {p.descricao && p.descricao!==p.titulo && <p style={{ color:C.textMuted, fontSize:11, margin:"3px 0 0", lineHeight:1.4 }}>{p.descricao}</p>}
-          <div style={{ display:"flex", gap:10, marginTop:5, flexWrap:"wrap" }}>
-            {p.nota && <span style={{ color:C.warningLight, fontSize:10, fontFamily:"monospace", fontWeight:700 }}>SAP {p.nota}</span>}
-            {p.data && <span style={{ color:C.textDim, fontSize:9 }}>{fmtData(p.data)}</span>}
-            {p.operador && <span style={{ color:C.textDim, fontSize:9 }}>{p.operador}</span>}
+        ) : (
+          <div>
+            <div style={{ color:C.textMuted, fontSize:11, marginBottom:4 }}>Total de oportunidades</div>
+            <div style={{ fontSize:40, fontWeight:900, fontFamily:"monospace", lineHeight:1, color:qtd>0?C.text:C.textDim }}>{qtd}</div>
+            <div style={{ display:"flex", gap:12, marginTop:10, flexWrap:"wrap" }}>
+              {[["Críticas",cc.crit,"#FF5252"],["Médias",cc.med,"#FFC107"],["Baixas",cc.baixa,"#00E676"]].map(([l,v,co])=>(
+                <div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                  <span style={{ width:7, height:7, borderRadius:"50%", background:co }}/>
+                  <span style={{ color:C.text, fontSize:12, fontWeight:800 }}>{v}</span>
+                  <span style={{ color:C.textMuted, fontSize:10 }}>{l}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-        {p.tipo==="manual" && (
-          <button onClick={()=>resolverManual(p.id)} style={{ flexShrink:0, background:"rgba(0,230,118,0.12)", border:`1px solid ${C.accentLight}44`, color:C.accentLight, borderRadius:7, padding:"5px 9px", fontSize:10, fontWeight:700, cursor:"pointer" }}>✓</button>
         )}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:14, paddingTop:12, borderTop:`1px solid ${C.border}` }}>
+          <span style={{ color:jan.cor, fontSize:12, fontWeight:700 }}>Ver oportunidades</span>
+          <span style={{ color:jan.cor, fontSize:13 }}>›</span>
+        </div>
       </div>
     );
   }
 
-  // ── RENDER ──────────────────────────────────────────────────────────────────
+  // ── Ranking (ordenado por qtd) ──────────────────────────────────────────────
+  const rankAreas = [...JANELAS].sort((a,b)=>(porJanela[b.id]?.length||0)-(porJanela[a.id]?.length||0));
+
+  // ── Tabela da área selecionada ──────────────────────────────────────────────
+  const janSel = JANELAS.find(j=>j.id===sel) || JANELAS[0];
+  const arrSel = porJanela[sel]||[];
+  const origensTab = ["Todas", ...Object.keys(origensDe(sel))];
+  const arrFiltrado = tabOrigem==="Todas" ? arrSel : arrSel.filter(p=>p.origem===tabOrigem);
+
   return (
     <div style={{ padding:"16px 16px 80px" }}>
       <button onClick={onVoltar} style={{ background:C.tagBg, border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:9, padding:"9px 14px", cursor:"pointer", fontSize:12, fontWeight:700, marginBottom:14 }}>← Início</button>
 
-      {/* ════ CARD TORRE DE CONTROLE ════ */}
-      <div style={{ position:"relative", borderRadius:18, overflow:"hidden", marginBottom:16,
-        background:`linear-gradient(160deg, rgba(10,25,41,0.95), rgba(7,24,40,0.98))`,
-        border:`1px solid ${C.border}`,
-        boxShadow:"0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)" }}>
-
-        {/* Blueprint grid de fundo */}
-        <div style={{ position:"absolute", inset:0, pointerEvents:"none", opacity:0.4,
-          backgroundImage:"radial-gradient(rgba(80,144,255,0.12) 1px, transparent 1px)",
-          backgroundSize:"18px 18px" }}/>
-
-        {/* Barra de severidade no topo */}
-        <div className={severidade>0.2?"mural-sev-pulse":""} style={{ height:4, width:"100%",
-          background:`linear-gradient(90deg, ${sevCor}, ${sevCor}88)`,
-          boxShadow:`0 0 12px ${sevCor}` }}/>
-
-        <div style={{ position:"relative", padding:"18px 18px 16px" }}>
-          {/* Header + Hero */}
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18 }}>
-            <div>
-              <div style={{ color:C.textDim, fontSize:9, fontWeight:800, letterSpacing:"0.22em", textTransform:"uppercase", fontFamily:"monospace" }}>Mural de Oportunidades</div>
-              <div style={{ color:C.textMuted, fontSize:11, marginTop:3 }}>Janelas de parada · prioridade dinâmica</div>
-            </div>
-            <div style={{ textAlign:"right" }}>
-              <div style={{ fontSize:38, fontWeight:900, fontFamily:"monospace", lineHeight:1, color:sevCor, textShadow:`0 0 16px ${sevCor}66` }}>{heroAnim}</div>
-              <div style={{ color:C.textDim, fontSize:8, letterSpacing:"0.15em", textTransform:"uppercase", marginTop:2 }}>pendências</div>
-            </div>
-          </div>
-
-          {/* Tiles-reatores */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-            {JANELAS.map(jan => {
-              const qtd = porJanela[jan.id]?.length || 0;
-              const ativo = sel === jan.id;
-              const intensidade = totalGlobal>0 ? qtd/Math.max(...JANELAS.map(j=>porJanela[j.id]?.length||0),1) : 0;
-              return (
-                <button key={jan.id} onClick={()=>setSel(ativo?null:jan.id)}
-                  style={{ position:"relative", textAlign:"left", cursor:"pointer",
-                    background: ativo?`${jan.cor}14`:"rgba(255,255,255,0.025)",
-                    border:`1.5px solid ${ativo?jan.cor:C.border}`,
-                    borderRadius:13, padding:"12px 13px", transition:"all .2s",
-                    transform:ativo?"translateY(-2px)":"none",
-                    boxShadow:ativo?`0 6px 18px ${jan.cor}33, 0 0 0 1px ${jan.cor}44`:"none" }}>
-                  {/* dot led + sigla */}
-                  <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:8 }}>
-                    <span className={qtd>0?"mural-led":""} style={{ "--lc":jan.cor, width:9, height:9, borderRadius:"50%", background:qtd>0?jan.cor:C.textDim, flexShrink:0, boxShadow:qtd>0?`0 0 8px ${jan.cor}`:"none" }}/>
-                    <span style={{ color:ativo?jan.cor:C.textMuted, fontSize:11, fontWeight:800, letterSpacing:"0.05em" }}>{jan.label}</span>
-                  </div>
-                  {/* número grande */}
-                  <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
-                    <span style={{ fontSize:30, fontWeight:900, fontFamily:"monospace", lineHeight:1, color:qtd>0?(ativo?jan.cor:C.text):C.textDim }}>{qtd}</span>
-                    <span style={{ color:C.textDim, fontSize:9, textTransform:"uppercase", letterSpacing:"0.1em" }}>{qtd===1?"item":"itens"}</span>
-                  </div>
-                  {/* micro-barra de intensidade */}
-                  <div style={{ marginTop:9, height:4, borderRadius:3, background:"rgba(255,255,255,0.05)", overflow:"hidden" }}>
-                    <div style={{ height:"100%", width:`${Math.max(intensidade*100, qtd>0?12:0)}%`, borderRadius:3,
-                      background:jan.cor, boxShadow:qtd>0?`0 0 6px ${jan.cor}88`:"none", transition:"width .4s" }}/>
-                  </div>
-                  <div style={{ color:C.textDim, fontSize:8, marginTop:6, letterSpacing:"0.03em" }}>{jan.desc}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Ações */}
-      <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-        <button onClick={()=>setAddOpen(true)} style={{ flex:1, padding:11, borderRadius:10, border:`1px solid ${C.border}`, background:C.tagBg, color:C.text, fontSize:12, fontWeight:700, cursor:"pointer" }}>+ Adicionar</button>
-        <button onClick={exportarExcel} disabled={exportando||totalGlobal===0} style={{ flex:1, padding:11, borderRadius:10, border:"none", background:totalGlobal===0?C.textDim:"linear-gradient(135deg,#006B2E,#00E676)", color:"#fff", fontSize:12, fontWeight:800, cursor:totalGlobal===0?"not-allowed":"pointer", boxShadow:totalGlobal>0?"0 0 12px rgba(0,230,118,0.3)":"none" }}>
-          {exportando?"Gerando…":"Exportar Excel"}
-        </button>
-      </div>
-
-      {/* ════ RANKING DA ÁREA SELECIONADA ════ */}
-      {sel ? (
+      {/* Header */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16, flexWrap:"wrap", gap:10 }}>
         <div>
-          <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:12, paddingBottom:8, borderBottom:`2px solid ${janSel.cor}44` }}>
-            <span className="mural-led" style={{ "--lc":janSel.cor, width:10, height:10, borderRadius:"50%", background:janSel.cor, boxShadow:`0 0 10px ${janSel.cor}` }}/>
-            <div style={{ flex:1 }}>
-              <div style={{ color:C.text, fontWeight:800, fontSize:15 }}>{janSel.label}</div>
-              <div style={{ color:C.textDim, fontSize:10 }}>Ranking de prioridade · {lista.length} oportunidade{lista.length!==1?"s":""}</div>
+          <h2 style={{ color:C.text, fontSize:22, fontWeight:900, margin:"0 0 4px", letterSpacing:"0.02em" }}>MURAL DE OPORTUNIDADES</h2>
+          <p style={{ color:C.textMuted, fontSize:12, margin:0 }}>Visão geral das oportunidades por área da Secagem H2</p>
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={()=>setAddOpen(true)} style={{ padding:"9px 14px", borderRadius:9, border:`1px solid ${C.border}`, background:C.tagBg, color:C.text, fontSize:12, fontWeight:700, cursor:"pointer" }}>+ Adicionar</button>
+          <button onClick={exportarExcel} disabled={exportando||totalGlobal===0} style={{ padding:"9px 14px", borderRadius:9, border:"none", background:totalGlobal===0?C.textDim:"linear-gradient(135deg,#006B2E,#00E676)", color:"#fff", fontSize:12, fontWeight:800, cursor:totalGlobal===0?"not-allowed":"pointer" }}>
+            {exportando?"Gerando…":"Exportar Excel"}
+          </button>
+        </div>
+      </div>
+
+      {/* Card grande = área selecionada */}
+      <div style={{ marginBottom:12 }}>
+        <AreaCard jan={janSel} grande/>
+      </div>
+
+      {/* Cards menores = demais áreas */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
+        {JANELAS.filter(j=>j.id!==sel).map(jan => <AreaCard key={jan.id} jan={jan}/>)}
+      </div>
+
+      {/* Ranking de prioridade */}
+      <div style={{ marginBottom:20 }}>
+        <h3 style={{ color:C.text, fontSize:16, fontWeight:800, margin:"0 0 3px" }}>🏆 Ranking de Prioridade</h3>
+        <p style={{ color:C.textDim, fontSize:11, margin:"0 0 12px" }}>Ordenado por volume e criticidade</p>
+        {rankAreas.map((jan, idx) => {
+          const qtd = porJanela[jan.id]?.length||0;
+          const podioCor = idx===0?"#FFD700":idx===1?"#C0C0C0":idx===2?"#CD7F32":C.textDim;
+          return (
+            <div key={jan.id} onClick={()=>{ setSel(jan.id); setTabOrigem("Todas"); }}
+              className="mural-item" style={{ animationDelay:`${idx*0.05}s`, cursor:"pointer",
+                background:sel===jan.id?`${jan.cor}10`:C.card, border:`1px solid ${sel===jan.id?jan.cor+"66":C.border}`,
+                borderRadius:12, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12 }}>
+              <div style={{ width:30, height:30, borderRadius:8, flexShrink:0, background:`${podioCor}22`, border:`1.5px solid ${podioCor}`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:13, fontFamily:"monospace", color:podioCor }}>{idx+1}</div>
+              <span className={qtd>0?"mural-led":""} style={{ width:9, height:9, borderRadius:"50%", background:jan.cor, flexShrink:0, boxShadow:`0 0 8px ${jan.cor}` }}/>
+              <div style={{ flex:1 }}>
+                <div style={{ color:C.text, fontWeight:800, fontSize:14 }}>{jan.label}</div>
+                <span style={{ background:`${jan.impCor}1f`, border:`1px solid ${jan.impCor}55`, color:jan.impCor, borderRadius:5, padding:"1px 6px", fontSize:8, fontWeight:800 }}>{jan.impacto}</span>
+              </div>
+              <div style={{ textAlign:"right" }}>
+                <div style={{ color:C.text, fontSize:20, fontWeight:900, fontFamily:"monospace", lineHeight:1 }}>{qtd}</div>
+                <div style={{ color:C.textDim, fontSize:9 }}>{qtd===1?"oportunidade":"oportunidades"}</div>
+              </div>
+              <span style={{ color:jan.cor, fontSize:16 }}>›</span>
             </div>
-            <button onClick={()=>setSel(null)} style={{ background:"none", border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:8, padding:"5px 10px", fontSize:11, cursor:"pointer" }}>Fechar</button>
-          </div>
-          {lista.length===0 ? (
-            <div style={{ color:C.textDim, fontSize:12, textAlign:"center", padding:32, fontStyle:"italic" }}>Nada pendente nesta janela 🎉</div>
-          ) : lista.map((p,i) => <RankItem key={p.chave} p={p} idx={i}/>)}
+          );
+        })}
+      </div>
+
+      {/* Tabela da área selecionada */}
+      <div style={{ background:"rgba(10,25,41,0.7)", border:`1px solid ${C.border}`, borderRadius:16, overflow:"hidden" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 16px 0" }}>
+          <span style={{ color:janSel.cor, fontSize:15, fontWeight:800 }}>{janSel.label.toUpperCase()}</span>
+          <span style={{ background:`${janSel.impCor}1f`, border:`1px solid ${janSel.impCor}55`, color:janSel.impCor, borderRadius:6, padding:"2px 8px", fontSize:8, fontWeight:800 }}>{janSel.impacto}</span>
         </div>
-      ) : (
-        <div style={{ color:C.textDim, fontSize:12, textAlign:"center", padding:"24px 16px", fontStyle:"italic" }}>
-          Toque numa área acima para ver o ranking de prioridade
+        {/* Abas de origem */}
+        <div style={{ display:"flex", gap:4, padding:"10px 16px 0", borderBottom:`1px solid ${C.border}`, overflowX:"auto" }}>
+          {origensTab.map(o => {
+            const n = o==="Todas"?arrSel.length:origensDe(sel)[o]||0;
+            const ativo = tabOrigem===o;
+            return (
+              <button key={o} onClick={()=>setTabOrigem(o)} style={{ flexShrink:0, padding:"7px 12px", border:"none", background:"transparent", cursor:"pointer", color:ativo?janSel.cor:C.textMuted, fontWeight:ativo?800:500, fontSize:12, borderBottom:ativo?`2px solid ${janSel.cor}`:"2px solid transparent" }}>
+                {o} {o!=="Todas"&&`(${n})`}
+              </button>
+            );
+          })}
         </div>
-      )}
+        {/* Linhas */}
+        <div style={{ padding:"6px 8px 12px" }}>
+          {arrFiltrado.length===0 ? (
+            <div style={{ color:C.textDim, fontSize:12, textAlign:"center", padding:28, fontStyle:"italic" }}>Nada pendente 🎉</div>
+          ) : arrFiltrado.map((p,i) => {
+            const crit = criticidade(p);
+            return (
+              <div key={p.chave} className="mural-item" style={{ animationDelay:`${i*0.04}s`, display:"flex", alignItems:"center", gap:10, padding:"10px 10px", borderBottom:i<arrFiltrado.length-1?`1px solid ${C.border}`:"none" }}>
+                <span style={{ width:22, color:C.textDim, fontSize:12, fontWeight:700, fontFamily:"monospace", flexShrink:0 }}>{i+1}</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ color:C.text, fontSize:13, fontWeight:600, lineHeight:1.3 }}>{p.titulo}</div>
+                  {p.tag && <code style={{ color:C.textDim, fontSize:9 }}>{p.tag}</code>}
+                </div>
+                <span style={{ color:C.textMuted, fontSize:11, flexShrink:0, width:64 }}>{p.origem}</span>
+                <div style={{ display:"flex", alignItems:"center", gap:5, flexShrink:0, width:72 }}>
+                  <span style={{ width:7, height:7, borderRadius:"50%", background:CRIT_COR[crit] }}/>
+                  <span style={{ color:CRIT_COR[crit], fontSize:11, fontWeight:700 }}>{crit}</span>
+                </div>
+                {p.tipo==="manual" && (
+                  <button onClick={()=>resolverManual(p.id)} style={{ flexShrink:0, background:"rgba(0,230,118,0.12)", border:`1px solid ${C.accentLight}44`, color:C.accentLight, borderRadius:6, padding:"4px 8px", fontSize:10, fontWeight:700, cursor:"pointer" }}>✓</button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Modal adicionar */}
       {addOpen && (
