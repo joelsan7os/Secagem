@@ -873,6 +873,7 @@ import { TelaAuth, usePerfilAtivo, FUNCOES, validarPin } from "./auth";
 import { PainelAdmin } from "./admin";
 import { CleanersTela, RelatorioCleaners, CLEANERS_TOTAL } from "./cleaners";
 import { BarcodeModal } from "./barcode";
+import { MuralOportunidades } from "./pendencias";
 
 // Leitura imediata do aparelho (não trava a tela esperando a nuvem)
 const storageGet = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
@@ -1602,7 +1603,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
       })()}
       <h3 style={{color:C.text,fontSize:12,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.06em"}}>Acesso Rápido</h3>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        {[{label:"📋 Check-list",tela:"checklist"},{label:"🔧 Equipamentos",tela:"equipamentos"},{label:"🗂 Justificar Rotas",tela:"rotas"},{label:"📖 Manual",tela:"manual"}].map(a=>(
+        {[{label:"📋 Check-list",tela:"checklist"},{label:"🔧 Equipamentos",tela:"equipamentos"},{label:"🎯 Mural de Oportunidades",tela:"mural"},{label:"🗂 Justificar Rotas",tela:"rotas"},{label:"📖 Manual",tela:"manual"}].map(a=>(
           <button key={a.tela} onClick={()=>setTela(a.tela)} style={{background:"rgba(10,25,45,0.7)",border:`1px solid ${C.border}`,color:C.text,borderRadius:12,padding:"13px 14px",cursor:"pointer",fontSize:13,fontWeight:500,textAlign:"left",transition:"all .2s"}}
             onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.card;}}
             onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surface;}}>{a.label}</button>
@@ -1646,12 +1647,10 @@ function BarcodeSeletorTela() {
         <div style={{color:"#B5C6DA",fontSize:10,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Selecione a Linha</div>
         <div style={{display:"flex",gap:8,marginBottom:16}}>
           {linhas.map(l=>{
-            const ativo=linha===l;
-            const maq=maqDaLinha(l);
+            const ativo=linha===l;const maq=maqDaLinha(l);
             return(
               <button key={l} onClick={()=>setLinha(l)} style={{flex:1,padding:"10px 4px",borderRadius:10,cursor:"pointer",border:`2px solid ${ativo?"rgba(255,255,255,0.55)":"rgba(60,255,140,0.15)"}`,background:ativo?"#0E2847":"rgba(255,255,255,0.04)",color:ativo?"#fff":"#B5C6DA",fontWeight:ativo?800:500,fontSize:13,transition:"all .15s",boxShadow:ativo?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>
-                {l}
-                <div style={{fontSize:8,opacity:.6,marginTop:2,fontWeight:400}}>{maq}</div>
+                {l}<div style={{fontSize:8,opacity:.6,marginTop:2,fontWeight:400}}>{maq}</div>
               </button>
             );
           })}
@@ -4486,6 +4485,7 @@ export default function App() {
     if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil}/>;
     if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout} onAbrirAdmin={()=>setAdminAberto(true)}/>;
     if(tela==="rotas")return <RotasTela historico={historico} onVoltar={()=>setTela("dashboard")}/>;
+    if(tela==="mural")return <MuralOportunidades eqState={eqState} onVoltar={()=>setTela("dashboard")}/>;
     if(tela==="cleaners")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>setTela("dashboard")} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><CleanersTela eqState={eqState}/></div>;
   };
   if(!perfil) return <TelaAuth onEntrar={setPerfil}/>;
