@@ -55,8 +55,10 @@ const MAQUINAS = ["M2","M3"];
 const PESO_PRAZO = { "Imediato":0, "Urgente":1, "Normal":2, "Programável":3, "":4 };
 
 function criticidade(p) {
+  // Válvula com passagem = crítica máxima (multi-janela)
+  if (p.origem==="Cleaners" && p.multiJanela) return "Crítica";
   if (p.prazo==="Imediato" || p.descricao?.includes("manutenção")) return "Crítica";
-  if (p.prazo==="Urgente" || p.origem==="Cleaners") return "Crítica";
+  if (p.prazo==="Urgente") return "Crítica";
   if (p.prazo==="Normal" || p.prazo==="") return "Média";
   return "Baixa";
 }
@@ -71,7 +73,7 @@ function areaParaJanela(area) {
 }
 function scorePrioridade(p) {
   let s = (PESO_PRAZO[p.prazo] ?? 4) * 100;
-  if (p.origem === "Cleaners") s -= 50;
+  if (p.origem === "Cleaners" && p.multiJanela) s -= 80;  // válvula c/ passagem = dor máxima
   if (p.descricao?.includes("manutenção")) s -= 20;
   return s;
 }
@@ -159,13 +161,27 @@ function MuralInterno({ eqState = {}, onVoltar }) {
       ["M2","M3"].forEach(mq => {
         const garrafas = (cleaners && cleaners[mq]) || {};
         Object.entries(garrafas).forEach(([key, g]) => {
+          // toda garrafa presente em cleaners_h2 está FORA de operação
           const ms = g?.motivos || (g?.motivo ? [g.motivo] : []);
-          if (Array.isArray(ms) && ms.includes("Válvula com passagem")) {
+          const temPassagem = (Array.isArray(ms) && ms.includes("Válvula com passagem")) || g?.motivo==="Válvula com passagem";
+          // label do cleaner: chave c1_3 → "Cleaners 1 · G3"
+          const cfgMap = { c1:"Cleaners 1", c2:"Cleaners 2", c3:"Cleaners 3", c4:"Cleaners 4" };
+          const cId = key.split("_")[0];
+          const gNum = key.split("_")[1];
+          const cleanerLabel = cfgMap[cId] || cId;
+          const motivoTxt = ms.length>0 ? ms.join(", ") : (g?.motivo || g?.status || "Fora de operação");
+          if (temPassagem) {
             lista.push({ chave:`pass:${mq}:${key}`, janela:"clean", origem:"Cleaners",
-              titulo:`Válvula c/ passagem — ${key}`, tag:mq,
+              titulo:`${cleanerLabel} · G${gNum} — Válvula c/ passagem`, tag:mq,
               descricao:"Válvula com passagem — só resolve com cleaners isolado ou máquina parada",
               nota:"", prazo:"Urgente", disciplina:"Mecânica", maquina:mq, area:"Cleaners",
               data:g?.data||"", operador:g?.operador||"", tempo:0, tipo:"auto", multiJanela:["clean","pu"] });
+          } else {
+            lista.push({ chave:`cln:${mq}:${key}`, janela:"clean", origem:"Cleaners",
+              titulo:`${cleanerLabel} · G${gNum} — ${motivoTxt}`, tag:mq,
+              descricao:`Garrafa fora de operação (${motivoTxt}) — recolocar no isolamento dos cleaners`,
+              nota:"", prazo:"Normal", disciplina:"Mecânica", maquina:mq, area:"Cleaners",
+              data:g?.data||"", operador:g?.operador||"", tempo:0, tipo:"auto" });
           }
         });
       });
