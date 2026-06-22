@@ -318,7 +318,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
     const evidencia = selMaq === mq;
 
     return (
-      <div onClick={()=>setSelMaq(evidencia?null:mq)}
+      <div onClick={(e)=>{ e.stopPropagation(); setSelMaq(evidencia?null:mq); }}
         style={{ flex:1, minWidth:0, cursor:"pointer", transition:"all .18s",
           background: evidencia?`${jan.cor}14`:"rgba(4,17,29,0.5)",
           border:`1.5px solid ${evidencia?jan.cor:C.border}`, borderRadius:11, padding:"11px 12px",
