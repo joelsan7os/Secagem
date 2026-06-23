@@ -58,6 +58,202 @@ const subColor    = (s) => s==="Comum"?C.warningLight:s==="M2"?C.blueLight:C.acc
 const subLabel    = (s) => s==="Comum"?"⚡ COMUM":s;
 
 
+// ─── Componentes auxiliares ──────────────────────────────────────────────────
+const Badge = ({ children, color }) => {
+  const map = {
+    green: ["#002A10","#006830","#00C855"],
+    yellow:["#2A1800","#8A5000","#F0A500"],
+    red:   ["#2A0808","#8A1818","#E83030"],
+    blue:  ["#001838","#003DA5","#5090FF"],
+  };
+  const [bg,bd,tx] = map[color]||map.blue;
+  return <span style={{background:bg,border:`1px solid ${bd}`,color:tx,padding:"2px 9px",borderRadius:20,fontSize:10,fontWeight:800,letterSpacing:"0.06em",textTransform:"uppercase",whiteSpace:"nowrap"}}>{children}</span>;
+};
+
+
+// ─── BotaoFoto ────────────────────────────────────────────────────────────────
+function BotaoFoto({ fotos=[], onAdd, onRemove, compact=false }) {
+  const inputRef = React.useRef();
+  const handleFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => onAdd(ev.target.result);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+  return (
+    <div>
+      <input ref={inputRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handleFile}/>
+      {fotos.length>0&&(
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+          {fotos.map((src,i)=>(
+            <div key={i} style={{position:"relative"}}>
+              <img src={src} alt={`foto-${i}`} style={{width:compact?48:72,height:compact?48:72,objectFit:"cover",borderRadius:8,border:`2px solid ${C.accentLight}55`}}/>
+              {onRemove&&<button onClick={()=>onRemove(i)} style={{position:"absolute",top:-5,right:-5,background:C.danger,border:"none",color:"#fff",width:28,height:28,borderRadius:"50%",fontSize:10,cursor:"pointer",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>}
+            </div>
+          ))}
+        </div>
+      )}
+      <button onClick={()=>inputRef.current.click()} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4,background:fotos.length>0?"#0a2015":C.tagBg,border:`1px solid ${fotos.length>0?C.accentLight+"55":C.border}`,color:fotos.length>0?C.accentLight:C.textMuted,borderRadius:8,padding:compact?"4px 8px":"7px 12px",cursor:"pointer",fontSize:compact?14:16,transition:"all .15s",position:"relative"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accentLight;e.currentTarget.style.color=C.accentLight;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=fotos.length>0?C.accentLight+"55":C.border;e.currentTarget.style.color=fotos.length>0?C.accentLight:C.textMuted;}}>
+        📷
+        {fotos.length>0&&<span style={{background:C.accent,color:"#fff",borderRadius:"50%",width:14,height:14,fontSize:9,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",position:"absolute",top:-5,right:-5}}>{fotos.length}</span>}
+      </button>
+    </div>
+  );
+}
+
+// ─── ObsFotos ─────────────────────────────────────────────────────────────────
+function ObsFotos({ fotos }) {
+  const [ampliada, setAmpliada] = useState(null);
+  return (
+    <>
+      {ampliada&&<div onClick={()=>setAmpliada(null)} style={{position:"fixed",inset:0,background:"#000000ee",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={ampliada} alt="amp" style={{maxWidth:"95vw",maxHeight:"90vh",borderRadius:12}}/></div>}
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        {fotos.map((src,i)=>(
+          <img key={i} src={src} alt={`f-${i}`} onClick={()=>setAmpliada(src)}
+            style={{width:68,height:68,objectFit:"cover",borderRadius:9,border:`2px solid ${C.accentLight}44`,cursor:"pointer"}}
+            onMouseEnter={e=>e.currentTarget.style.transform="scale(1.06)"}
+            onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}/>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ─── ModalObservacao ──────────────────────────────────────────────────────────
+function ModalObservacao({ eq, onClose, onSave }) {
+  const now=new Date();
+  const horaAtual=now.toTimeString().slice(0,5);
+  const dataAtual=now.toISOString().slice(0,10);
+  const [obs,setObs]=useState(eq.obsRota||"");
+  const [fotos,setFotos]=useState(eq.obsRotaFotos||[]);
+  const [status,setStatus]=useState(eq.status);
+  const [hora,setHora]=useState(horaAtual);
+  const [fotoAmpliada,setFotoAmpliada]=useState(null);
+  const addFoto=(src)=>setFotos(p=>[...p,src]);
+  const removeFoto=(i)=>setFotos(p=>p.filter((_,j)=>j!==i));
+  return (
+    <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"#000000dd",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={fotoAmpliada} alt="amp" style={{maxWidth:"95vw",maxHeight:"90vh",borderRadius:12}}/></div>}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"90vh",overflowY:"auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+          <div>
+            <p style={{color:C.textMuted,fontSize:10,margin:"0 0 3px",textTransform:"uppercase"}}>Observação de Rota</p>
+            <h3 style={{color:C.white,fontSize:15,fontWeight:800,margin:"0 0 2px"}}>{eq.nome}</h3>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <code style={{color:C.textMuted,fontSize:10}}>{eq.tag}</code>
+              <span style={{color:C.textDim,fontSize:10}}>· {eq.area}</span>
+            </div>
+          </div>
+          <button onClick={onClose} style={{...btnSec,padding:"5px 11px"}}>✕</button>
+        </div>
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 12px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{color:C.textMuted,fontSize:11}}>📅 {dataAtual.split("-").reverse().join("/")}</span>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{color:C.textMuted,fontSize:11}}>⏱</span>
+            <input type="time" value={hora} onChange={e=>setHora(e.target.value)} style={{...inputStyle,width:90,padding:"3px 8px",fontSize:11}}/>
+          </div>
+        </div>
+        <div style={{marginBottom:14}}>
+          <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:6}}>Status do equipamento</label>
+          <div style={{display:"flex",gap:7}}>
+            {["OP","ALERTA","MANUTENÇÃO"].map(s=>(
+              <button key={s} onClick={()=>setStatus(s)} style={{flex:1,padding:"7px",borderRadius:7,cursor:"pointer",fontWeight:700,fontSize:10,textTransform:"uppercase",background:status===s?(s==="OP"?C.success:s==="ALERTA"?C.warning:C.danger):C.tagBg,border:`1px solid ${status===s?(s==="OP"?C.accentLight:s==="ALERTA"?C.warningLight:C.dangerLight):C.border}`,color:status===s?"#fff":C.textMuted}}>{s}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{marginBottom:14}}>
+          <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:6}}>Descrição</label>
+          <textarea value={obs} onChange={e=>setObs(e.target.value)} rows={3} placeholder="Descreva o que observou durante a rota..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/>
+        </div>
+        <div style={{marginBottom:18}}>
+          <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:8}}>Fotos ({fotos.length})</label>
+          {fotos.length>0&&(
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
+              {fotos.map((src,i)=>(
+                <div key={i} style={{position:"relative"}}>
+                  <img src={src} alt={`obs-${i}`} onClick={()=>setFotoAmpliada(src)} style={{width:80,height:80,objectFit:"cover",borderRadius:10,border:`2px solid ${C.accentLight}55`,cursor:"pointer"}}/>
+                  <button onClick={()=>removeFoto(i)} style={{position:"absolute",top:-6,right:-6,background:C.danger,border:"none",color:"#fff",width:20,height:20,borderRadius:"50%",fontSize:10,cursor:"pointer",fontWeight:700}}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <BotaoFoto fotos={[]} onAdd={addFoto}/>
+        </div>
+        <button onClick={()=>onSave(eq.id,{obs,fotos,status,data:dataAtual,hora})} style={{...btnPrim,width:"100%",padding:13}}>✓ Salvar Observação</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── ModalNotas ───────────────────────────────────────────────────────────────
+function ModalNotas({ eq, onClose, onSave }) {
+  const [notas,setNotas]=useState(eq.notas.map((n,i)=>({...n,_id:i})));
+  const [novaNum,setNovaNum]=useState("");
+  const [novaDesc,setNovaDesc]=useState("");
+  const [editando,setEditando]=useState(null);
+  const addNota=()=>{if(!novaNum.trim()&&!novaDesc.trim())return;setNotas(p=>[...p,{_id:Date.now(),num:novaNum.trim(),desc:novaDesc.trim()}]);setNovaNum("");setNovaDesc("");};
+  const del=(id)=>setNotas(p=>p.filter(n=>n._id!==id));
+  const upd=(id,f,v)=>setNotas(p=>p.map(n=>n._id===id?{...n,[f]:v}:n));
+  return (
+    <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:24,width:"100%",maxWidth:600,maxHeight:"85vh",overflowY:"auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18}}>
+          <div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+              <span style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.accentLight,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800,fontFamily:"monospace"}}>{eq.sub}</span>
+              {eq.sub==="Comum"&&<span style={{background:"#2a180088",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800}}>⚡ IMPACTA M2 E M3</span>}
+            </div>
+            <h3 style={{color:C.text,fontSize:15,fontWeight:800,margin:"0 0 2px"}}>{eq.nome}</h3>
+            <code style={{color:C.textMuted,fontSize:11}}>{eq.tag}</code>
+          </div>
+          <button onClick={onClose} style={{...btnSec,padding:"5px 11px"}}>✕</button>
+        </div>
+        {notas.length===0
+          ?<div style={{background:C.card,border:`1px dashed ${C.border}`,borderRadius:10,padding:20,textAlign:"center",color:C.textMuted,fontSize:13,marginBottom:18}}>Nenhuma nota aberta.</div>
+          :<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:18}}>
+            {notas.map(nota=>(
+              <div key={nota._id} style={{background:C.card,border:`1px solid ${editando===nota._id?C.accent:C.border}`,borderLeft:`3px solid ${C.warningLight}`,borderRadius:10,padding:"12px 14px"}}>
+                {editando===nota._id?(
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    <input value={nota.num} onChange={e=>upd(nota._id,"num",e.target.value)} placeholder="Número da nota" style={inputStyle}/>
+                    <textarea value={nota.desc} onChange={e=>upd(nota._id,"desc",e.target.value)} rows={2} style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/>
+                    <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                      <button onClick={()=>setEditando(null)} style={btnSec}>Cancelar</button>
+                      <button onClick={()=>setEditando(null)} style={btnPrim}>Salvar</button>
+                    </div>
+                  </div>
+                ):(
+                  <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                    <div style={{flex:1}}>
+                      <span style={{background:"#2a180055",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800,fontFamily:"monospace",display:"inline-block",marginBottom:5}}>{nota.num||"S/Nº"}</span>
+                      <p style={{color:C.text,fontSize:13,margin:0,lineHeight:1.5}}>{nota.desc||"—"}</p>
+                    </div>
+                    <div style={{display:"flex",gap:5,flexShrink:0}}>
+                      <button onClick={()=>setEditando(nota._id)} style={btnIcon}>✏</button>
+                      <button onClick={()=>del(nota._id)} style={{...btnIcon,color:C.dangerLight}}>🗑</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        }
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:16}}>
+          <p style={{color:C.textMuted,fontSize:11,textTransform:"uppercase",margin:"0 0 10px"}}>+ Nova Nota</p>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <input value={novaNum} onChange={e=>setNovaNum(e.target.value)} placeholder="Número da nota (ex: MNT-2025-1234)" style={inputStyle}/>
+            <textarea value={novaDesc} onChange={e=>setNovaDesc(e.target.value)} rows={2} placeholder="Descreva o problema..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/>
+            <button onClick={addNota} disabled={!novaNum.trim()&&!novaDesc.trim()} style={{...btnPrim,opacity:(!novaNum.trim()&&!novaDesc.trim())?0.4:1}}>Adicionar</button>
+          </div>
+        </div>
+        <button onClick={()=>onSave(eq.id,notas.map(({_id,...r})=>r))} style={{...btnPrim,width:"100%",padding:13}}>✓ Confirmar e Fechar</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Arrays de Equipamentos ──────────────────────────────────────────────────
 const equipamentosComum = [
   { id:"co01", tag:"31-20-0-25-01", nome:"Agitador Torre HD 1",            area:"Torre HD",      sub:"Comum" },
