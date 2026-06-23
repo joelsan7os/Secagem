@@ -1160,7 +1160,6 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
   };
   const setStatus=(eqId,s)=>{const key=getListKey();setEqState(p=>({...p,[key]:p[key].map(e=>e.id===eqId?{...e,status:s}:e)}));};
   const dotColor2=(s)=>s==="OP"?C.accentLight:s==="ALERTA"?C.warningLight:C.dangerLight;
-  const areaColor=(a)=>{const m={"Torre HD":"#5090FF","Torre Quebras":"#5090FF","Torre Água Branca":"#5090FF","Utilidades":"#5090FF","Efluentes":"#5090FF","Depuração":"#5090FF","Formação":"#5090FF","Prensa":"#5090FF","UH / Lub.":"#5090FF","Prime Press":"#5090FF","Vácuo":"#5090FF","Bombas":"#5090FF","Quebras":"#5090FF","Cleaners":"#5090FF","Tanques":"#5090FF","Cortadeira":"#A855F7","Secador":"#00BCD4","Enfardamento":"#FFB300"};return m[a]||"#5090FF";};
   const eq=selId?listaAtual.find(e=>e.id===selId):null;
 
   if(eq)return (
@@ -1391,14 +1390,18 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
         <div style={{flex:1,height:1,background:"linear-gradient(90deg,rgba(0,230,118,0.27),transparent)"}}/>
       </div>
       <div style={{display:"flex",gap:6,marginBottom:8}}>
-        {[{id:"pu",l:"P. ÚMIDA"},{id:"cs",l:"CORTADEIRA"},{id:"enf",l:"ENFARD."}].map(a=>(
+        {[{id:"pu",l:"P. ÚMIDA",cor:"#5090FF",glow:"rgba(80,144,255,0.6)"},{id:"cs",l:"CORTADEIRA",cor:"#A855F7",glow:"rgba(168,85,247,0.6)"},{id:"enf",l:"ENFARD.",cor:"#FFB300",glow:"rgba(255,179,0,0.6)"}].map(a=>{const ativo=areaAtiva===a.id;return(
           <button key={a.id} onClick={()=>{setAreaAtiva(a.id);setFiltroSub("M2");setFiltroArea("TODAS");setFiltroStatus("TODOS");setBusca("");}}
-            style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.05em",transition:"all .15s",
-              background:areaAtiva===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,
-              border:`2px solid ${areaAtiva===a.id?"rgba(255,255,255,0.55)":C.border}`,
-              color:areaAtiva===a.id?"#fff":C.textMuted,
-              boxShadow:areaAtiva===a.id?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>{a.l}</button>
-        ))}
+            style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.05em",transition:"all .15s",position:"relative",overflow:"hidden",
+              background:ativo?`linear-gradient(135deg,${a.cor}22,${a.cor}0a)`:C.tagBg,
+              border:`2px solid ${ativo?a.cor+"99":C.border}`,
+              color:ativo?a.cor:C.textMuted,
+              boxShadow:ativo?`0 0 12px ${a.glow},0 0 24px ${a.glow.replace("0.6","0.25")}`:"none"}}>
+            {ativo&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${a.cor},transparent)`}}/>}
+            {a.l}
+          </button>
+        );})}
+
       </div>
       {(()=>{
         const chamA=(storageGet("chamados_h2")||[]).filter(c=>c.status==="aberto");
@@ -1450,8 +1453,8 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {filtrados.length===0&&<div style={{textAlign:"center",color:C.textMuted,padding:"36px 0",fontSize:13}}>Nenhum resultado.</div>}
         {filtrados.map(eq=>(
-          <div key={eq.id} style={{position:"relative",background:`linear-gradient(155deg,${areaColor(eq.area)}12,rgba(7,24,40,0.97))`,border:`1.5px solid ${areaColor(eq.area)}77`,borderRadius:10,padding:"11px 12px",display:"flex",alignItems:"center",gap:10,boxShadow:`0 2px 16px ${areaColor(eq.area)}22`,overflow:"hidden"}}>
-            <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${areaColor(eq.area)},transparent)`,borderRadius:"10px 10px 0 0"}}/>
+          <div key={eq.id} style={{position:"relative",background:`linear-gradient(155deg,${dotColor2(eq.status)}12,rgba(7,24,40,0.97))`,border:`1.5px solid ${dotColor2(eq.status)}77`,borderRadius:10,padding:"11px 12px",display:"flex",alignItems:"center",gap:10,boxShadow:`0 2px 16px ${dotColor2(eq.status)}22`,overflow:"hidden"}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${dotColor2(eq.status)},transparent)`,borderRadius:"10px 10px 0 0"}}/>
             <div style={{width:9,height:9,borderRadius:"50%",flexShrink:0,background:dotColor2(eq.status),boxShadow:`0 0 8px ${dotColor2(eq.status)},0 0 16px ${dotColor2(eq.status)}66`}}/>
             <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setSelId(eq.id)}>
               <div style={{color:C.text,fontWeight:600,fontSize:13,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{eq.nome}</div>
