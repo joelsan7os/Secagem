@@ -1413,10 +1413,12 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
           const ativo=filtroSub===k;
           return(
             <button key={k} onClick={()=>{setFiltroSub(k);setFiltroArea("TODAS");setFiltroStatus("TODOS");setBusca("");}}
-              style={{flex:1,padding:"10px 6px",borderRadius:11,cursor:"pointer",transition:"all .15s",
-                background:ativo?C.card:C.tagBg,border:`2px solid ${ativo?cor:C.border}`,
-                boxShadow:ativo?`0 0 8px ${glow},0 0 20px ${glow.replace("0.6","0.3")}`:"none",
+              style={{flex:1,padding:"10px 6px",borderRadius:11,cursor:"pointer",transition:"all .15s",position:"relative",overflow:"hidden",
+                background:ativo?`linear-gradient(155deg,${cor}22,rgba(7,24,40,0.97))`:C.tagBg,
+                border:`2px solid ${ativo?cor+"99":C.border}`,
+                boxShadow:ativo?`0 0 14px ${glow},0 0 28px ${glow.replace("0.6","0.25")}`:"none",
                 display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+              {ativo&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${cor},transparent)`}}/>}
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <span style={{width:8,height:8,borderRadius:"50%",background:ok?C.success:al>0?C.warning:C.warningLight,boxShadow:`0 0 5px ${ok?C.success:C.warning}`}}/>
                 <span style={{color:ativo?cor:C.textMuted,fontWeight:900,fontSize:13,letterSpacing:"0.04em"}}>{label}</span>
