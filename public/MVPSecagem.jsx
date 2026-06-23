@@ -31,6 +31,209 @@ const C = {
 };
 
 
+// ─── Checklists e Catálogo ──────────────────────────────────────────────────
+const checklistM2 = [
+  { id:"m2c1",  secao:"Pichasso", item:"Nível do tanque do Pichasso",                           ref:"—",             unit:"ok/ñok",  tipo:"ok_nok"  },
+  { id:"m2c2",  secao:"Pichasso", item:"Funcionamento da bomba do Pichasso",                    ref:"—",             unit:"ok/ñok",  tipo:"ok_nok"  },
+  { id:"m2c3",  secao:"Pichasso", item:"Posição Pichasso L.C — está sujando?",                  ref:"5 e 4",         unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c4",  secao:"Pichasso", item:"Posição Pichasso L.A — está sujando?",                  ref:"5,3 e 5,5",     unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c5",  secao:"Telas",    item:"Tela superior – tensão, marcas, desgaste, posic.",      ref:"7,5",           unit:"kN/m",    tipo:"ok_nok"  },
+  { id:"m2c6",  secao:"Telas",    item:"Chuveiro tela superior está oscilando?",                ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c7",  secao:"Telas",    item:"Tela inferior – tensão, marcas, desgaste, posic.",      ref:"7,0",           unit:"kN/m",    tipo:"ok_nok"  },
+  { id:"m2c8",  secao:"Telas",    item:"Chuveiro tela inferior está oscilando?",                ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c9",  secao:"Feltros",  item:"Feltro pickup – tensão, marcas, desgaste, posic.",      ref:"3,2",           unit:"kN/m",    tipo:"ok_nok"  },
+  { id:"m2c10", secao:"Feltros",  item:"Feltro pickup – chuveiro leque com bico entupido?",     ref:"2,5 bar",       unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c11", secao:"Feltros",  item:"Feltro pickup – chuveiro oscilante entupido?",          ref:"12,5 bar",      unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c12", secao:"Feltros",  item:"Feltro 2ª prensa – tensão, marcas, desgaste, posic.",   ref:"3,5",           unit:"kN/m",    tipo:"ok_nok"  },
+  { id:"m2c13", secao:"Feltros",  item:"Feltro 2ª prensa – chuveiro leque entupido?",           ref:"2,5 bar",       unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c14", secao:"Feltros",  item:"Feltro 2ª prensa – chuveiro oscilante entupido?",       ref:"12,5 bar",      unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c15", secao:"Feltros",  item:"Feltro 3ª prensa Sup – tensão, marcas, desgaste.",      ref:"—",             unit:"kN/m",    tipo:"ok_nok"  },
+  { id:"m2c16", secao:"Feltros",  item:"Feltro 3ª prensa Sup – chuveiro leque entupido?",       ref:"2,5 bar",       unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c17", secao:"Feltros",  item:"Feltro 3ª prensa Sup – chuveiro oscilante entupido?",   ref:"12,5 bar",      unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c18", secao:"Feltros",  item:"Feltro 3ª prensa Inf – tensão, marcas, desgaste.",      ref:"3,5",           unit:"kN/m",    tipo:"ok_nok"  },
+  { id:"m2c19", secao:"Feltros",  item:"Feltro 3ª prensa Inf – chuveiro leque entupido?",       ref:"2,5 bar",       unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c20", secao:"Feltros",  item:"Feltro 3ª prensa Inf – chuveiro oscilante entupido?",   ref:"12,5 bar",      unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c21", secao:"Prensas",  item:"Pressão WED ZONE – zonas 1 a 5",                        ref:"2/1,5/1/1,5/2", unit:"ok/ñok",  tipo:"ok_nok"  },
+  { id:"m2c22", secao:"Prensas",  item:"Pressão régua vedação COUCH",                           ref:"0,85 e 0,5",    unit:"bar",     tipo:"valor"   },
+  { id:"m2c23", secao:"Prensas",  item:"Pressão régua vedação PICK UP",                         ref:"0,75 e 0,75",   unit:"bar",     tipo:"valor"   },
+  { id:"m2c24", secao:"Prensas",  item:"Vazão água rolo COUCH",                                 ref:"—",             unit:"m³/h",    tipo:"valor"   },
+  { id:"m2c25", secao:"Prensas",  item:"Vazão água rolo PICK UP",                               ref:"—",             unit:"m³/h",    tipo:"valor"   },
+  { id:"m2c26", secao:"Prensas",  item:"Pressão Lump Breaker",                                  ref:"25",            unit:"kN/m",    tipo:"valor"   },
+  { id:"m2c27", secao:"Prensas",  item:"Pressão 1ª prensa",                                     ref:"55",            unit:"kN/m",    tipo:"valor"   },
+  { id:"m2c28", secao:"Prensas",  item:"Pressão 2ª prensa",                                     ref:"151",           unit:"kN/m",    tipo:"valor"   },
+  { id:"m2c29", secao:"Prensas",  item:"Pressão 3ª prensa",                                     ref:"1200",          unit:"kN/m",    tipo:"valor"   },
+  { id:"m2c30", secao:"Rolos",    item:"Passe Rolo curvo após 2ª Prensa (32-21-0-10-45)",        ref:"1",             unit:"%",       tipo:"valor"   },
+  { id:"m2c31", secao:"Rolos",    item:"Passe PRIME PRESS",                                     ref:"1,6",           unit:"%",       tipo:"valor"   },
+  { id:"m2c32", secao:"Rolos",    item:"Passe Rolo curvo após 3ª Prensa (32-21-0-10-78)",        ref:"0,2",           unit:"%",       tipo:"valor"   },
+];
+const checklistM3 = [
+  { id:"m3c1",  secao:"Pichasso", item:"Nível do tanque do Pichasso",                           ref:"—",             unit:"ok/ñok",  tipo:"ok_nok"  },
+  { id:"m3c2",  secao:"Pichasso", item:"Funcionamento da bomba do Pichasso",                    ref:"—",             unit:"ok/ñok",  tipo:"ok_nok"  },
+  { id:"m3c3",  secao:"Pichasso", item:"Posição Pichasso L.C — está sujando?",                  ref:"5 e 4,9",       unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c4",  secao:"Pichasso", item:"Posição Pichasso L.A — está sujando?",                  ref:"5,1 e 6,5",     unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c5",  secao:"Telas",    item:"Tela superior – tensão, marcas, desgaste, posic.",      ref:"6,5",           unit:"kN/m",    tipo:"ok_nok"  },
+  { id:"m3c6",  secao:"Telas",    item:"Chuveiro tela superior está oscilando?",                ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c7",  secao:"Telas",    item:"Tela inferior – tensão, marcas, desgaste, posic.",      ref:"6,8",           unit:"kN/m",    tipo:"ok_nok"  },
+  { id:"m3c8",  secao:"Telas",    item:"Chuveiro tela inferior está oscilando?",                ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c9",  secao:"Feltros",  item:"Feltro pickup – tensão, marcas, desgaste, posic.",      ref:"3,8",           unit:"kN/m",    tipo:"ok_nok"  },
+  { id:"m3c10", secao:"Feltros",  item:"Feltro pickup – chuveiro leque com bico entupido?",     ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c11", secao:"Feltros",  item:"Feltro pickup – chuveiro oscilante entupido?",          ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c12", secao:"Feltros",  item:"Feltro 2ª prensa – tensão, marcas, desgaste, posic.",   ref:"3,6",           unit:"kN/m",    tipo:"ok_nok"  },
+  { id:"m3c13", secao:"Feltros",  item:"Feltro 2ª prensa – chuveiro leque entupido?",           ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c14", secao:"Feltros",  item:"Feltro 2ª prensa – chuveiro oscilante entupido?",       ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c15", secao:"Feltros",  item:"Feltro 3ª prensa Sup – tensão, marcas, desgaste.",      ref:"4,3",           unit:"kN/m",    tipo:"ok_nok"  },
+  { id:"m3c16", secao:"Feltros",  item:"Feltro 3ª prensa Sup – chuveiro leque entupido?",       ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c17", secao:"Feltros",  item:"Feltro 3ª prensa Sup – chuveiro oscilante entupido?",   ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c18", secao:"Feltros",  item:"Feltro 3ª prensa Inf – tensão, marcas, desgaste.",      ref:"4,7",           unit:"kN/m",    tipo:"ok_nok"  },
+  { id:"m3c19", secao:"Feltros",  item:"Feltro 3ª prensa Inf – chuveiro leque entupido?",       ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c20", secao:"Feltros",  item:"Feltro 3ª prensa Inf – chuveiro oscilante entupido?",   ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c21", secao:"Prensas",  item:"Pressão WED ZONE – zonas 1 a 5",                        ref:"2/1,5/1/1,5/2", unit:"ok/ñok",  tipo:"ok_nok"  },
+  { id:"m3c22", secao:"Prensas",  item:"Pressão régua vedação COUCH",                           ref:"0,9 e 0,7",     unit:"bar",     tipo:"valor"   },
+  { id:"m3c23", secao:"Prensas",  item:"Pressão régua vedação PICK UP",                         ref:"0,75 e 0,7",    unit:"bar",     tipo:"valor"   },
+  { id:"m3c24", secao:"Prensas",  item:"Vazão água rolo COUCH",                                 ref:"—",             unit:"m³/h",    tipo:"valor"   },
+  { id:"m3c25", secao:"Prensas",  item:"Vazão água rolo PICK UP",                               ref:"—",             unit:"m³/h",    tipo:"valor"   },
+  { id:"m3c26", secao:"Prensas",  item:"Pressão Lump Breaker",                                  ref:"25",            unit:"kN/m",    tipo:"valor"   },
+  { id:"m3c27", secao:"Prensas",  item:"Pressão 1ª prensa",                                     ref:"55",            unit:"kN/m",    tipo:"valor"   },
+  { id:"m3c28", secao:"Prensas",  item:"Pressão 2ª prensa",                                     ref:"150",           unit:"kN/m",    tipo:"valor"   },
+  { id:"m3c29", secao:"Prensas",  item:"Pressão 3ª prensa",                                     ref:"1200",          unit:"kN/m",    tipo:"valor"   },
+  { id:"m3c30", secao:"Rolos",    item:"Passe Rolo curvo após 2ª Prensa (33-21-0-10-45)",        ref:"1",             unit:"%",       tipo:"valor"   },
+  { id:"m3c31", secao:"Rolos",    item:"Passe PRIME PRESS",                                     ref:"1,6",           unit:"%",       tipo:"valor"   },
+  { id:"m3c32", secao:"Rolos",    item:"Passe Rolo curvo após 3ª Prensa (33-21-0-10-78)",        ref:"0,2",           unit:"%",       tipo:"valor"   },
+];
+
+// ─── Check-list Passagem de Ponta (igual M2 e M3 — mesmo formulário) ─────────
+const checklistPassagemPonta = [
+  // ── Operação Parte Úmida ──────────────────────────────────────────────────
+  { id:"pp01", secao:"P. Úmida",    item:"1ª checagem — movimento do pichasso — verificar corrente",          ref:"—",         unit:"ok/ñok",  tipo:"ok_nok" },
+  { id:"pp02", secao:"P. Úmida",    item:"Verificar acúmulo de massa nas estruturas do pichasso e caixa de vapor", ref:"—",    unit:"ok/ñok",  tipo:"ok_nok" },
+  { id:"pp03", secao:"P. Úmida",    item:"Velocidade da máquina",                                             ref:"150",       unit:"m/min",   tipo:"valor"  },
+  { id:"pp04", secao:"P. Úmida",    item:"Ratio de ajuste da gramatura",                                      ref:"1,0000",    unit:"—",       tipo:"valor"  },
+  { id:"pp05", secao:"P. Úmida",    item:"Relação de dosagem de quebras",                                     ref:"80%",       unit:"%",       tipo:"valor"  },
+  { id:"pp06", secao:"P. Úmida",    item:"Relação de dosagem de massa da torre HD",                           ref:"20%",       unit:"%",       tipo:"valor"  },
+  { id:"pp07", secao:"P. Úmida",    item:"Bombas de vácuo (MODO E1 LIGADAS)",                                 ref:"—",         unit:"ok/ñok",  tipo:"ok_nok" },
+  { id:"pp08", secao:"P. Úmida",    item:"Fluxo de massa para caixa de entrada (consist. E1 - pop-up W4)",    ref:"±2950",     unit:"m³/h",    tipo:"valor"  },
+  { id:"pp09", secao:"P. Úmida",    item:"Consistência tanque da máquina (consist. E1 - pop-up W4)",          ref:"3,30%",     unit:"%",       tipo:"valor"  },
+  { id:"pp10", secao:"P. Úmida",    item:"Wedge Zone (FECHADA COM CARGA)",                                    ref:"—",         unit:"ok/ñok",  tipo:"ok_nok" },
+  { id:"pp11", secao:"P. Úmida",    item:"Pressão do Lumpbreaker",                                            ref:"30",        unit:"kN/m",    tipo:"valor"  },
+  { id:"pp12", secao:"P. Úmida",    item:"Pressão da 1ª prensa",                                              ref:"45",        unit:"kN/m",    tipo:"valor"  },
+  { id:"pp13", secao:"P. Úmida",    item:"Pressão da 2ª prensa",                                              ref:"170",       unit:"kN/m",    tipo:"valor"  },
+  { id:"pp14", secao:"P. Úmida",    item:"Folha acompanhando feltro pick up",                                 ref:"—",         unit:"sim/não", tipo:"sim_nao"},
+  { id:"pp15", secao:"P. Úmida",    item:"Pressão da shoe press",                                             ref:"1150",      unit:"kN/m",    tipo:"valor"  },
+  { id:"pp16", secao:"P. Úmida",    item:"Caixa de vapor (ABAIXADA e VAPOR LIGADO)",                          ref:"—",         unit:"ok/ñok",  tipo:"ok_nok" },
+  { id:"pp17", secao:"P. Úmida",    item:"Ajuste do perfil de gramatura MODO PASSAGEM DE PONTA (SDCD)",       ref:"—",         unit:"ok/ñok",  tipo:"ok_nok" },
+  { id:"pp18", secao:"P. Úmida",    item:"Válvula de recirculação da caixa de entrada ajustada para fase inicial", ref:"20%",  unit:"%",       tipo:"valor"  },
+  { id:"pp19", secao:"P. Úmida",    item:"Chapinha fim de curso do pichasso móvel LA alinhada com pichasso fixo", ref:"—",     unit:"ok/ñok",  tipo:"ok_nok" },
+];
+
+// ─── Check-list Passagem de Ponta — Parte Seca/Cortadeira ────────────────────
+// (Os itens abaixo foram movidos do checklist de Passagem de Ponta da P.Úmida)
+const checklistPassagemPontaCS = [
+  { id:"ppcs01", secao:"P. Seca", item:"Todas caixas sopradoras do secador (ABAIXADAS)",                    ref:"—",    unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"ppcs02", secao:"P. Seca", item:"Setpoint do sensor Slack (MODO AUTO)",                              ref:"19%",  unit:"%",      tipo:"valor"  },
+  { id:"ppcs03", secao:"P. Seca", item:"Setpoint do sensor Slack (INDICAÇÃO SEM FOLHA)",                    ref:"100%", unit:"%",      tipo:"valor"  },
+  { id:"ppcs04", secao:"P. Seca", item:"Set point da célula de carga antes passagem de ponta",              ref:"280",  unit:"KN/m",   tipo:"valor"  },
+  { id:"ppcs05", secao:"P. Seca", item:"Cabo de aço da fita de passagem de ponta folgado",                  ref:"—",    unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"ppcs06", secao:"P. Seca", item:"Pressão do rolo de tração (MODO PASSAGEM DE PONTA)",                ref:"0,6",  unit:"KN/m",   tipo:"valor"  },
+  { id:"ppcs07", secao:"P. Seca", item:"Rolo direcionador na posição central e testado",                    ref:"—",    unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"ppcs08", secao:"P. Seca", item:"Posicionamento dos operadores nas passarelas do secador",           ref:"—",    unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"ppcs09", secao:"P. Seca", item:"Verificado estrutura atrás do rolo tração — sem pedaços de celulose",ref:"—",   unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"ppcs10", secao:"P. Seca", item:"Controle de carga do tração em MODO PASSAGEM DE PONTA",             ref:"—",    unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"ppcs11", secao:"P. Seca", item:"Cortadeira em operação",                                            ref:"—",    unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"ppcs12", secao:"P. Seca", item:"Sistema de passagem ponta antes secador testado",                   ref:"—",    unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"ppcs13", secao:"P. Seca", item:"Medição dos rolos retornos",                                        ref:"—",    unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"ppcs14", secao:"P. Seca", item:"Todas as grades entre decks bem fixadas",                           ref:"—",    unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"ppcs15", secao:"P. Seca", item:"Limpeza e inspeção do secador concluída",                           ref:"—",    unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"ppcs16", secao:"P. Seca", item:"Pulper seco ligado e testado",                                      ref:"—",    unit:"ok/ñok", tipo:"ok_nok" },
+];
+
+// ─── Check-list PP / Quebra de Máquina — Parte Úmida ─────────────────────────
+const checklistQuebraMaquina = [
+  // VERIFICAR TRAVAS ────────────────────────────────────────────────────────
+  { id:"qm01", secao:"Verificar Travas", item:"Lumpbreaker",           ref:"—", unit:"ok/nok", tipo:"ok_nok", trava:true },
+  { id:"qm02", secao:"Verificar Travas", item:"3ª Prensa Inferior",    ref:"—", unit:"ok/nok", tipo:"ok_nok", trava:true },
+  { id:"qm03", secao:"Verificar Travas", item:"Caixa de Vapor",        ref:"—", unit:"ok/nok", tipo:"ok_nok", trava:true },
+  // TESTES DE ATUAÇÃO ───────────────────────────────────────────────────────
+  { id:"qm04", secao:"Testes de Atuação", item:"Apalpador Tela Superior",               ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm05", secao:"Testes de Atuação", item:"Apalpador Tela Inferior",               ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm06", secao:"Testes de Atuação", item:"Apalpador Feltro Pick Up",              ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm07", secao:"Testes de Atuação", item:"Apalpador Feltro 2ª Prensa",            ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm08", secao:"Testes de Atuação", item:"Apalpador Feltro 3ª Prensa Superior",   ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm09", secao:"Testes de Atuação", item:"Apalpador Feltro 3ª Prensa Inferior",   ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm10", secao:"Testes de Atuação", item:"Esticador Feltro Pick Up",              ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm11", secao:"Testes de Atuação", item:"Esticador Feltro 2ª Prensa",            ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm12", secao:"Testes de Atuação", item:"Esticador Feltro 3ª Prensa Superior",   ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm13", secao:"Testes de Atuação", item:"Esticador Feltro 3ª Prensa Inferior",   ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  // INSPEÇÕES ───────────────────────────────────────────────────────────────
+  { id:"qm14", secao:"Inspeções", item:"Raspas dos Rolos",                  ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm15", secao:"Inspeções", item:"Emenda Feltro Pick Up",             ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm16", secao:"Inspeções", item:"Emenda Feltro 2ª Prensa",           ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm17", secao:"Inspeções", item:"Emenda Feltro 3ª Prensa Superior",  ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm18", secao:"Inspeções", item:"Emenda Feltro 3ª Prensa Inferior",  ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm19", secao:"Inspeções", item:"Manta Shoe Press",                  ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm20", secao:"Inspeções", item:"Caixa de Vapor",                    ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  // LIMPEZAS ────────────────────────────────────────────────────────────────
+  { id:"qm21", secao:"Limpezas", item:"Chuveiros da Máquina",   ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm22", secao:"Limpezas", item:"Filtros dos Pichassos",  ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm23", secao:"Limpezas", item:"Bicos dos Pichassos",    ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm24", secao:"Limpezas", item:"Estruturas",             ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm25", secao:"Limpezas", item:"Calhas",                 ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  { id:"qm26", secao:"Limpezas", item:"Raspas",                 ref:"—", unit:"ok/nok", tipo:"ok_nok" },
+  // MEDIÇÕES ────────────────────────────────────────────────────────────────
+  { id:"qm27", secao:"Medições", item:"GAP Wedge Zone",
+    ref:"4–5", unit:"mm", tipo:"valor",
+    alertaMin:4, alertaMax:5,
+    descMin:"Abaixo de 4 mm — fora da faixa",
+    descMax:"Acima de 5 mm — fora da faixa" },
+];
+
+// ─── WFT — dados do fluxo de diagnóstico (H2 = M2 + M3, meta 315 m³/h) ───────
+// Estrutura: cada "passo" tem uma pergunta ou verificação com ação associada
+const WFT_META_H2 = 315; // m³/h
+
+const WFT_VERIFICACOES_SEM_REJEICAO = [
+  { id:"wv1",  item:"Existe algum tanque transbordando?",                                     acao:"Verificar no SDCD e em campo — se houver, avaliar problema e corrigir." },
+  { id:"wv2",  item:"Existe algum dreno aberto?",                                             acao:"Verificar todos os tanques e fechar caso haja dreno aberto." },
+  { id:"wv3",  item:"Pressão dos chuveiros de baixa pressão estão em 2,5 bar?",               acao:"Caso esteja com pressão elevada, ajustar imediatamente." },
+  { id:"wv4",  item:"Pressão do chuveiro de alta está maior que 13 bar?",                     acao:"Caso esteja, realizar ajuste imediatamente." },
+  { id:"wv5",  item:"Válvula manual de WBR do tanque água morna para trocador ar/água aberta?",acao:"Verificar em campo e ajustar e voltar para posição." },
+  { id:"wv6",  item:"Há mangueiras abertas nas laterais da máquina?",                         acao:"Verificar em campo — priorizar fechamento caso não seja crítico por acúmulo de massa." },
+  { id:"wv7",  item:"Há mangueiras de limpeza abertas na área para limpeza do piso?",         acao:"Verificar em campo e fechar imediatamente caso já não seja mais necessária para limpeza." },
+  { id:"wv8",  item:"Mangueiras de campo com água morna e não de WFT?",                       acao:"Verificar em campo e fechar imediatamente." },
+  { id:"wv9",  item:"Pressão do chuveiro de alta e baixa está maior que 2,5 bar / 13 bar?",   acao:"Caso esteja, realizar a limpeza imediatamente." },
+  { id:"wv10", item:"Peneira micra screen está suja?",                                         acao:"Pressão do chuveiro de limpeza está maior que 2,5 bar — realizar ajuste imediatamente." },
+];
+
+// ─── Catálogo de tipos de Check-list ─────────────────────────────────────────
+
+const LINHAS = [
+  { id:"L4", label:"Linha 4", maquina:"M2" },
+  { id:"L5", label:"Linha 5", maquina:"M2" },
+  { id:"L6", label:"Linha 6", maquina:"M3" },
+  { id:"L7", label:"Linha 7", maquina:"M3" },
+  { id:"L8", label:"Linha 8", maquina:"M3" },
+];
+
+const AREAS = [
+  { id:"pu",  label:"Parte Úmida",           icon:"", desc:"Formação, prensas, feltros, vácuo"      },
+  { id:"cs",  label:"Parte Seca/Cortadeira", icon:"", desc:"Secador, cortadeira, layboy, faquinhas" },
+  { id:"enf", label:"Enfardamento",           icon:"", desc:"Enfardamento L4/L5 e L6/L7/L8"         },
+];
+
+const CATALOGO = [
+  { id:"rotina",           label:"Rotina",              icon:"", desc:"Verificação por turno — Parte Úmida",                  porMaquina:true,  tipo:"padrao",   area:"pu",  getItems:(m)=>m==="M2"?checklistM2:checklistM3 },
+  { id:"passagem_ponta",   label:"Passagem de Ponta",   icon:"", desc:"Check-list M2 e M3 — antes da passagem",               porMaquina:true,  tipo:"padrao",   area:"pu",  passagem:true, getItems:()=>checklistPassagemPonta },
+  { id:"quebra_pu",        label:"PP / Quebra de Máq.", icon:"", desc:"Segurança, testes, inspeções e limpezas pós-quebra",    porMaquina:true,  tipo:"padrao",   area:"pu",  getItems:()=>checklistQuebraMaquina },
+  { id:"wft",              label:"Consumo WFT",         icon:"", desc:"Diagnóstico de consumo de água — Meta H2: 315 m³/h",   porMaquina:false, tipo:"wft",      area:"pu",  getItems:()=>[] },
+  { id:"cortadeira",       label:"Rotina",              icon:"", desc:"Check-list operacional — Secador + Cortadeira + Layboy",porMaquina:true,  tipo:"padrao",   area:"cs",  getItems:(m)=>m==="M2"?checklistCortadeiraM2:checklistCortadeiraM3 },
+  { id:"passagem_ponta_cs",label:"Passagem de Ponta",   icon:"", desc:"Check-list Parte Seca — antes da passagem de ponta",   porMaquina:true,  tipo:"padrao",   area:"cs",  passagem:true, getItems:()=>checklistPassagemPontaCS },
+  { id:"rejeicao",         label:"Diagnóstico Rejeição",icon:"⚠️",desc:"Fluxo de diagnóstico — Faca circular / Facão / Transversal",porMaquina:false,tipo:"rejeicao",area:"cs",getItems:()=>[] },
+  { id:"enf_qualidade",    label:"Check List Qualidade",icon:"", desc:"Qualidade do fardo — todas as linhas",                 porMaquina:false, tipo:"enf",      area:"enf", getItems:()=>checklistEnfardamento },
+  { id:"rota_enf",         label:"Rota Enfardamento",   icon:"", desc:"Inspeção por turno — todos os equipamentos",           porMaquina:true,  tipo:"rota_enf", area:"enf", getItems:()=>checklistRotaEnfardamento },
+  { id:"barcode_enf",      label:"Validação de Fardos", icon:"📦", desc:"Leitura de código de barras — Lado A / Lado B",        porMaquina:false, tipo:"barcode_enf",area:"enf", getItems:()=>[] },
+];
+
+
+
 // ─── Storage helpers (Firestore + localStorage offline-safe) ──────────────────
 import { COL, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "./firebase";
 import { TelaAuth, usePerfilAtivo, FUNCOES, validarPin } from "./auth";
