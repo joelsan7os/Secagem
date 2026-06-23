@@ -330,9 +330,10 @@ function PainelChamados({ chamadosData, setTela }) {
 }
 
 // ── Painel 3 · Cleaners ────────────────────────────────────────────────────
-function PainelCleaners({ cleanersData, cleanersHistData, setTela }) {
+function PainelCleaners({ cleanersData, cleanersHistData, sedimData, setTela }) {
   const dados=cleanersData||{M2:{},M3:{}};
   const histAll=Array.isArray(cleanersHistData)?cleanersHistData:[];
+  const sedimAll=Array.isArray(sedimData)?sedimData:[];
 
   // sparkline 7 dias por máquina
   const sparkDays=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
@@ -390,20 +391,96 @@ function PainelCleaners({ cleanersData, cleanersHistData, setTela }) {
     );
   }
 
+  // ── SEDIMENTÁVEIS: 10 dias × 3 turnos, linha "corre" a cada lançamento ──
+  const shiftBounds=[];
+  for(let day=0;day<10;day++){
+    const d=new Date(); d.setDate(d.getDate()-9+day);
+    const ds=d.toISOString().slice(0,10);
+    for(const h of[8,16,24]){
+      const nd=h===24;
+      const bd=nd?new Date(d.getTime()+86400000).toISOString().slice(0,10):ds;
+      const bh=nd?"00:00":String(h).padStart(2,"0")+":00";
+      shiftBounds.push({ts:bd+"T"+bh,label:ds});
+    }
+  }
+  const sdVals=shiftBounds.map(({ts})=>{const recs=sedimAll.filter(s=>s.data+"T"+(s.hora||"00:00")<=ts);return recs.length>0?recs[recs.length-1].valor:null;});
+  const hasSd=sdVals.some(v=>v!==null);
+  const lastSd=sedimAll.length>0?sedimAll[sedimAll.length-1]:null;
+  const corSd=lastSd?(lastSd.valor<150?C.accentLight:lastSd.valor<=250?C.warningLight:C.dangerLight):C.textDim;
+  // SVG dims
+  const SW_=300,SH=86,PAD_T=8,PAD_B=16,PLOT=SH-PAD_T-PAD_B;
+  const sdMax=Math.max(300,...sdVals.filter(v=>v!==null))+30;
+  const xSd=(i)=>(i/(shiftBounds.length-1))*SW_;
+  const ySd=(v)=>PAD_T+PLOT-(v/sdMax)*PLOT;
+  // preenche buracos iniciais com 1º valor pra linha não cortar
+  const firstSd=sdVals.find(v=>v!==null);
+  const firstIdx=sdVals.findIndex(v=>v!==null);
+  const sdFilled=firstSd!=null?sdVals.map((v,i)=>v!==null?v:(i<firstIdx?firstSd:null)):sdVals;
+  const sdPtsArr=sdFilled.map((v,i)=>v!==null?`${xSd(i)},${ySd(v)}`:null).filter(Boolean);
+  const sdLine=bPath(sdPtsArr);
+  const sdArea=sdLine?sdLine+` L${SW_},${PAD_T+PLOT} L${sdPtsArr.length>0?sdPtsArr[0].split(",")[0]:0},${PAD_T+PLOT} Z`:"";
+  // linhas de referência 150 / 250
+  const yRef150=ySd(150), yRef250=ySd(250);
+  // marcadores de dia (1 a cada 3 pontos)
+  const dayMarks=shiftBounds.filter((_,i)=>i%3===0);
+
   return(
     <PainelCard title="Cleaners" icon="🫧" corTopo={C.accentLight} onClick={()=>setTela("cleaners")}>
       <div style={{display:"flex",gap:8}}>
         <CardMaq mq="M2"/>
         <CardMaq mq="M3"/>
       </div>
+
+      {/* ── GRÁFICO SEDIMENTÁVEIS (fora a fora, comum às 2 máquinas) ── */}
+      <div style={{background:"rgba(255,255,255,0.025)",border:`1px solid ${C.border}`,borderTop:`2px solid ${corSd}`,
+        borderRadius:10,padding:"10px 12px 8px",marginTop:2}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+          <span style={{fontSize:9,color:C.textDim,letterSpacing:"0.1em",fontWeight:700}}>SEDIMENTÁVEIS · 10 DIAS · COMUM M2/M3</span>
+          {lastSd&&<span style={{background:`${corSd}22`,border:`1px solid ${corSd}44`,color:corSd,
+            borderRadius:20,padding:"2px 9px",fontSize:10,fontFamily:"monospace",fontWeight:800}}>{lastSd.valor} mL/L</span>}
+        </div>
+        {hasSd?(
+          <svg width="100%" height={SH} viewBox={`0 0 ${SW_} ${SH}`} preserveAspectRatio="none" style={{display:"block"}}>
+            <defs>
+              <linearGradient id="sdFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={corSd} stopOpacity="0.22"/>
+                <stop offset="100%" stopColor={corSd} stopOpacity="0.02"/>
+              </linearGradient>
+            </defs>
+            {/* faixas de referência */}
+            {yRef250>PAD_T&&yRef250<PAD_T+PLOT&&<line x1={0} y1={yRef250} x2={SW_} y2={yRef250} stroke={C.dangerLight} strokeWidth="0.7" strokeDasharray="3,3" opacity={0.4}/>}
+            {yRef150>PAD_T&&yRef150<PAD_T+PLOT&&<line x1={0} y1={yRef150} x2={SW_} y2={yRef150} stroke={C.warningLight} strokeWidth="0.7" strokeDasharray="3,3" opacity={0.4}/>}
+            {/* área + linha */}
+            <path d={sdArea} fill="url(#sdFill)" opacity={0.8}/>
+            <path d={sdLine} fill="none" stroke={corSd} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
+              style={{filter:`drop-shadow(0 0 4px ${corSd}aa)`}}/>
+            {/* ponto final */}
+            {sdPtsArr.length>0&&<circle cx={sdPtsArr[sdPtsArr.length-1].split(",")[0]} cy={sdPtsArr[sdPtsArr.length-1].split(",")[1]} r="3.5" fill={corSd}
+              style={{filter:`drop-shadow(0 0 5px ${corSd})`}}/>}
+            {/* labels ref */}
+            {yRef250>PAD_T&&yRef250<PAD_T+PLOT&&<text x={2} y={yRef250-2} fontSize="6.5" fill={C.dangerLight} fontFamily="monospace" opacity={0.6}>250</text>}
+            {yRef150>PAD_T&&yRef150<PAD_T+PLOT&&<text x={2} y={yRef150-2} fontSize="6.5" fill={C.warningLight} fontFamily="monospace" opacity={0.6}>150</text>}
+            {/* marcas de dia eixo X */}
+            {dayMarks.map((m,i)=>{
+              const x=xSd(i*3);
+              const dd=m.label.slice(8,10)+"/"+m.label.slice(5,7);
+              return<text key={i} x={x} y={SH-3} fontSize="6.5" fill={C.textDim} fontFamily="monospace"
+                textAnchor={i===0?"start":i===dayMarks.length-1?"end":"middle"}>{dd}</text>;
+            })}
+          </svg>
+        ):(
+          <div style={{height:SH,display:"flex",alignItems:"center",justifyContent:"center",color:C.textDim,fontSize:10}}>
+            Sem lançamentos de sedimentáveis ainda
+          </div>
+        )}
+      </div>
     </PainelCard>
   );
 }
 
-// ── Painel 4 · Tendência + Sedimentáveis ──────────────────────────────────
-function PainelTendencia({ cleanersHistData, sedimData, setTela }) {
+// ── Painel 4 · Tendência de Eficiência ────────────────────────────────────
+function PainelTendencia({ cleanersHistData, setTela }) {
   const histAll=Array.isArray(cleanersHistData)?cleanersHistData:[];
-  const sedimAll=Array.isArray(sedimData)?sedimData:[];
 
   // 30 pontos: 10 dias × 3 turnos
   const shiftBounds=[];
@@ -425,58 +502,51 @@ function PainelTendencia({ cleanersHistData, sedimData, setTela }) {
     const fora=Object.keys(snapEf.M2||{}).length+Object.keys(snapEf.M3||{}).length;
     return Math.round(((CLEANERS_TOTAL*2)-fora)/(CLEANERS_TOTAL*2)*100);
   });
-  const sedimVals=shiftBounds.map(({ts})=>{const recs=sedimAll.filter(s=>s.data+"T"+(s.hora||"00:00")<=ts);return recs.length>0?recs[recs.length-1].valor:null;});
-  const hasSedim=sedimVals.some(v=>v!==null);
-  const lastSedim=sedimAll.length>0?sedimAll[sedimAll.length-1]:null;
-  const corSedim=lastSedim?(lastSedim.valor<150?C.accentLight:lastSedim.valor<=250?C.warningLight:C.dangerLight):C.textDim;
 
-  const W=260,H=80;
-  const HU=Math.round(H*0.45),HG=Math.round(H*0.1),HL=H-HU-HG;
+  const W=260,H=92,PAD_T=6,PAD_B=16,PLOT=H-PAD_T-PAD_B;
   const efMin=Math.max(0,Math.min(...effVals)-5),efMax=Math.min(100,Math.max(...effVals)+5),efRng=efMax-efMin||1;
-  const sdMax=Math.max(300,...sedimVals.filter(v=>v!==null))+30;
   const xOf=(i)=>(i/(shiftBounds.length-1))*W;
-  const yEf=(v)=>HU-((v-efMin)/efRng)*HU;
-  const ySd=(v)=>HU+HG+(v/sdMax)*HL;
+  const yEf=(v)=>PAD_T+PLOT-((v-efMin)/efRng)*PLOT;
   const efPts=effVals.map((v,i)=>`${xOf(i)},${yEf(v)}`);
   const efLine=bPath(efPts);
-  const efArea=efLine+` L${W},${HU} L0,${HU} Z`;
-  const firstSd=sedimVals.find(v=>v!==null);
-  const sdFilled=firstSd!=null?sedimVals.map((v,i)=>v!==null?v:(i<sedimVals.findIndex(x=>x!==null)?firstSd:null)):sedimVals;
-  const sdPts=sdFilled.map((v,i)=>v!==null?`${xOf(i)},${ySd(v)}`:null).filter(Boolean);
-  const sdLine=bPath(sdPts);
+  const efArea=efLine+` L${W},${PAD_T+PLOT} L0,${PAD_T+PLOT} Z`;
   const efAtual=effVals[effVals.length-1];
   const corEf=efAtual>=90?C.accentLight:efAtual>=CLEANERS_LIMITE?C.warningLight:C.dangerLight;
+  // linha de limite 70%
+  const yLim=yEf(CLEANERS_LIMITE);
+  const dayMarks=shiftBounds.filter((_,i)=>i%3===0);
 
   return(
-    <PainelCard title="Tendência Cleaners" icon="📈" corTopo={corEf} onClick={()=>setTela("cleaners")}>
+    <PainelCard title="Tendência de Eficiência" icon="📈" corTopo={corEf} onClick={()=>setTela("cleaners")}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-        <span style={{fontSize:9,color:C.textDim,letterSpacing:"0.1em"}}>EFICIÊNCIA · 10 DIAS · 3 TURNOS</span>
-        {lastSedim&&<span style={{background:`${corSedim}22`,border:`1px solid ${corSedim}44`,color:corSedim,
-          borderRadius:20,padding:"2px 8px",fontSize:9,fontFamily:"monospace",fontWeight:800}}>Sedim: {lastSedim.valor} mL/L</span>}
+        <span style={{fontSize:9,color:C.textDim,letterSpacing:"0.1em"}}>EFICIÊNCIA GERAL · 10 DIAS · 3 TURNOS</span>
+        <span style={{background:`${corEf}22`,border:`1px solid ${corEf}44`,color:corEf,
+          borderRadius:20,padding:"2px 9px",fontSize:11,fontFamily:"monospace",fontWeight:900}}>{efAtual}%</span>
       </div>
       <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{display:"block"}}>
         <defs>
           <linearGradient id="efFillD" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={C.accentLight} stopOpacity="0.25"/>
-            <stop offset="100%" stopColor={C.accentLight} stopOpacity="0.02"/>
+            <stop offset="0%" stopColor={corEf} stopOpacity="0.25"/>
+            <stop offset="100%" stopColor={corEf} stopOpacity="0.02"/>
           </linearGradient>
         </defs>
-        <rect x={0} y={0} width={W} height={HU} fill="rgba(0,230,118,0.03)" rx="2"/>
-        <rect x={0} y={HU+HG} width={W} height={HL} fill="rgba(255,193,7,0.03)" rx="2"/>
-        <line x1={0} y1={HU+HG/2} x2={W} y2={HU+HG/2} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="4,4"/>
+        {/* linha limite 70% */}
+        {yLim>PAD_T&&yLim<PAD_T+PLOT&&<>
+          <line x1={0} y1={yLim} x2={W} y2={yLim} stroke={C.warningLight} strokeWidth="0.7" strokeDasharray="3,3" opacity={0.4}/>
+          <text x={2} y={yLim-2} fontSize="6.5" fill={C.warningLight} fontFamily="monospace" opacity={0.6}>70%</text>
+        </>}
         <path d={efArea} fill="url(#efFillD)" opacity={0.8}/>
         <path d={efLine} fill="none" stroke={corEf} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
-          style={{filter:`drop-shadow(0 0 4px ${corEf}88)`}}/>
-        {hasSedim&&sdLine&&<path d={sdLine} fill="none" stroke={C.warningLight} strokeWidth="2" strokeLinejoin="round"
-          style={{filter:`drop-shadow(0 0 3px ${C.warningLight}66)`}}/>}
-        <circle cx={xOf(effVals.length-1)} cy={yEf(efAtual)} r="3" fill={corEf} style={{filter:`drop-shadow(0 0 5px ${corEf})`}}/>
-        <text x={W-2} y={10} textAnchor="end" fontSize="8" fill={corEf} fontFamily="monospace" fontWeight="700">EF%</text>
-        {hasSedim&&<text x={W-2} y={H-3} textAnchor="end" fontSize="8" fill={C.warningLight} fontFamily="monospace" fontWeight="700">mL/L</text>}
+          style={{filter:`drop-shadow(0 0 4px ${corEf}aa)`}}/>
+        <circle cx={xOf(effVals.length-1)} cy={yEf(efAtual)} r="3.5" fill={corEf} style={{filter:`drop-shadow(0 0 5px ${corEf})`}}/>
+        {/* marcas de dia */}
+        {dayMarks.map((m,i)=>{
+          const x=xOf(i*3);
+          const dd=m.label.slice(8,10)+"/"+m.label.slice(5,7);
+          return<text key={i} x={x} y={H-3} fontSize="6.5" fill={C.textDim} fontFamily="monospace"
+            textAnchor={i===0?"start":i===dayMarks.length-1?"end":"middle"}>{dd}</text>;
+        })}
       </svg>
-      <div style={{display:"flex",gap:12,marginTop:2}}>
-        <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:2,background:corEf,display:"inline-block",borderRadius:1,boxShadow:`0 0 4px ${corEf}`}}/><span style={{color:C.textDim,fontSize:8}}>Eficiência %</span></span>
-        {hasSedim&&<span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:2,background:C.warningLight,display:"inline-block",borderRadius:1}}/><span style={{color:C.textDim,fontSize:8}}>Sedimentáveis mL/L</span></span>}
-      </div>
     </PainelCard>
   );
 }
@@ -662,8 +732,8 @@ export default function DashboardTV({ setTela, setModoVisao }) {
       <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gridTemplateRows:"1fr 1fr",gap:14,padding:14,overflow:"hidden"}}>
         <PainelMural       pendenciasData={pendencias} chamadosData={chamados}    setTela={setTela}/>
         <PainelChamados    chamadosData={chamados}                                setTela={setTela}/>
-        <PainelCleaners    cleanersData={cleaners}     cleanersHistData={cleanersHist} setTela={setTela}/>
-        <PainelTendencia   cleanersHistData={cleanersHist} sedimData={sedim}      setTela={setTela}/>
+        <PainelCleaners    cleanersData={cleaners}     cleanersHistData={cleanersHist} sedimData={sedim} setTela={setTela}/>
+        <PainelTendencia   cleanersHistData={cleanersHist}                          setTela={setTela}/>
         <PainelAlturaUnits historicoData={historico}                              setTela={setTela}/>
         <PainelChecklists  historicoData={historico}                              setTela={setTela}/>
       </div>
