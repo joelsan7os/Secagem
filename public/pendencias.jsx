@@ -456,7 +456,8 @@ function MuralInterno({ eqState = {}, onVoltar }) {
         <>
           {/* ════ TELA GERAL ════ */}
           {/* Cards de máquina M2/M3 no topo (somam todas as áreas, ou filtra ao escolher) */}
-          <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+          <div style={{ background:"rgba(7,24,40,0.55)", border:`1px solid ${C.border}`, borderRadius:18, padding:8, marginBottom:14, boxShadow:"inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 22px rgba(0,0,0,0.35)" }}>
+          <div style={{ display:"flex", gap:8 }}>
             {MAQUINAS.map(mq => {
               const arr = todasPendencias.filter(p => p.maquina===mq || (!p.maquina && mq==="M2"));
               const cc = critCount(arr);
@@ -499,6 +500,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
                 </button>
               );
             })}
+          </div>
           </div>
 
           {/* Mini-cards de área (com divisão Alta/Méd/Baixa, respeitam máquina selecionada) */}
