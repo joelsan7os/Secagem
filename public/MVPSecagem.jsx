@@ -478,7 +478,20 @@ import { PainelAdmin } from "./admin";
 import { CleanersTela, RelatorioCleaners, CLEANERS_TOTAL } from "./cleaners";
 import { BarcodeModal } from "./barcode";
 import { MuralOportunidades } from "./pendencias";
-import DashboardTV from "./Dashboard";
+// Dashboard TV carregado de forma tolerante: se o arquivo ainda não existir no
+// repo, o app NÃO quebra — o modo dashboard apenas fica indisponível até subir.
+const DashboardTV = React.lazy(() =>
+  import("./Dashboard").catch(() => ({
+    default: ({ setModoVisao }) => (
+      <div style={{background:"#04111D",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,color:"#B5C6DA",fontFamily:"'Segoe UI',system-ui,sans-serif",padding:24,textAlign:"center"}}>
+        <div style={{fontSize:40}}>🖥️</div>
+        <div style={{color:"#fff",fontWeight:800,fontSize:16}}>Dashboard ainda não publicado</div>
+        <div style={{fontSize:13,maxWidth:340,lineHeight:1.5}}>O arquivo Dashboard.jsx precisa ser enviado ao repositório. Assim que subir, este modo passa a funcionar.</div>
+        <button onClick={()=>setModoVisao("app")} style={{background:"rgba(80,144,255,0.12)",border:"1px solid #1A5CCC55",color:"#1A5CCC",borderRadius:9,padding:"10px 18px",cursor:"pointer",fontSize:13,fontWeight:800}}>← Voltar ao App</button>
+      </div>
+    ),
+  }))
+);
 
 // Leitura imediata do aparelho (não trava a tela esperando a nuvem)
 const storageGet = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
@@ -3349,7 +3362,7 @@ export default function App() {
   };
   if(!perfil) return <TelaAuth onEntrar={setPerfil}/>;
   if(adminAberto && perfil.funcao==="dev") return <PainelAdmin onVoltar={()=>setAdminAberto(false)}/>;
-  if(modoVisao==="dashboard") return <DashboardTV setTela={(t)=>{setModoVisao("app");setTela(t);}} setModoVisao={setModoVisao}/>;
+  if(modoVisao==="dashboard") return <React.Suspense fallback={<div style={{background:C.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",color:C.accentLight,fontFamily:"monospace",fontSize:14}}>Carregando dashboard…</div>}><DashboardTV setTela={(t)=>{setModoVisao("app");setTela(t);}} setModoVisao={setModoVisao}/></React.Suspense>;
   return (
     <div style={{background:C.bg,minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text}}>
       <div style={{maxWidth:860,margin:"0 auto",position:"relative"}}>
