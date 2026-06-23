@@ -161,6 +161,8 @@ function PainelCard({ title, icon, corTopo, onClick, children, alerta=false }) {
 function PainelMural({ pendenciasData, chamadosData, setTela }) {
   const pend = Array.isArray(pendenciasData)?pendenciasData:[];
   const chamAbertos = Array.isArray(chamadosData)?chamadosData.filter(c=>c.status==="aberto"):[];
+
+  // ── LÓGICA (inalterada): contagem por janela ──
   const cnt = {pu:0,clean:0,cs:0,enf:0};
   pend.forEach(p=>{
     if(p.multiJanela) p.multiJanela.forEach(j=>{if(cnt[j]!==undefined)cnt[j]++;});
@@ -168,48 +170,124 @@ function PainelMural({ pendenciasData, chamadosData, setTela }) {
   });
   chamAbertos.forEach(c=>{const j=areaParaJanela(c.area);if(cnt[j]!==undefined)cnt[j]++;});
   const total=Object.values(cnt).reduce((a,b)=>a+b,0);
-  const cor=total===0?C.accentLight:total<=5?C.warningLight:C.dangerLight;
-  // donut
-  const R=38,SW=8,circ=2*Math.PI*R;
-  const segs=JANELAS.map(j=>({v:cnt[j.id],cor:j.cor})).filter(s=>s.v>0);
+
+  // ── severidade por prazo (lógica já existente nos dados) ──
+  const prazoDe = (item) => (item.prazo||"").toLowerCase();
+  let nCrit=0,nMed=0,nBaixa=0;
+  const classifica = (pz) => { if(pz==="imediato"||pz==="urgente")nCrit++; else if(pz==="normal")nMed++; else nBaixa++; };
+  pend.forEach(p=>classifica(prazoDe(p)));
+  chamAbertos.forEach(c=>classifica(prazoDe(c)));
+
+  // ── donut multicolor por severidade (igual mockup: vermelho/amarelo/verde) ──
+  const sevSegs=[
+    {v:nCrit, cor:C.dangerLight},
+    {v:nMed,  cor:C.warningLight},
+    {v:nBaixa,cor:C.accentLight},
+  ].filter(s=>s.v>0);
+  const corCentro = nCrit>0?C.dangerLight:nMed>0?C.warningLight:C.accentLight;
+  const R=52,SW=13,circ=2*Math.PI*R;
   let acc=0;
+
+  // ── linhas da lista (área-pai → sub) igual mockup ──
+  // Parte Úmida engloba Máquina(pu) + Cleaners(clean); Cortadeira=cs; Enfardamento=enf
+  const puTotal = cnt.pu + cnt.clean;
+  const corBarra = (n,base) => n===0?C.textDim:base;
+  const linhas = [
+    {tipo:"pai", label:"Parte Úmida", n:puTotal, cor: puTotal===0?C.textDim:(nCrit>0?C.dangerLight:C.warningLight)},
+    {tipo:"sub", label:"Máquina",     n:cnt.pu},
+    {tipo:"sub", label:"Cleaners",    n:cnt.clean},
+    {tipo:"pai", label:"Cortadeira",  n:cnt.cs,  cor: cnt.cs===0?C.textDim:C.warningLight},
+    {tipo:"pai", label:"Enfardamento",n:cnt.enf, cor: cnt.enf===0?C.textDim:C.accentLight},
+  ];
+  const maxBar = Math.max(1, puTotal, cnt.cs, cnt.enf);
+
   return(
-    <PainelCard title="Mural de Oportunidades" icon="🔧" corTopo={cor} onClick={()=>setTela("mural")} alerta={total>5}>
-      <div style={{display:"flex",alignItems:"center",gap:16}}>
-        {/* donut */}
-        <svg width={100} height={100} viewBox="0 0 100 100" style={{transform:"rotate(-90deg)",flexShrink:0}}>
-          <circle cx="50" cy="50" r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={SW}/>
-          {total===0
-            ? <circle cx="50" cy="50" r={R} fill="none" stroke={C.accentLight} strokeWidth={SW} strokeDasharray={`${circ} 0`} style={{filter:`drop-shadow(0 0 6px ${C.accentLight})`}}/>
-            : segs.map((s,i)=>{
-                const frac=total>0?s.v/total:0; const len=frac*circ; const off=-acc*circ; acc+=frac;
-                return <circle key={i} cx="50" cy="50" r={R} fill="none" stroke={s.cor} strokeWidth={SW}
-                  strokeDasharray={`${len} ${circ-len}`} strokeDashoffset={off} strokeLinecap="round"
-                  style={{filter:`drop-shadow(0 0 5px ${s.cor}88)`}}/>;
-              })
-          }
-          <text x="50" y="53" textAnchor="middle" fontSize="22" fontWeight="900" fill={cor} fontFamily="monospace" transform="rotate(90,50,50)"
-            style={{filter:`drop-shadow(0 0 10px ${cor})`}}>{total}</text>
-        </svg>
-        {/* breakdown */}
-        <div style={{flex:1,display:"flex",flexDirection:"column",gap:6}}>
-          {JANELAS.map(j=>{
-            const n=cnt[j.id]||0;
-            const w=total>0?Math.round(n/total*100):0;
+    <PainelCard title="Mural de Oportunidades" icon="🔧" corTopo={corCentro} onClick={()=>setTela("mural")} alerta={nCrit>0}>
+      <div style={{display:"flex",gap:18,alignItems:"center"}}>
+        {/* ── DONUT ── */}
+        <div style={{position:"relative",flexShrink:0,width:140,height:140}}>
+          <svg width={140} height={140} viewBox="0 0 140 140" style={{transform:"rotate(-90deg)"}}>
+            <circle cx="70" cy="70" r={R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={SW}/>
+            {total===0
+              ? <circle cx="70" cy="70" r={R} fill="none" stroke={C.accentLight} strokeWidth={SW} strokeDasharray={`${circ} 0`} style={{filter:`drop-shadow(0 0 8px ${C.accentLight})`}}/>
+              : sevSegs.map((s,i)=>{
+                  const frac=s.v/total; const len=frac*circ; const off=-acc*circ; acc+=frac;
+                  const gap=2; // micro-gap entre segmentos
+                  return <circle key={i} cx="70" cy="70" r={R} fill="none" stroke={s.cor} strokeWidth={SW}
+                    strokeDasharray={`${Math.max(0,len-gap)} ${circ-len+gap}`} strokeDashoffset={off} strokeLinecap="round"
+                    style={{filter:`drop-shadow(0 0 6px ${s.cor}aa)`,transition:"stroke-dasharray .6s"}}/>;
+                })
+            }
+          </svg>
+          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+            <span style={{fontFamily:"monospace",fontSize:46,fontWeight:900,color:corCentro,lineHeight:1,
+              textShadow:`0 0 22px ${corCentro}aa, 0 0 44px ${corCentro}44`}}>{total}</span>
+            <span style={{fontSize:10,color:C.textMuted,letterSpacing:"0.06em",marginTop:2}}>oportunidades</span>
+          </div>
+        </div>
+
+        {/* ── LISTA ── */}
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",borderBottom:`1px solid ${C.border}`,paddingBottom:5,marginBottom:7}}>
+            <span style={{fontSize:8,color:C.textDim,letterSpacing:"0.14em",fontWeight:700}}>ÁREA / MÁQUINA</span>
+            <span style={{fontSize:8,color:C.textDim,letterSpacing:"0.14em",fontWeight:700}}>TOTAL</span>
+          </div>
+          {linhas.map((ln,i)=>{
+            const isSub=ln.tipo==="sub";
+            const w=ln.tipo==="pai"?Math.round((ln.n/maxBar)*100):0;
             return(
-              <div key={j.id}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                  <span style={{fontSize:10,color:C.textMuted}}>{j.label}</span>
-                  <span style={{fontFamily:"monospace",fontWeight:900,fontSize:12,color:n>0?j.cor:C.textDim}}>{n}</span>
-                </div>
-                <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.06)",overflow:"hidden"}}>
-                  <div style={{height:"100%",width:`${w}%`,borderRadius:2,background:j.cor,transition:"width .5s",
-                    boxShadow:n>0?`0 0 6px ${j.cor}88`:"none"}}/>
-                </div>
+              <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:isSub?3:5,
+                paddingLeft:isSub?14:0}}>
+                {/* ícone/marcador */}
+                {!isSub&&<span style={{width:5,height:5,borderRadius:"50%",background:ln.cor,flexShrink:0,
+                  boxShadow:ln.n>0?`0 0 6px ${ln.cor}`:"none"}}/>}
+                {isSub&&<span style={{color:C.textDim,fontSize:10,flexShrink:0,marginLeft:-8}}>└</span>}
+                <span style={{fontSize:isSub?10:12,color:isSub?C.textDim:C.text,fontWeight:isSub?500:700,
+                  whiteSpace:"nowrap",flexShrink:0}}>{ln.label}</span>
+                {/* barra (só pai) */}
+                {!isSub&&(
+                  <div style={{flex:1,height:5,borderRadius:3,background:"rgba(255,255,255,0.05)",overflow:"hidden",minWidth:20}}>
+                    <div style={{height:"100%",width:`${w}%`,borderRadius:3,background:ln.cor,transition:"width .5s",
+                      boxShadow:ln.n>0?`0 0 6px ${ln.cor}aa`:"none"}}/>
+                  </div>
+                )}
+                {isSub&&<div style={{flex:1}}/>}
+                <span style={{fontFamily:"monospace",fontSize:isSub?11:13,fontWeight:900,
+                  color:ln.n>0?(isSub?C.textMuted:ln.cor):C.textDim,flexShrink:0,minWidth:16,textAlign:"right"}}>{ln.n}</span>
               </div>
             );
           })}
+          {/* total geral */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+            borderTop:`1px solid ${C.border}`,paddingTop:6,marginTop:4}}>
+            <span style={{fontSize:11,color:C.textMuted,fontWeight:600}}>Total geral</span>
+            <span style={{fontFamily:"monospace",fontSize:14,fontWeight:900,color:corCentro}}>{total}</span>
+          </div>
         </div>
+      </div>
+
+      {/* ── RODAPÉ: severidade + botão ── */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:4,
+        borderTop:`1px solid ${C.border}`,paddingTop:10}}>
+        <div style={{display:"flex",gap:20}}>
+          {[
+            {n:nCrit, label:"CRÍTICAS", cor:C.dangerLight},
+            {n:nMed,  label:"MÉDIAS",   cor:C.warningLight},
+            {n:nBaixa,label:"BAIXAS",   cor:C.accentLight},
+          ].map(({n,label,cor})=>(
+            <div key={label} style={{textAlign:"center"}}>
+              <div style={{fontFamily:"monospace",fontSize:24,fontWeight:900,color:n>0?cor:C.textDim,lineHeight:1,
+                textShadow:n>0?`0 0 14px ${cor}88`:"none"}}>{n}</div>
+              <div style={{fontSize:8,color:C.textDim,letterSpacing:"0.12em",marginTop:3,fontWeight:600}}>{label}</div>
+            </div>
+          ))}
+        </div>
+        <button onClick={(e)=>{e.stopPropagation();setTela("mural");}}
+          style={{background:"transparent",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 14px",
+            cursor:"pointer",color:C.textMuted,fontSize:10,fontWeight:700,letterSpacing:"0.08em",
+            display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+          VER DETALHES <span style={{fontSize:12}}>›</span>
+        </button>
       </div>
     </PainelCard>
   );
