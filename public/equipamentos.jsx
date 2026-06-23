@@ -1167,7 +1167,8 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
       {modalEq&&<ModalNotas eq={modalEq} onClose={()=>setModalEq(null)} onSave={salvarNotas}/>}
       {modalObs&&<ModalObservacao eq={modalObs} onClose={()=>setModalObs(null)} onSave={salvarObservacao}/>}
       <button onClick={()=>setSelId(null)} style={{...btnSec,marginBottom:18}}>← Voltar</button>
-      <div style={{background:`linear-gradient(160deg,${C.card},${C.surface})`,border:`1px solid ${dotColor2(eq.status)}44`,borderTop:`3px solid ${dotColor2(eq.status)}`,borderRadius:14,padding:20,boxShadow:`0 4px 24px ${dotColor2(eq.status)}18`}}>
+      <div style={{position:"relative",background:`linear-gradient(155deg,${dotColor2(eq.status)}12,rgba(7,24,40,0.97))`,border:`1.5px solid ${dotColor2(eq.status)}77`,borderRadius:14,padding:20,boxShadow:`0 4px 28px ${dotColor2(eq.status)}28`,overflow:"hidden"}}>
+        <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${dotColor2(eq.status)},transparent)`}}/>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
           <div>
             <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}>
@@ -1448,7 +1449,8 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {filtrados.length===0&&<div style={{textAlign:"center",color:C.textMuted,padding:"36px 0",fontSize:13}}>Nenhum resultado.</div>}
         {filtrados.map(eq=>(
-          <div key={eq.id} style={{background:`linear-gradient(135deg,${C.card},${C.surface})`,border:`1px solid ${dotColor2(eq.status)}44`,borderTop:`2px solid ${dotColor2(eq.status)}`,borderRadius:10,padding:"11px 12px",display:"flex",alignItems:"center",gap:10,boxShadow:`0 2px 12px ${dotColor2(eq.status)}18`}}>
+          <div key={eq.id} style={{position:"relative",background:`linear-gradient(155deg,${dotColor2(eq.status)}12,rgba(7,24,40,0.97))`,border:`1.5px solid ${dotColor2(eq.status)}77`,borderRadius:10,padding:"11px 12px",display:"flex",alignItems:"center",gap:10,boxShadow:`0 2px 16px ${dotColor2(eq.status)}22`,overflow:"hidden"}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${dotColor2(eq.status)},transparent)`,borderRadius:"10px 10px 0 0"}}/>
             <div style={{width:9,height:9,borderRadius:"50%",flexShrink:0,background:dotColor2(eq.status),boxShadow:`0 0 8px ${dotColor2(eq.status)},0 0 16px ${dotColor2(eq.status)}66`}}/>
             <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setSelId(eq.id)}>
               <div style={{color:C.text,fontWeight:600,fontSize:13,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{eq.nome}</div>
