@@ -213,25 +213,37 @@ export function BarcodeModal({ linha, onFechar }) {
 
   async function handleSalvar() {
     setSalvando(true);
+    // monta items (cada fardo lido + arames) para o detalhe do Histórico
+    const items = [];
+    ["A","B"].forEach(lado => {
+      fardos[lado].forEach((cod, i) => {
+        items.push({ id:`fardo_${lado}_${i}`, secao:`Lado ${lado}`, item:`Fardo ${i+1}`, ref:"lido", unit:"barcode",
+          resp: cod ? "ok" : "nao", codigo: cod || "" });
+      });
+    });
+    items.push({ id:"arame_218", secao:"Arames", item:"Arame 2,18 mm", ref:"OK", unit:"nível", resp: arames.a218==="Não OK — arame sobre o código"?"nok":"ok", obs:arames.a218 });
+    items.push({ id:"arame_3mm", secao:"Arames", item:"Arame 3 mm", ref:"OK", unit:"nível", resp: arames.a3mm==="Não OK — arame sobre o código"?"nok":"ok", obs:arames.a3mm });
     const reg = {
       id:Date.now(),
       tipoId:"barcode_enf",
       tipoLabel:"Validação de Fardos",
       data:hoje(), hora:horaAtual(),
       turno:getAutoTurno(), letra:calcularLetra(),
-      operador, linha,
+      operador, opPU:operador, linha,
       lote:meta?.lote||"", unidade:meta?.unidade||"", maquina:meta?.maq||"",
       fardos:{ A:fardos.A, B:fardos.B, contA, contB },
       arames:{ a218:arames.a218, a3mm:arames.a3mm },
       resultado: aprovado ? "APROVADO" : "AVARIA",
       noks: [temAlerta218, temAlerta3mm, !fardosOk].filter(Boolean).length,
+      total: 8,
+      items,
+      obs: meta?.raw ? `Código: ${meta.raw}` : "",
     };
     const hist = storageGet("barcode_hist_h2") || [];
-    const novo = [reg, ...hist].slice(0,200);
-    storageSet("barcode_hist_h2", novo);
-    // Grava também no histórico geral para aparecer na tela Histórico do app
-    const histGeral = storageGet("checklist_hist_h2") || [];
-    storageSet("checklist_hist_h2", [reg, ...histGeral].slice(0,500));
+    storageSet("barcode_hist_h2", [reg, ...hist].slice(0,200));
+    // Grava no histórico do app (mesma chave que a tela Histórico lê)
+    const histApp = storageGet("historico_h2") || [];
+    storageSet("historico_h2", [...histApp, reg]);
     setSalvo(true);
     setSalvando(false);
   }
@@ -284,7 +296,7 @@ export function BarcodeModal({ linha, onFechar }) {
             }}>×</div>
           )}
         </div>
-        {lido && <span style={{ fontSize:8, color:C.textDim, fontFamily:"monospace", maxWidth:"100%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{cod.slice(-6)}</span>}
+        {lido && <span style={{ fontSize:8, color:C.accentLight, fontFamily:"monospace", fontWeight:700, maxWidth:"100%", wordBreak:"break-all", lineHeight:1.2, textAlign:"center" }}>{cod}</span>}
         {!lido && !ativo && (
           <button onClick={()=>setLendo({lado,idx})} style={{ padding:"3px 6px", borderRadius:5, border:`1px solid ${C.dangerLight}55`, background:"transparent", color:C.dangerLight, fontSize:8, cursor:"pointer", fontWeight:700 }}>📷 LER</button>
         )}
