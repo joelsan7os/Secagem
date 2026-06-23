@@ -478,6 +478,7 @@ import { PainelAdmin } from "./admin";
 import { CleanersTela, RelatorioCleaners, CLEANERS_TOTAL } from "./cleaners";
 import { BarcodeModal } from "./barcode";
 import { MuralOportunidades } from "./pendencias";
+import DashboardTV from "./Dashboard";
 
 // Leitura imediata do aparelho (não trava a tela esperando a nuvem)
 const storageGet = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
@@ -3281,6 +3282,7 @@ export default function App() {
   const { perfil, setPerfil, logout } = usePerfilAtivo();
   const [adminAberto,setAdminAberto]=useState(false);
   const [tela,setTela]=useState("dashboard");
+  const [modoVisao,setModoVisao]=useState("app"); // "app" | "dashboard"
   const [historico,setHistorico]=useState(()=>storageGet("historico_h2")||[]);
   const [areaAtiva,setAreaAtiva]=useState("pu");
   const [ocorrencias,setOcorrencias]=useState({M2:null,M3:null});
@@ -3347,6 +3349,7 @@ export default function App() {
   };
   if(!perfil) return <TelaAuth onEntrar={setPerfil}/>;
   if(adminAberto && perfil.funcao==="dev") return <PainelAdmin onVoltar={()=>setAdminAberto(false)}/>;
+  if(modoVisao==="dashboard") return <DashboardTV setTela={(t)=>{setModoVisao("app");setTela(t);}} setModoVisao={setModoVisao}/>;
   return (
     <div style={{background:C.bg,minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text}}>
       <div style={{maxWidth:860,margin:"0 auto",position:"relative"}}>
@@ -3391,6 +3394,7 @@ export default function App() {
           <div style={{display:"flex",alignItems:"center",gap:7}}>
             {notasComum>0&&<button onClick={()=>setTela("equipamentos")} style={{background:"rgba(240,165,0,0.18)",border:`1px solid ${C.warningLight}`,color:C.warningLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>⚡{notasComum}</button>}
             {totalNotas>0&&<button onClick={()=>setTela("equipamentos")} style={{background:"rgba(232,51,58,0.18)",border:`1px solid ${C.dangerLight}`,color:C.dangerLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🗒{totalNotas}</button>}
+            <button onClick={()=>setModoVisao("dashboard")} style={{background:"rgba(80,144,255,0.12)",border:`1px solid ${C.blueLight}55`,color:C.blueLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🖥️</button>
             <div style={{display:"flex",alignItems:"center",gap:4}}>
               <button onClick={()=>setModalSinal(true)} style={{background:"none",border:"none",cursor:"pointer",padding:"2px 4px",display:"flex",alignItems:"center",gap:4}}>
                 {(()=>{const oc=ocMaisCritica(ocorrencias);const cor=oc?.cor==="vermelho"?C.dangerLight:oc?.cor==="amarelo"?C.warningLight:C.accentLight;return <span style={{fontSize:18,filter:`drop-shadow(0 0 4px ${cor})`}}>🚦</span>;})()}
