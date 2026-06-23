@@ -90,13 +90,15 @@ const STYLES = `
 const neon = (cor) => ({ textShadow:`0 0 8px ${cor}99, 0 0 18px ${cor}55` });
 
 // ── Donut gauge ────────────────────────────────────────────────────────────────
-function DonutGauge({ total, segs, cor, size=104 }) {
+function DonutGauge({ total, segs, cor, size=104, anelExterno=false }) {
   const R=size*0.38, SW=size*0.085, circ=2*Math.PI*R;
+  const Rext=size*0.46;
   let acc=0;
   const partes = segs.filter(s=>s.v>0);
   return (
     <div style={{ position:"relative", width:size, height:size, flexShrink:0 }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform:"rotate(-90deg)" }}>
+        {anelExterno && <circle cx={size/2} cy={size/2} r={Rext} fill="none" stroke={`${cor}55`} strokeWidth={size*0.018} style={{ filter:`drop-shadow(0 0 4px ${cor}aa)` }}/>}
         <circle cx={size/2} cy={size/2} r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={SW}/>
         {partes.map((s,i) => {
           const frac = total>0 ? s.v/total : 0;
@@ -482,7 +484,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
                       <span className={arr.length>0?"mural-led":""} style={{ "--lc":corM, width:9, height:9, borderRadius:"50%", background:arr.length>0?corM:C.textDim, boxShadow:arr.length>0?`0 0 8px ${corM}`:"none" }}/>
                     </div>
                     <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                      <DonutGauge total={arr.length} segs={segs} cor={corM} size={64}/>
+                      <DonutGauge total={arr.length} segs={segs} cor={corM} size={64} anelExterno/>
                       <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
                         {[["Alta",cc.crit,"#FF5252"],["Méd",cc.med,"#FFC107"],["Bax",cc.baixa,"#00E676"]].map(([l,v,co])=>(
                           <div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}>
@@ -557,7 +559,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
                 <div style={{ position:"relative" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
                     <div>
-                      <div style={{ color:janSel.cor, fontSize:20, fontWeight:900, letterSpacing:"0.02em", ...neon(janSel.cor) }}>{janSel.label.toUpperCase()}</div>
+                      <div style={{ color:janSel.cor, fontSize:20, fontWeight:900, letterSpacing:"0.02em", ...neon(janSel.cor) }}>{(janSel.id==="cs"?janSel.sigla:janSel.label).toUpperCase()}</div>
                       <div style={{ color:C.textMuted, fontSize:11, marginTop:2 }}>{arr.length} oportunidades · {janSel.desc}</div>
                     </div>
                     <span style={{ background:`${janSel.impCor}1f`, border:`1px solid ${janSel.impCor}66`, color:janSel.impCor, borderRadius:7, padding:"3px 9px", fontSize:9, fontWeight:800 }}>{janSel.impacto}</span>
