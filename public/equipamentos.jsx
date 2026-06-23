@@ -1167,11 +1167,11 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
       {modalEq&&<ModalNotas eq={modalEq} onClose={()=>setModalEq(null)} onSave={salvarNotas}/>}
       {modalObs&&<ModalObservacao eq={modalObs} onClose={()=>setModalObs(null)} onSave={salvarObservacao}/>}
       <button onClick={()=>setSelId(null)} style={{...btnSec,marginBottom:18}}>← Voltar</button>
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:20}}>
+      <div style={{background:`linear-gradient(160deg,${C.card},${C.surface})`,border:`1px solid ${dotColor2(eq.status)}44`,borderTop:`3px solid ${dotColor2(eq.status)}`,borderRadius:14,padding:20,boxShadow:`0 4px 24px ${dotColor2(eq.status)}18`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
           <div>
             <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5}}>
-              <span style={{background:C.tagBg,border:`1px solid ${subColor(eq.sub)}55`,color:subColor(eq.sub),borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800}}>{subLabel(eq.sub)}</span>
+              <span style={{background:`${subColor(eq.sub)}18`,border:`1px solid ${subColor(eq.sub)}99`,color:subColor(eq.sub),borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800,boxShadow:`0 0 8px ${subColor(eq.sub)}33`}}>{subLabel(eq.sub)}</span>
               <span style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:6,padding:"2px 8px",fontSize:10}}>{eq.area}</span>
             </div>
             <h3 style={{color:C.white,fontSize:16,fontWeight:800,margin:"0 0 3px"}}>{eq.nome}</h3>
@@ -1181,7 +1181,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
         </div>
         {eq.sub==="Comum"&&<div style={{background:"#1a0f0055",border:`1px solid ${C.warningLight}44`,borderRadius:8,padding:"10px 12px",marginBottom:16}}><p style={{color:C.warningLight,fontSize:12,margin:0,fontWeight:600}}>⚡ Equipamento de Área Comum — uma falha aqui impacta Máquina 2 e Máquina 3</p></div>}
         {/* Notas */}
-        <div style={{background:C.surface,border:`1px solid ${eq.notas.length>0?C.warningLight+"44":C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
+        <div style={{background:C.surface,border:`1px solid ${eq.notas.length>0?C.warningLight+"44":C.border}`,borderTop:`2px solid ${eq.notas.length>0?C.warningLight:C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
             <div style={{display:"flex",alignItems:"center",gap:7}}>
               <span>🗒</span><span style={{color:C.text,fontWeight:700,fontSize:13}}>Notas de Manutenção</span>
@@ -1192,14 +1192,14 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
           {eq.notas.length===0?<p style={{color:C.textDim,fontSize:12,margin:0}}>Nenhuma nota aberta.</p>:eq.notas.map((n,i)=>(<div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.warningLight}`,borderRadius:7,padding:"9px 12px",marginBottom:6}}><span style={{background:"#2a180055",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:5,padding:"1px 7px",fontSize:10,fontWeight:800,fontFamily:"monospace",display:"inline-block",marginBottom:4}}>{n.num||"S/Nº"}</span><p style={{color:C.text,fontSize:12,margin:0,lineHeight:1.5}}>{n.desc}</p></div>))}
         </div>
         {/* Status */}
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
+        <div style={{background:C.surface,border:`1px solid ${dotColor2(eq.status)}44`,borderTop:`2px solid ${dotColor2(eq.status)}`,borderRadius:10,padding:12}}>
           <p style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",margin:"0 0 8px"}}>Status</p>
           <div style={{display:"flex",gap:7}}>
-            {["OP","ALERTA","MANUTENÇÃO"].map(s=>(<button key={s} onClick={()=>setStatus(eq.id,s)} style={{flex:1,padding:"7px",borderRadius:7,cursor:"pointer",fontWeight:700,fontSize:10,textTransform:"uppercase",background:eq.status===s?(s==="OP"?C.success:s==="ALERTA"?C.warning:C.danger):C.tagBg,border:`1px solid ${eq.status===s?(s==="OP"?C.accentLight:s==="ALERTA"?C.warningLight:C.dangerLight):C.border}`,color:eq.status===s?"#fff":C.textMuted}}>{s}</button>))}
+            {["OP","ALERTA","MANUTENÇÃO"].map(s=>{const cor=s==="OP"?C.accentLight:s==="ALERTA"?C.warningLight:C.dangerLight;const ativo=eq.status===s;return(<button key={s} onClick={()=>setStatus(eq.id,s)} style={{flex:1,padding:"7px",borderRadius:7,cursor:"pointer",fontWeight:700,fontSize:10,textTransform:"uppercase",background:ativo?`linear-gradient(135deg,${cor}33,${cor}18)`:C.tagBg,border:`1.5px solid ${ativo?cor:C.border}`,color:ativo?cor:C.textMuted,boxShadow:ativo?`0 0 10px ${cor}44,0 0 20px ${cor}22`:"none"}}>{s}</button>);})}
           </div>
         </div>
         {/* Observações de Rota */}
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:14,marginTop:12}}>
+        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderTop:`2px solid #5090FF`,borderRadius:10,padding:14,marginTop:12}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
             <div style={{display:"flex",alignItems:"center",gap:7}}>
               <span>📝</span><span style={{color:C.text,fontWeight:700,fontSize:13}}>Observações de Rota</span>
@@ -1448,8 +1448,8 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {filtrados.length===0&&<div style={{textAlign:"center",color:C.textMuted,padding:"36px 0",fontSize:13}}>Nenhum resultado.</div>}
         {filtrados.map(eq=>(
-          <div key={eq.id} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${dotColor2(eq.status)}`,borderRadius:10,padding:"11px 12px",display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:9,height:9,borderRadius:"50%",flexShrink:0,background:dotColor2(eq.status),boxShadow:`0 0 6px ${dotColor2(eq.status)}88`}}/>
+          <div key={eq.id} style={{background:`linear-gradient(135deg,${C.card},${C.surface})`,border:`1px solid ${dotColor2(eq.status)}44`,borderTop:`2px solid ${dotColor2(eq.status)}`,borderRadius:10,padding:"11px 12px",display:"flex",alignItems:"center",gap:10,boxShadow:`0 2px 12px ${dotColor2(eq.status)}18`}}>
+            <div style={{width:9,height:9,borderRadius:"50%",flexShrink:0,background:dotColor2(eq.status),boxShadow:`0 0 8px ${dotColor2(eq.status)},0 0 16px ${dotColor2(eq.status)}66`}}/>
             <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setSelId(eq.id)}>
               <div style={{color:C.text,fontWeight:600,fontSize:13,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{eq.nome}</div>
               <div style={{display:"flex",gap:6,alignItems:"center",marginTop:3}}>
