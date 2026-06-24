@@ -416,44 +416,88 @@ function PanelAltura({ historico, setTela }) {
   );
 }
 
-// ════════ PAINEL: AVARIAS (heatmap turnos + top3 + total) ════════
+// ════════ PAINEL: AVARIAS (grafico linha por turno + top3 + total) ════════
 function PanelAvarias({ avarias, setTela }) {
   const dados=Array.isArray(avarias)?avarias:[];
   const mes=mesISO();
   const totalMes=dados.filter(r=>r.data?.slice(0,7)===mes&&r.teveAvaria).reduce((s,r)=>s+r.total,0);
-  // heatmap: 7 dias x 3 turnos
-  const dias=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
-  const letras=["A","B","C"];
-  const cell=(d,lt)=>dados.filter(r=>r.data===d&&r.letra===lt&&r.teveAvaria).reduce((a,r)=>a+r.total,0);
-  const allVals=[]; dias.forEach(d=>letras.forEach(lt=>allVals.push(cell(d,lt))));
-  const maxCell=Math.max(1,...allVals);
-  const heatColor=(v)=>{if(v===0)return"rgba(255,255,255,0.03)";const t=v/maxCell;if(t<=0.33)return`rgba(255,193,7,${0.25+t})`;if(t<=0.66)return`rgba(255,140,0,${0.4+t*0.3})`;return`rgba(255,82,82,${0.5+t*0.4})`;};
+  // serie por turno: 10 dias x 3 turnos (ordem cronologica)
+  const bounds=[];
+  for(let day=0;day<10;day++){
+    const d=new Date(); d.setDate(d.getDate()-9+day);
+    const ds=d.toISOString().slice(0,10);
+    for(const h of[8,16,24]){
+      const tsH=h===24?"23:59":String(h).padStart(2,"0")+":00";
+      bounds.push({data:ds,hLim:tsH,label:ds});
+    }
+  }
+  // soma de avarias por janela de turno (registros daquele dia com hora <= limite do turno e > limite anterior)
+  // simplificado: agrupa por data e ordena registros por hora, distribui em 3 slots do dia
+  const valPorTurno=bounds.map(b=>{
+    // pega registros do dia cujo horario cai no turno
+    const recs=dados.filter(r=>r.data===b.data&&r.teveAvaria);
+    // turno por faixa de hora do registro
+    const slot=b.hLim==="08:00"?0:b.hLim==="16:00"?1:2;
+    return recs.filter(r=>{
+      const hr=parseInt((r.hora||"00:00").slice(0,2),10);
+      const s=hr<8?0:hr<16?1:2;
+      return s===slot;
+    }).reduce((a,r)=>a+r.total,0);
+  });
   // top3
   const ct={}; TIPOS_AV.forEach(t=>ct[t.id]=0);
   dados.filter(r=>r.data?.slice(0,7)===mes&&r.teveAvaria).forEach(r=>r.itens?.forEach(it=>{if(ct[it.id]!==undefined)ct[it.id]+=it.quantidade;}));
   const top3=TIPOS_AV.map(t=>({...t,total:ct[t.id]})).sort((a,b)=>b.total-a.total).slice(0,3);
   const maxTop=Math.max(1,...top3.map(t=>t.total));
   const cTop=totalMes===0?C.green:totalMes<=10?C.amber:C.red;
+
+  // grafico
+  const W=300,H=78,PT=12,PB=16,PLOT=H-PT-PB;
+  const maxV=Math.max(1,...valPorTurno);
+  const xOf=(i)=>PT+(i/(Math.max(1,bounds.length-1)))*(W-PT*2);
+  const yOf=(v)=>PT+PLOT-((v/maxV)*PLOT);
+  const pts=valPorTurno.map((v,i)=>`${xOf(i)},${yOf(v)}`);
+  const line=bezier(pts);
+  const area=line?line+` L${xOf(valPorTurno.length-1)},${PT+PLOT} L${xOf(0)},${PT+PLOT} Z`:"";
+  const temDados=valPorTurno.some(v=>v>0);
+  const dayMarks=bounds.filter((_,i)=>i%3===0);
+
   return (
     <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}} onClick={()=>setTela&&setTela("historico")}>
       <Corners c={cTop}/>
       <PanelHead code="04" title="Avarias por Turno" accent={cTop}
         right={<span style={{fontFamily:mono,fontSize:18,fontWeight:900,color:cTop,textShadow:`0 0 12px ${cTop}66`}}>{totalMes}<span style={{fontSize:8,color:C.dim}}>/mes</span></span>}/>
-      {/* heatmap */}
-      <div style={{marginBottom:12}}>
-        <div style={{display:"flex",gap:3,marginLeft:18}}>
-          {dias.map((d,i)=>(<span key={i} style={{flex:1,textAlign:"center",fontFamily:mono,fontSize:7,color:C.dim}}>{d.slice(8,10)}</span>))}
-        </div>
-        {letras.map(lt=>(
-          <div key={lt} style={{display:"flex",alignItems:"center",gap:3,marginTop:3}}>
-            <span style={{width:15,fontFamily:mono,fontSize:9,fontWeight:700,color:C.dim}}>{lt}</span>
-            {dias.map((d,i)=>{const v=cell(d,lt);return(
-              <div key={i} style={{flex:1,height:18,borderRadius:4,background:heatColor(v),border:`1px solid ${v>0?"rgba(255,82,82,0.3)":C.line}`,display:"flex",alignItems:"center",justifyContent:"center",transition:"background .4s"}}>
-                {v>0&&<span style={{fontFamily:mono,fontSize:9,fontWeight:900,color:"#fff",textShadow:"0 0 4px #000"}}>{v}</span>}
-              </div>
-            );})}
-          </div>
-        ))}
+      {/* grafico de linha por turno */}
+      <div style={{marginBottom:10}}>
+        <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginBottom:4}}>AVARIAS POR TURNO · 10 DIAS</div>
+        {temDados?(
+          <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{display:"block"}}>
+            <defs>
+              <linearGradient id="avLineFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={cTop} stopOpacity="0.28"/><stop offset="100%" stopColor={cTop} stopOpacity="0.01"/>
+              </linearGradient>
+            </defs>
+            {/* grid horizontal */}
+            {[0,0.5,1].map(g=>{const y=PT+PLOT-g*PLOT;return <line key={g} x1={PT} y1={y} x2={W-PT} y2={y} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>;})}
+            <path d={area} fill="url(#avLineFill)"/>
+            <path d={line} fill="none" stroke={cTop} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 4px ${cTop}aa)`}}/>
+            {/* bolinhas por turno */}
+            {valPorTurno.map((v,i)=>(
+              <circle key={i} cx={xOf(i)} cy={yOf(v)} r={v>0?3:1.5}
+                fill={v>0?cTop:C.faint}
+                stroke={v>0?"#04111D":"none"} strokeWidth="1"
+                style={{filter:v>0?`drop-shadow(0 0 4px ${cTop})`:"none"}}/>
+            ))}
+            {/* valores nos picos */}
+            {valPorTurno.map((v,i)=>v>=maxV&&v>0?(
+              <text key={"t"+i} x={xOf(i)} y={yOf(v)-6} textAnchor="middle" fontFamily={mono} fontSize="8" fontWeight="700" fill={cTop}>{v}</text>
+            ):null)}
+            {/* marcas de dia */}
+            {dayMarks.map((m,i)=>{const x=xOf(i*3);const dd=m.label.slice(8,10)+"/"+m.label.slice(5,7);return(<text key={i} x={x} y={H-3} fontFamily={mono} fontSize="7" fill={C.dim} textAnchor={i===0?"start":i===dayMarks.length-1?"end":"middle"}>{dd}</text>);})}
+          </svg>
+        ):(
+          <div style={{height:H,display:"flex",alignItems:"center",justifyContent:"center",color:C.dim,fontFamily:sans,fontSize:10}}>Sem avarias registradas</div>
+        )}
       </div>
       {/* top3 */}
       <div style={{paddingTop:10,borderTop:`1px solid ${C.line}`,flex:1}}>
