@@ -286,16 +286,20 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
         {/* cabecalho */}
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:16}}>
           <div style={{display:"flex",alignItems:"center",gap:11}}>
-            {/* badge circular da maquina */}
+            {/* badge circular da maquina — arcos multicolor */}
             <div style={{position:"relative",width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
               <svg width="44" height="44" style={{position:"absolute",inset:0}}>
-                <circle cx="22" cy="22" r="19" fill="none" stroke={`${cor}22`} strokeWidth="2"/>
-                <circle cx="22" cy="22" r="19" fill="none" stroke={cor} strokeWidth="2"
-                  strokeDasharray={`${critico?"120":"80"} 200`} strokeLinecap="round"
-                  transform="rotate(-90 22 22)" style={{filter:`drop-shadow(0 0 4px ${cor})`}}/>
+                {areas.map((a,i)=>{
+                  const r=19,circ=2*Math.PI*r,segLen=circ*0.18,gap=circ*0.055;
+                  const offset=-(circ*(0.18+0.055)*i)+(circ*0.25);
+                  return <circle key={a.id} cx="22" cy="22" r={r} fill="none" stroke={a.c} strokeWidth="3"
+                    strokeDasharray={`${segLen} ${circ-segLen}`} strokeLinecap="round"
+                    transform={`rotate(${-90+i*76} 22 22)`}
+                    style={{filter:`drop-shadow(0 0 3px ${a.c}99)`,opacity:d.cnt[a.id]>0?1:0.25}}/>;
+                })}
               </svg>
-              <span style={{fontFamily:mono,fontSize:12,fontWeight:900,color:cor,
-                textShadow:`0 0 10px ${cor}`,zIndex:1}}>{mq}</span>
+              <span style={{fontFamily:mono,fontSize:12,fontWeight:900,color:C.ink,
+                textShadow:"0 0 8px rgba(255,255,255,0.5)",zIndex:1}}>{mq}</span>
               {critico&&<div style={{position:"absolute",inset:0,borderRadius:"50%",
                 border:`1.5px solid ${C.red}`,animation:"cmd-ring 1.6s ease-out infinite"}}/>}
             </div>
@@ -315,27 +319,31 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
           </div>
         </div>
 
-        {/* areas com visual rico */}
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {/* areas — cada uma com sua cor sempre visivel */}
+        <div style={{display:"flex",flexDirection:"column",gap:9}}>
           {areas.map(a=>{
-            const v=d.cnt[a.id], w=Math.round(v/maxArea*100);
+            const v=d.cnt[a.id], w=Math.max(v>0?Math.round(v/maxArea*100):0,0);
             return (
               <div key={a.id}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
-                  <div style={{width:8,height:8,borderRadius:3,
-                    background:v>0?a.c:C.faint,
-                    boxShadow:v>0?`0 0 6px ${a.c}`:0,
-                    flexShrink:0}}/>
-                  <span style={{fontFamily:sans,fontSize:10,fontWeight:v>0?700:400,
-                    color:v>0?C.mute:C.dim,flex:1,letterSpacing:"0.04em"}}>{a.l}</span>
-                  <span style={{fontFamily:mono,fontSize:13,fontWeight:900,
-                    color:v>0?a.c:C.faint,minWidth:20,textAlign:"right"}}>{v}</span>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                  <div style={{width:8,height:8,borderRadius:3,background:a.c,
+                    boxShadow:`0 0 ${v>0?8:3}px ${a.c}${v>0?"bb":"44"}`,flexShrink:0}}/>
+                  <span style={{fontFamily:sans,fontSize:10,fontWeight:700,
+                    color:a.c,flex:1,letterSpacing:"0.05em",
+                    textShadow:v>0?`0 0 8px ${a.c}66`:"none",
+                    opacity:v>0?1:0.45}}>{a.l}</span>
+                  <span style={{fontFamily:mono,fontSize:14,fontWeight:900,
+                    color:v>0?a.c:C.dim,minWidth:20,textAlign:"right",
+                    textShadow:v>0?`0 0 8px ${a.c}88`:"none"}}>{v}</span>
                 </div>
-                <div style={{height:3,borderRadius:2,background:"rgba(255,255,255,0.05)",overflow:"hidden"}}>
-                  <div style={{height:"100%",width:`${w}%`,
-                    background:`linear-gradient(90deg,${a.c}88,${a.c})`,
+                <div style={{height:3,borderRadius:2,background:`${a.c}15`,overflow:"hidden",position:"relative"}}>
+                  {/* barra base dim sempre visivel */}
+                  <div style={{position:"absolute",inset:0,background:`${a.c}18`}}/>
+                  {/* barra de preenchimento */}
+                  <div style={{height:"100%",width:`${w}%`,position:"relative",
+                    background:`linear-gradient(90deg,${a.c}66,${a.c})`,
                     borderRadius:2,transition:"width .7s cubic-bezier(.4,0,.2,1)",
-                    boxShadow:v>0?`0 0 6px ${a.c}88`:"none"}}/>
+                    boxShadow:v>0?`0 0 8px ${a.c}aa`:"none"}}/>
                 </div>
               </div>
             );
