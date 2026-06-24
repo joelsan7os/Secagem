@@ -6,6 +6,7 @@ import * as React from "react";
 import { COL, doc, onSnapshot, setDoc, getDoc } from "./firebase";
 import { CarrosselViewer } from "./carrossel";
 import { PainelAvariasTV } from "./avarias";
+import { MapaLinha } from "./MapaLinha";
 
 const C = {
   bg:"#04111D", surface:"#071828", card:"#0A1929", cardHover:"#0D2140",
@@ -748,8 +749,8 @@ export default function DashboardTV({ setTela, setModoVisao }) {
         </PainelCard>
         {/* Avarias */}
         <PainelAvariasTV avariasData={avarias} setTela={setTela}/>
-        {/* Slot livre */}
-        <div style={{borderRadius:14,border:`1px dashed rgba(60,255,140,0.08)`,opacity:0.4}}/>
+        {/* Mapa da Linha — ocupa slot livre */}
+        <MapaLinha ocorrencias={ocorrencias} pendenciasData={pendencias} chamadosData={chamados} setTela={setTela}/>
       </div>
 
       {/* ── Modal acidente ───────────────────────────────────────────── */}
