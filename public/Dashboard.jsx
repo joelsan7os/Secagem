@@ -949,26 +949,23 @@ export default function DashboardTV({ setTela, setModoVisao }) {
       </div>
 
       {/* ═══ CORPO ═══ */}
-      <div style={{position:"relative",zIndex:5,flex:1,padding:"12px 14px",display:"flex",flexDirection:"column",gap:0,overflow:"auto"}}>
+      <div style={{position:"relative",zIndex:5,flex:1,padding:"12px 14px",display:"flex",flexDirection:"column",gap:0,overflow:"hidden"}}>
         <HeroBar historico={historico} seguranca={seguranca} cleaners={cleaners} cleanersHist={cleanersHist} avarias={avarias} onEditAcid={()=>setModalAcid(true)}/>
 
         {/* grid principal: 4 col x 2 linhas + faixa */}
-        <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gridTemplateRows:"1fr 1fr auto",gap:12,overflow:"visible"}}>
+        <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gridTemplateRows:"1fr 1fr auto",gap:12,minHeight:0,overflow:"hidden"}}>
           {/* linha 1 — Cleaners + Mural M2+M3 (span2) + Avarias */}
           <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
           <div style={{gridColumn:"span 2"}}><PanelMural pendencias={pendencias} chamados={chamados} cleaners={cleaners} ocorrencias={ocorrencias} setTela={setTela}/></div>
           <PanelAvarias avarias={avarias} setTela={setTela}/>
-          {/* linha 2 — Altura+Checklists+Chamados (span2) + Carrossel (span2) */}
+          {/* linha 2 — Altura+Checklists (span2) + Carrossel (span2 col x 2 linhas) */}
           <div style={{gridColumn:"span 2"}}><PanelAlturaChecklists historico={historico} chamados={chamados} cleaners={cleaners} avarias={avarias} setTela={setTela}/></div>
-          <div style={{gridColumn:"span 2"}} className="cmd-card">
-            <div style={{width:"100%",height:"100%",position:"relative",borderRadius:16,overflow:"hidden"}}>
-              <Corners c={C.blue}/>
-              <CarrosselViewer/>
-            </div>
+          <div className="cmd-card" style={{gridColumn:"span 2",gridRow:"span 2",padding:0,overflow:"hidden",position:"relative"}}>
+            <Corners c={C.blue}/>
+            <CarrosselViewer/>
           </div>
-          {/* linha 3 — Saude horizontal (span2) */}
+          {/* linha 3 — Saude horizontal (span2) embaixo do Altura */}
           <div style={{gridColumn:"span 2"}}><PanelSaude cleaners={cleaners} historico={historico} chamados={chamados} avarias={avarias}/></div>
-          <div/><div/>
         </div>
 
         {/* faixa inferior: ticker + status */}
