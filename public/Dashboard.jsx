@@ -225,71 +225,161 @@ function HeroBar({ historico, seguranca, cleaners, cleanersHist, avarias, onEdit
   );
 }
 
-// ════════ PAINEL: MURAL (radial multi-anel) ════════
-function PanelMural({ pendencias, chamados, setTela }) {
+// ════════ PAINEL: MURAL (duplo M2/M3 — cada maquina com suas areas) ════════
+function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
   const pend=Array.isArray(pendencias)?pendencias:[];
   const chA=Array.isArray(chamados)?chamados.filter(c=>c.status==="aberto"):[];
-  const cnt={pu:0,clean:0,cs:0,enf:0};
-  pend.forEach(p=>{if(p.multiJanela)p.multiJanela.forEach(j=>{if(cnt[j]!==undefined)cnt[j]++;});else{const j=p.janela||jReg(p.area);if(cnt[j]!==undefined)cnt[j]++;}});
-  chA.forEach(c=>{const j=jReg(c.area);if(cnt[j]!==undefined)cnt[j]++;});
-  const total=Object.values(cnt).reduce((a,b)=>a+b,0);
-  // severidade
-  let nC=0,nM=0,nB=0; const cl=(pz)=>{const p=(pz||"").toLowerCase();if(p==="imediato"||p==="urgente")nC++;else if(p==="normal")nM++;else nB++;};
-  pend.forEach(p=>cl(p.prazo)); chA.forEach(c=>cl(c.prazo));
-  const cCenter=nC>0?C.red:nM>0?C.amber:C.green;
-  const areas=[{id:"pu",l:"P.UMIDA",c:C.green},{id:"clean",l:"CLEANERS",c:C.cyan},{id:"cs",l:"SEC/CORT",c:C.blue},{id:"enf",l:"ENFARD.",c:C.purple}];
-  // aneis concentricos
-  const cx=72,cy=72; const rings=[54,44,34,24];
-  return (
-    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}}>
-      <Corners c={cCenter}/>
-      <PanelHead code="01" title="Mural de Oportunidades" accent={cCenter}
-        right={<span style={{fontFamily:mono,fontSize:9,color:C.dim}}>{total} ABERTAS</span>}/>
-      <div style={{display:"flex",gap:14,flex:1}}>
-        {/* aneis */}
-        <div style={{position:"relative",width:144,height:144,flexShrink:0}}>
-          <svg width="144" height="144" viewBox="0 0 144 144">
-            {areas.map((a,i)=>{
-              const v=cnt[a.id], frac=total>0?v/total:0, r=rings[i], circ=2*Math.PI*r;
-              return (
-                <g key={a.id}>
-                  <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="6"/>
-                  <circle cx={cx} cy={cy} r={r} fill="none" stroke={a.c} strokeWidth="6"
-                    strokeDasharray={`${frac*circ} ${circ}`} strokeLinecap="round"
-                    transform={`rotate(-90 ${cx} ${cy})`}
-                    style={{filter:`drop-shadow(0 0 4px ${a.c}aa)`,transition:"stroke-dasharray .7s"}}/>
-                </g>
-              );
-            })}
-            <text x={cx} y={cy-2} textAnchor="middle" fontFamily={mono} fontSize="32" fontWeight="900" fill={cCenter} style={{filter:`drop-shadow(0 0 10px ${cCenter})`}}>{total}</text>
-            <text x={cx} y={cy+14} textAnchor="middle" fontFamily={sans} fontSize="7" fill={C.dim} letterSpacing="2">PENDENCIAS</text>
-          </svg>
+  const areas=[
+    {id:"pu",l:"Parte Umida",c:C.green},
+    {id:"clean",l:"Cleaners",c:C.cyan},
+    {id:"cs",l:"Sec / Cortadeira",c:C.blue},
+    {id:"enf",l:"Enfardamento",c:C.purple},
+  ];
+  // separa pendencias por maquina (campo maquina; fallback por linha)
+  const maqDe=(item)=>{
+    if(item.maquina==="M2"||item.maquina==="M3")return item.maquina;
+    const ln=item.linha||"";
+    if(["L4","L5"].includes(ln))return"M2";
+    if(["L6","L7","L8"].includes(ln))return"M3";
+    return null;
+  };
+  // conta por maquina+area e severidade por maquina
+  const dadosMaq=(mq)=>{
+    const cnt={pu:0,clean:0,cs:0,enf:0};
+    let nC=0,nM=0,nB=0;
+    const add=(item,jan)=>{const pz=(item.prazo||"").toLowerCase();if(pz==="imediato"||pz==="urgente")nC++;else if(pz==="normal")nM++;else nB++;if(cnt[jan]!==undefined)cnt[jan]++;};
+    pend.forEach(p=>{const m=maqDe(p);if(m!==mq)return;if(p.multiJanela)p.multiJanela.forEach(j=>add(p,j));else add(p,p.janela||jReg(p.area));});
+    chA.forEach(c=>{const m=maqDe(c);if(m!==mq)return;add(c,jReg(c.area));});
+    const total=Object.values(cnt).reduce((a,b)=>a+b,0);
+    return {cnt,total,nC,nM,nB};
+  };
+  const m2=dadosMaq("M2"), m3=dadosMaq("M3");
+  const totalGeral=m2.total+m3.total;
+  const cGeral=(m2.nC+m3.nC)>0?C.red:(m2.nM+m3.nM)>0?C.amber:C.green;
+
+  // bloco de uma maquina — visual sofisticado para espaco dobrado
+  const MaqBlock=({mq,d,ocr})=>{
+    const cor=d.nC>0?C.red:d.nM>0?C.amber:d.total>0?C.amber:C.green;
+    const critico=d.nC>0||ocr?.cor==="vermelho";
+    const maxArea=Math.max(1,...Object.values(d.cnt));
+    const linhas=mq==="M2"?"L4 · L5":"L6 · L7 · L8";
+    return (
+      <div onClick={()=>setTela&&setTela("mural")}
+        style={{flex:1,position:"relative",cursor:"pointer",borderRadius:14,padding:"16px 18px",
+          background:critico
+            ?"linear-gradient(145deg,rgba(192,39,45,0.18),rgba(7,24,38,0.7))"
+            :"linear-gradient(145deg,rgba(10,32,50,0.5),rgba(7,24,38,0.65))",
+          border:`1px solid ${critico?C.red+"77":cor+"44"}`,
+          boxShadow:critico?`0 0 28px ${C.red}33, inset 0 0 40px ${C.red}0c`:`0 0 18px ${cor}11`,
+          transition:"all .3s",overflow:"hidden"}}>
+        {/* borda superior animada */}
+        <div style={{position:"absolute",top:0,left:0,right:0,height:2,
+          background:`linear-gradient(90deg,transparent 0%,${cor} 50%,transparent 100%)`,
+          opacity:critico?1:0.5,
+          animation:critico?"cmd-pulse 1.2s infinite":"none"}}/>
+        {/* cantos HUD */}
+        <div style={{position:"absolute",top:7,left:7,width:10,height:10,borderTop:`1.5px solid ${cor}88`,borderLeft:`1.5px solid ${cor}88`}}/>
+        <div style={{position:"absolute",top:7,right:7,width:10,height:10,borderTop:`1.5px solid ${cor}88`,borderRight:`1.5px solid ${cor}88`}}/>
+        <div style={{position:"absolute",bottom:7,left:7,width:10,height:10,borderBottom:`1.5px solid ${cor}88`,borderLeft:`1.5px solid ${cor}88`}}/>
+        <div style={{position:"absolute",bottom:7,right:7,width:10,height:10,borderBottom:`1.5px solid ${cor}88`,borderRight:`1.5px solid ${cor}88`}}/>
+
+        {/* cabecalho */}
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:11}}>
+            {/* badge circular da maquina */}
+            <div style={{position:"relative",width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <svg width="44" height="44" style={{position:"absolute",inset:0}}>
+                <circle cx="22" cy="22" r="19" fill="none" stroke={`${cor}22`} strokeWidth="2"/>
+                <circle cx="22" cy="22" r="19" fill="none" stroke={cor} strokeWidth="2"
+                  strokeDasharray={`${critico?"120":"80"} 200`} strokeLinecap="round"
+                  transform="rotate(-90 22 22)" style={{filter:`drop-shadow(0 0 4px ${cor})`}}/>
+              </svg>
+              <span style={{fontFamily:mono,fontSize:12,fontWeight:900,color:cor,
+                textShadow:`0 0 10px ${cor}`,zIndex:1}}>{mq}</span>
+              {critico&&<div style={{position:"absolute",inset:0,borderRadius:"50%",
+                border:`1.5px solid ${C.red}`,animation:"cmd-ring 1.6s ease-out infinite"}}/>}
+            </div>
+            <div>
+              <div style={{fontFamily:sans,fontSize:13,fontWeight:900,color:C.ink,
+                letterSpacing:"0.06em",textShadow:critico?`0 0 12px ${C.red}66`:"none"}}>
+                MAQUINA {mq.replace("M","")}
+              </div>
+              <div style={{fontFamily:mono,fontSize:8,color:C.dim,marginTop:1,letterSpacing:"0.1em"}}>{linhas}</div>
+            </div>
+          </div>
+          {/* total destaque */}
+          <div style={{textAlign:"right"}}>
+            <div style={{fontFamily:mono,fontSize:36,fontWeight:900,color:cor,lineHeight:1,
+              textShadow:`0 0 18px ${cor}88`}}>{d.total}</div>
+            <div style={{fontFamily:sans,fontSize:7,color:C.dim,letterSpacing:"0.12em",marginTop:2}}>PENDENCIAS</div>
+          </div>
         </div>
-        {/* legenda + severidade */}
-        <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",gap:7}}>
+
+        {/* areas com visual rico */}
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {areas.map(a=>{
-            const v=cnt[a.id], w=total>0?Math.round(v/total*100):0;
+            const v=d.cnt[a.id], w=Math.round(v/maxArea*100);
             return (
-              <div key={a.id} style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{width:6,height:6,borderRadius:2,background:a.c,boxShadow:v>0?`0 0 5px ${a.c}`:"none",flexShrink:0}}/>
-                <span style={{fontFamily:sans,fontSize:9,color:C.mute,minWidth:54}}>{a.l}</span>
-                <div style={{flex:1,height:3,borderRadius:2,background:"rgba(255,255,255,0.05)",overflow:"hidden"}}>
-                  <div style={{height:"100%",width:`${w}%`,background:a.c,borderRadius:2,boxShadow:v>0?`0 0 4px ${a.c}`:"none",transition:"width .6s"}}/>
+              <div key={a.id}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                  <div style={{width:8,height:8,borderRadius:3,
+                    background:v>0?a.c:C.faint,
+                    boxShadow:v>0?`0 0 6px ${a.c}`:0,
+                    flexShrink:0}}/>
+                  <span style={{fontFamily:sans,fontSize:10,fontWeight:v>0?700:400,
+                    color:v>0?C.mute:C.dim,flex:1,letterSpacing:"0.04em"}}>{a.l}</span>
+                  <span style={{fontFamily:mono,fontSize:13,fontWeight:900,
+                    color:v>0?a.c:C.faint,minWidth:20,textAlign:"right"}}>{v}</span>
                 </div>
-                <span style={{fontFamily:mono,fontSize:11,fontWeight:900,color:v>0?a.c:C.dim,minWidth:14,textAlign:"right"}}>{v}</span>
+                <div style={{height:3,borderRadius:2,background:"rgba(255,255,255,0.05)",overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${w}%`,
+                    background:`linear-gradient(90deg,${a.c}88,${a.c})`,
+                    borderRadius:2,transition:"width .7s cubic-bezier(.4,0,.2,1)",
+                    boxShadow:v>0?`0 0 6px ${a.c}88`:"none"}}/>
+                </div>
               </div>
             );
           })}
         </div>
+
+        {/* severidade rodape */}
+        <div style={{display:"flex",gap:7,marginTop:14,paddingTop:12,borderTop:`1px solid rgba(255,255,255,0.06)`}}>
+          {[{n:d.nC,l:"CRITICAS",c:C.red},{n:d.nM,l:"MEDIAS",c:C.amber},{n:d.nB,l:"BAIXAS",c:C.green}].map(s=>(
+            <div key={s.l} style={{flex:1,textAlign:"center",padding:"7px 0",borderRadius:8,
+              background:`${s.c}${s.n>0?"14":"08"}`,
+              border:`1px solid ${s.c}${s.n>0?"55":"18"}`,
+              boxShadow:s.n>0?`0 0 8px ${s.c}22`:"none"}}>
+              <div style={{fontFamily:mono,fontSize:18,fontWeight:900,
+                color:s.n>0?s.c:C.dim,lineHeight:1,
+                textShadow:s.n>0?`0 0 10px ${s.c}66`:"none"}}>{s.n}</div>
+              <div style={{fontFamily:sans,fontSize:6.5,color:C.dim,
+                letterSpacing:"0.1em",marginTop:2}}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* indicador de acao */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+          marginTop:10,fontFamily:mono,fontSize:7.5,
+          color:critico?C.red:C.dim,opacity:critico?1:0.5,
+          animation:critico?"cmd-pulse 1.5s infinite":"none"}}>
+          <div style={{width:4,height:4,borderRadius:"50%",
+            background:critico?C.red:C.dim,
+            boxShadow:critico?`0 0 5px ${C.red}`:"none"}}/>
+          {critico?"ACAO IMEDIATA · CLIQUE PARA ABRIR MURAL":"clique para abrir mural"}
+        </div>
       </div>
-      {/* severidade rodape */}
-      <div style={{display:"flex",gap:8,marginTop:12,paddingTop:10,borderTop:`1px solid ${C.line}`}}>
-        {[{n:nC,l:"CRITICAS",c:C.red},{n:nM,l:"MEDIAS",c:C.amber},{n:nB,l:"BAIXAS",c:C.green}].map(s=>(
-          <div key={s.l} onClick={()=>setTela&&setTela("mural")} style={{flex:1,cursor:"pointer",textAlign:"center",padding:"6px 0",borderRadius:8,background:`${s.c}0c`,border:`1px solid ${s.c}22`}}>
-            <div style={{fontFamily:mono,fontSize:20,fontWeight:900,color:s.n>0?s.c:C.dim,lineHeight:1,textShadow:s.n>0?`0 0 10px ${s.c}66`:"none"}}>{s.n}</div>
-            <div style={{fontFamily:sans,fontSize:7,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>{s.l}</div>
-          </div>
-        ))}
+    );
+  };
+
+  return (
+    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}}>
+      <Corners c={cGeral}/>
+      <PanelHead code="01" title="Mural de Oportunidades" accent={cGeral}
+        right={<span style={{fontFamily:mono,fontSize:9,color:C.dim}}>{totalGeral} ABERTAS</span>}/>
+      <div style={{display:"flex",gap:12,flex:1}}>
+        <MaqBlock mq="M2" d={m2} ocr={ocorrencias?.M2}/>
+        <MaqBlock mq="M3" d={m3} ocr={ocorrencias?.M3}/>
       </div>
     </div>
   );
@@ -588,48 +678,6 @@ function PanelChecklists({ historico, setTela }) {
 }
 
 // ════════ PAINEL: TENDENCIA EFICIENCIA (area grande) ════════
-function PanelTendencia({ cleanersHist, setTela }) {
-  const hist=Array.isArray(cleanersHist)?cleanersHist:[];
-  const bounds=[];
-  for(let day=0;day<10;day++){const d=new Date();d.setDate(d.getDate()-9+day);const ds=d.toISOString().slice(0,10);for(const h of[8,16,24]){const nd=h===24;const bd=nd?new Date(d.getTime()+864e5).toISOString().slice(0,10):ds;const bh=nd?"00:00":String(h).padStart(2,"0")+":00";bounds.push({ts:bd+"T"+bh,label:ds});}}
-  const sorted=[...hist].sort((a,b)=>(a.data+(a.hora||"00:00")).localeCompare(b.data+(b.hora||"00:00")));
-  const snap={M2:{},M3:{}};let idx=0;
-  const vals=bounds.map(({ts})=>{while(idx<sorted.length){const e=sorted[idx];if((e.data+"T"+(e.hora||"00:00"))>ts)break;if(e.maquina&&snap[e.maquina]){if(e.status==="REMOVIDA")snap[e.maquina][e.garrafa]=1;else delete snap[e.maquina][e.garrafa];}idx++;}const fora=Object.keys(snap.M2||{}).length+Object.keys(snap.M3||{}).length;return Math.round(((CLN_TOTAL*2)-fora)/(CLN_TOTAL*2)*100);});
-  const W=560,H=120,PT=10,PB=20,PLOT=H-PT-PB;
-  const mn=Math.max(0,Math.min(...vals)-5),mx=Math.min(100,Math.max(...vals)+5),rng=mx-mn||1;
-  const xOf=(i)=>(i/(bounds.length-1))*W, yOf=(v)=>PT+PLOT-((v-mn)/rng)*PLOT;
-  const pts=vals.map((v,i)=>`${xOf(i)},${yOf(v)}`);
-  const line=bezier(pts), area=line+` L${W},${PT+PLOT} L0,${PT+PLOT} Z`;
-  const atual=vals[vals.length-1];
-  const c=atual>=90?C.green:atual>=CLN_LIM?C.amber:C.red;
-  const yLim=yOf(CLN_LIM);
-  const dayMarks=bounds.filter((_,i)=>i%3===0);
-  return (
-    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}} onClick={()=>setTela&&setTela("cleaners")}>
-      <Corners c={c}/>
-      <PanelHead code="07" title="Tendencia de Eficiencia · Cleaners" accent={c}
-        right={<span style={{fontFamily:mono,fontSize:20,fontWeight:900,color:c,textShadow:`0 0 12px ${c}66`}}>{atual}%</span>}/>
-      <div style={{flex:1,position:"relative"}}>
-        <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{display:"block"}}>
-          <defs>
-            <linearGradient id="tendFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={c} stopOpacity="0.3"/><stop offset="100%" stopColor={c} stopOpacity="0.01"/>
-            </linearGradient>
-          </defs>
-          {/* grid horizontal */}
-          {[0,25,50,75,100].map(g=>{const y=yOf(g);if(y<PT||y>PT+PLOT)return null;return(<g key={g}><line x1="0" y1={y} x2={W} y2={y} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/><text x="2" y={y-2} fontFamily={mono} fontSize="7" fill={C.faint}>{g}</text></g>);})}
-          {/* limite */}
-          {yLim>PT&&yLim<PT+PLOT&&<line x1="0" y1={yLim} x2={W} y2={yLim} stroke={C.amber} strokeWidth="1" strokeDasharray="4,4" opacity="0.5"/>}
-          <path d={area} fill="url(#tendFill)"/>
-          <path d={line} fill="none" stroke={c} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 5px ${c}aa)`}}/>
-          <circle cx={xOf(vals.length-1)} cy={yOf(atual)} r="4" fill={c} style={{filter:`drop-shadow(0 0 6px ${c})`}}/>
-          {dayMarks.map((m,i)=>{const x=xOf(i*3);const dd=m.label.slice(8,10)+"/"+m.label.slice(5,7);return(<text key={i} x={x} y={H-4} fontFamily={mono} fontSize="7" fill={C.dim} textAnchor={i===0?"start":i===dayMarks.length-1?"end":"middle"}>{dd}</text>);})}
-        </svg>
-      </div>
-    </div>
-  );
-}
-
 // ════════ MODAL ACIDENTE ════════
 function ModalAcid({ valor, onSave, onClose }) {
   const [v,setV]=React.useState(valor!=null?String(valor):"");
@@ -751,16 +799,15 @@ export default function DashboardTV({ setTela, setModoVisao }) {
         <HeroBar historico={historico} seguranca={seguranca} cleaners={cleaners} cleanersHist={cleanersHist} avarias={avarias} onEditAcid={()=>setModalAcid(true)}/>
 
         {/* grid principal: 4 col x 2 linhas + faixa */}
-        <div style={{flex:1,display:"grid",gridTemplateColumns:"1.1fr 1.1fr 1fr 1fr",gridTemplateRows:"1fr 1fr",gap:12,minHeight:0}}>
-          {/* linha 1 */}
-          <PanelMural pendencias={pendencias} chamados={chamados} setTela={setTela}/>
+        <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gridTemplateRows:"1fr 1fr",gap:12,minHeight:0}}>
+          {/* linha 1 — Mural dobrado (M2/M3) + Cleaners + Avarias */}
+          <div style={{gridColumn:"span 2"}}><PanelMural pendencias={pendencias} chamados={chamados} ocorrencias={ocorrencias} setTela={setTela}/></div>
           <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
-          <PanelAltura historico={historico} setTela={setTela}/>
           <PanelAvarias avarias={avarias} setTela={setTela}/>
-          {/* linha 2 */}
-          <div style={{gridColumn:"span 2"}}><PanelTendencia cleanersHist={cleanersHist} setTela={setTela}/></div>
+          {/* linha 2 — Altura + Chamados + Checklists */}
+          <PanelAltura historico={historico} setTela={setTela}/>
           <PanelChamados chamados={chamados} setTela={setTela}/>
-          <PanelChecklists historico={historico} setTela={setTela}/>
+          <div style={{gridColumn:"span 2"}}><PanelChecklists historico={historico} setTela={setTela}/></div>
         </div>
 
         {/* faixa inferior: galeria + ticker */}
