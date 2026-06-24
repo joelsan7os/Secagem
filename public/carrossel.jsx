@@ -2,7 +2,8 @@
 // PainelCarrossel: upload, preview, remover, reordenar (só dev, via admin.jsx)
 // CarrosselViewer: slideshow pro Dashboard
 import { useState, useEffect, useRef, useCallback } from "react";
-import { COL, doc, onSnapshot, setDoc } from "./firebase";
+import { db, doc, onSnapshot, setDoc, deleteDoc } from "./firebase";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 
 const C = {
   bg:"#04111D", surface:"#071828", card:"#0A1929", cardHover:"#0E2847",
@@ -14,7 +15,8 @@ const C = {
   warningLight:"#FFC107",
 };
 
-const COL_KEY = "carrossel_h2";
+// Cada imagem = doc próprio em carrossel_h2/{id} → sem limite de 1MB
+const CARR_COL = () => collection(db, "carrossel_h2");
 const MAX_W = 1920, MAX_H = 1080, QUALITY = 0.82;
 
 // ── Compressão via canvas ─────────────────────────────────────────────────
@@ -41,32 +43,32 @@ function comprimirImagem(file) {
   });
 }
 
-// ── Salvar lista no Firestore ─────────────────────────────────────────────
-async function salvarLista(lista) {
-  await setDoc(doc(COL, COL_KEY), { val: lista, ts: Date.now() });
-}
-
 // ── PainelCarrossel ───────────────────────────────────────────────────────
 export function PainelCarrossel() {
-  const [imagens, setImagens]     = useState([]);
-  const [preview, setPreview]     = useState(null); // { base64, kb, w, h, nome }
+  const [imagens, setImagens]       = useState([]);
+  const [preview, setPreview]       = useState(null);
   const [carregando, setCarregando] = useState(true);
-  const [salvando, setSalvando]   = useState(false);
-  const [msg, setMsg]             = useState("");
+  const [salvando, setSalvando]     = useState(false);
+  const [msg, setMsg]               = useState("");
   const [confirmarRem, setConfirmarRem] = useState(null);
   const inputRef = useRef();
 
   const flash = (t, ok=true) => { setMsg({ texto: t, ok }); setTimeout(() => setMsg(""), 3000); };
 
-  useEffect(() => {
-    const unsub = onSnapshot(doc(COL, COL_KEY), s => {
-      setImagens(s.exists() && Array.isArray(s.data().val) ? s.data().val : []);
-      setCarregando(false);
-    });
-    return () => unsub();
+  // Lê todos os docs da coleção carrossel_h2, ordenados por ordem
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    try {
+      const snap = await getDocs(query(CARR_COL(), orderBy("ordem", "asc")));
+      const lista = [];
+      snap.forEach(d => lista.push({ id: d.id, ...d.data() }));
+      setImagens(lista);
+    } catch { setImagens([]); }
+    setCarregando(false);
   }, []);
 
-  // ── Selecionar arquivo ──
+  useEffect(() => { carregar(); }, [carregar]);
+
   const onFileChange = useCallback(async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -78,47 +80,52 @@ export function PainelCarrossel() {
     e.target.value = "";
   }, []);
 
-  // ── Confirmar upload ──
+  // Cada imagem = doc próprio → sem limite de 1MB por upload
   const confirmarUpload = async () => {
     if (!preview) return;
     setSalvando(true);
     try {
-      const nova = {
-        id: Date.now().toString(),
+      const id = Date.now().toString();
+      const maxOrdem = imagens.length > 0 ? Math.max(...imagens.map(i => i.ordem ?? 0)) : -1;
+      await setDoc(doc(db, "carrossel_h2", id), {
+        id,
         base64: preview.base64,
         nome: preview.nome,
         kb: preview.kb,
         w: preview.w,
         h: preview.h,
+        ordem: maxOrdem + 1,
         adicionadaEm: new Date().toISOString(),
-      };
-      const novaLista = [...imagens, nova];
-      await salvarLista(novaLista);
+      });
       setPreview(null);
       flash(`Imagem adicionada (${preview.kb} KB).`);
-    } catch { flash("Erro ao salvar.", false); }
+      await carregar();
+    } catch (e) { flash("Erro ao salvar: " + e.message, false); }
     setSalvando(false);
   };
 
-  // ── Remover ──
   const remover = async (id) => {
     setSalvando(true);
     try {
-      await salvarLista(imagens.filter(i => i.id !== id));
+      await deleteDoc(doc(db, "carrossel_h2", id));
       setConfirmarRem(null);
       flash("Imagem removida.");
+      await carregar();
     } catch { flash("Erro ao remover.", false); }
     setSalvando(false);
   };
 
-  // ── Mover (reordenar) ──
+  // Reordenar: troca o campo `ordem` entre dois docs
   const mover = async (idx, dir) => {
-    const nova = [...imagens];
     const alvo = idx + dir;
-    if (alvo < 0 || alvo >= nova.length) return;
-    [nova[idx], nova[alvo]] = [nova[alvo], nova[idx]];
+    if (alvo < 0 || alvo >= imagens.length) return;
     setSalvando(true);
-    try { await salvarLista(nova); } catch { flash("Erro ao reordenar.", false); }
+    try {
+      const a = imagens[idx], b = imagens[alvo];
+      await setDoc(doc(db, "carrossel_h2", a.id), { ...a, ordem: b.ordem });
+      await setDoc(doc(db, "carrossel_h2", b.id), { ...b, ordem: a.ordem });
+      await carregar();
+    } catch { flash("Erro ao reordenar.", false); }
     setSalvando(false);
   };
 
@@ -254,97 +261,75 @@ export function CarrosselViewer({ onClick }) {
   const timerRef              = useRef();
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(COL, COL_KEY), s => {
-      setImagens(s.exists() && Array.isArray(s.data().val) ? s.data().val : []);
-      setIdx(0);
-    });
-    return () => unsub();
+    // Polling a cada 30s (coleção não suporta onSnapshot facilmente no padrão atual)
+    const load = async () => {
+      try {
+        const snap = await getDocs(query(CARR_COL(), orderBy("ordem","asc")));
+        const lista = [];
+        snap.forEach(d => lista.push({ id: d.id, ...d.data() }));
+        setImagens(prev => {
+          if(JSON.stringify(prev.map(i=>i.id)) !== JSON.stringify(lista.map(i=>i.id))) setIdx(0);
+          return lista;
+        });
+      } catch {}
+    };
+    load();
+    const poll = setInterval(load, 30000);
+    return () => clearInterval(poll);
   }, []);
 
-  // Auto-avanço a cada 8s
   useEffect(() => {
     if (imagens.length < 2) return;
     timerRef.current = setInterval(() => {
       setFade(false);
-      setTimeout(() => {
-        setIdx(i => (i + 1) % imagens.length);
-        setFade(true);
-      }, 400);
+      setTimeout(() => { setIdx(i => (i + 1) % imagens.length); setFade(true); }, 400);
     }, 8000);
     return () => clearInterval(timerRef.current);
   }, [imagens.length]);
 
-  // Sem imagens — placeholder
   if (imagens.length === 0) {
     return (
       <div onClick={onClick} style={{
-        width: "100%", height: "100%", minHeight: 160,
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        gap: 10, cursor: onClick ? "pointer" : "default",
-        background: "rgba(255,255,255,0.02)", border: `1px dashed ${C.border}`,
-        borderRadius: 10, color: C.textDim,
+        width:"100%", height:"100%", minHeight:160,
+        display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+        gap:10, cursor:onClick?"pointer":"default",
+        background:"rgba(255,255,255,0.02)", border:`1px dashed ${C.border}`,
+        borderRadius:10, color:C.textDim,
       }}>
-        <span style={{ fontSize: 32 }}>🖼️</span>
-        <span style={{ fontSize: 11, letterSpacing: "0.06em" }}>Sem imagens no carrossel</span>
-        <span style={{ fontSize: 10, color: C.textDim, opacity: 0.6 }}>Adicione via Painel Admin → Carrossel</span>
+        <span style={{fontSize:32}}>🖼️</span>
+        <span style={{fontSize:11,letterSpacing:"0.06em"}}>Sem imagens no carrossel</span>
+        <span style={{fontSize:10,color:C.textDim,opacity:0.6}}>Adicione via Painel Admin → Carrossel</span>
       </div>
     );
   }
 
   const img = imagens[idx];
-
   return (
     <div onClick={onClick} style={{
-      position: "relative", width: "100%", height: "100%", minHeight: 160,
-      borderRadius: 10, overflow: "hidden", cursor: onClick ? "pointer" : "default",
-      background: "#000",
+      position:"relative", width:"100%", height:"100%", minHeight:160,
+      borderRadius:10, overflow:"hidden", cursor:onClick?"pointer":"default", background:"#000",
     }}>
-      <style>{`
-        @keyframes carr-fade-in { from { opacity: 0; } to { opacity: 1; } }
-      `}</style>
-
-      {/* Imagem */}
-      <img src={img.base64} alt={img.nome}
-        style={{
-          width: "100%", height: "100%", objectFit: "cover",
-          opacity: fade ? 1 : 0,
-          transition: "opacity 0.4s ease",
-          display: "block",
-        }}/>
-
-      {/* Overlay gradiente bottom */}
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0, height: 48,
-        background: "linear-gradient(to top, rgba(4,17,29,0.85), transparent)",
-        pointerEvents: "none",
+      <style>{`@keyframes carr-fade-in{from{opacity:0}to{opacity:1}}`}</style>
+      <img src={img.base64} alt={img.nome} style={{
+        width:"100%", height:"100%", objectFit:"cover",
+        opacity:fade?1:0, transition:"opacity 0.4s ease", display:"block",
       }}/>
-
-      {/* Dots indicadores */}
-      {imagens.length > 1 && (
-        <div style={{
-          position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)",
-          display: "flex", gap: 5,
-        }}>
-          {imagens.map((_, i) => (
-            <div key={i} onClick={(e) => { e.stopPropagation(); setFade(false); setTimeout(() => { setIdx(i); setFade(true); }, 300); }}
-              style={{
-                width: i === idx ? 16 : 5, height: 5, borderRadius: 3,
-                background: i === idx ? C.accent : "rgba(255,255,255,0.3)",
-                cursor: "pointer", transition: "all .3s",
-                boxShadow: i === idx ? `0 0 6px ${C.accent}` : "none",
-              }}/>
+      <div style={{position:"absolute",bottom:0,left:0,right:0,height:48,
+        background:"linear-gradient(to top,rgba(4,17,29,0.85),transparent)",pointerEvents:"none"}}/>
+      {imagens.length>1&&(
+        <div style={{position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%)",display:"flex",gap:5}}>
+          {imagens.map((_,i)=>(
+            <div key={i} onClick={e=>{e.stopPropagation();setFade(false);setTimeout(()=>{setIdx(i);setFade(true);},300);}}
+              style={{width:i===idx?16:5,height:5,borderRadius:3,
+                background:i===idx?C.accent:"rgba(255,255,255,0.3)",
+                cursor:"pointer",transition:"all .3s",
+                boxShadow:i===idx?`0 0 6px ${C.accent}`:"none"}}/>
           ))}
         </div>
       )}
-
-      {/* Contador */}
-      <div style={{
-        position: "absolute", top: 8, right: 8,
-        background: "rgba(4,17,29,0.7)", borderRadius: 20,
-        padding: "2px 8px", fontSize: 10, color: C.textMuted,
-        fontFamily: "monospace", fontWeight: 700,
-      }}>
-        {idx + 1}/{imagens.length}
+      <div style={{position:"absolute",top:8,right:8,background:"rgba(4,17,29,0.7)",
+        borderRadius:20,padding:"2px 8px",fontSize:10,color:C.textMuted,fontFamily:"monospace",fontWeight:700}}>
+        {idx+1}/{imagens.length}
       </div>
     </div>
   );
