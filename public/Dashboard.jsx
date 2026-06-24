@@ -324,15 +324,45 @@ function PanelCleaners({ cleaners, cleanersHist, sedim, setTela }) {
   };
   const lastSed=sed.length>0?sed[sed.length-1]:null;
   const cSed=lastSed?(lastSed.valor<150?C.green:lastSed.valor<=250?C.amber:C.red):C.dim;
+
+  // Top 3 motivos — garrafas atualmente fora (M2+M3), do estado atual
+  const motCont={};
+  ["M2","M3"].forEach(mq=>{
+    Object.values(dados[mq]||{}).forEach(g=>{
+      const ms=g?.motivos||(g?.motivo?[g.motivo]:[]);
+      ms.filter(Boolean).forEach(m=>{motCont[m]=(motCont[m]||0)+1;});
+    });
+  });
+  const top3Mot=Object.entries(motCont).map(([m,n])=>({m,n})).sort((a,b)=>b.n-a.n).slice(0,3);
+  const maxMot=Math.max(1,...top3Mot.map(t=>t.n));
+  const motCor=(m)=>m==="Válvula com passagem"?C.red:m==="Entupida"?C.orange:m.startsWith("Falta")?C.amber:C.cyan;
+
   return (
     <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}}>
       <Corners c={C.cyan}/>
       <PanelHead code="02" title="Cleaners" accent={C.cyan}
         right={lastSed?<span style={{fontFamily:mono,fontSize:9,color:cSed,background:`${cSed}18`,border:`1px solid ${cSed}33`,borderRadius:12,padding:"2px 8px"}}>SED {lastSed.valor} mL/L</span>:null}/>
-      <div style={{display:"flex",gap:12,flex:1}}>
+      <div style={{display:"flex",gap:12}}>
         <MqGauge mq="M2" idk="cm2"/>
         <div style={{width:1,background:`linear-gradient(180deg,transparent,${C.line},transparent)`}}/>
         <MqGauge mq="M3" idk="cm3"/>
+      </div>
+      {/* Top 3 motivos de retirada */}
+      <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${C.line}`,flex:1}}>
+        <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginBottom:8}}>PRINCIPAIS MOTIVOS · FORA DE OP.</div>
+        {top3Mot.length>0?top3Mot.map((t,i)=>(
+          <div key={t.m} style={{marginBottom:i<top3Mot.length-1?7:0}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+              <span style={{fontFamily:sans,fontSize:9,color:C.mute}}><span style={{fontFamily:mono,color:C.dim,marginRight:5}}>{i+1}</span>{t.m}</span>
+              <span style={{fontFamily:mono,fontSize:11,fontWeight:900,color:motCor(t.m)}}>{t.n}</span>
+            </div>
+            <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.04)",overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${t.n/maxMot*100}%`,background:motCor(t.m),borderRadius:2,boxShadow:`0 0 5px ${motCor(t.m)}`,transition:"width .6s"}}/>
+            </div>
+          </div>
+        )):(
+          <div style={{textAlign:"center",color:C.dim,fontFamily:sans,fontSize:10,padding:"8px 0"}}>Nenhuma garrafa fora de operação</div>
+        )}
       </div>
     </div>
   );
