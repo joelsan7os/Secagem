@@ -678,79 +678,61 @@ function PanelAlturaChecklists({ historico, chamados, cleaners, avarias, setTela
   );
 }
 
-// ════════ PAINEL: SAUDE OPERACIONAL (score do turno) ════════
+// ════════ PAINEL: SAUDE OPERACIONAL (horizontal compacto) ════════
 function PanelSaude({ cleaners, historico, chamados, avarias }) {
   const hj=hojeISO(), turno=autoTurno();
-  // 1. Eficiencia Cleaners (peso 35%)
-  const dados=cleaners||{M2:{},M3:{}};
-  const foraTotal=Object.keys(dados.M2||{}).length+Object.keys(dados.M3||{}).length;
-  const eficCln=Math.round(((CLN_TOTAL*2)-foraTotal)/(CLN_TOTAL*2)*100);
-  // 2. Checklists lancados (peso 30%)
   const hist=Array.isArray(historico)?historico:[];
   const ct=hist.filter(h=>h.data===hj&&h.turno===turno);
-  const chkEsp=9; // M2+M3 rotina + cortadeira + 5 linhas qualidade
-  const chkFeito=ct.filter(h=>["rotina","cortadeira","enf_qualidade"].includes(h.tipoId)).length;
-  const eficChk=Math.round(Math.min(chkFeito/chkEsp,1)*100);
-  // 3. Chamados criticos (peso 20%) — 0 criticos=100, cada critico -20
   const ch=Array.isArray(chamados)?chamados.filter(c=>c.status==="aberto"):[];
+  const av=Array.isArray(avarias)?avarias:[];
+  const foraTotal=Object.keys((cleaners||{}).M2||{}).length+Object.keys((cleaners||{}).M3||{}).length;
+  const eficCln=Math.round(((CLN_TOTAL*2)-foraTotal)/(CLN_TOTAL*2)*100);
+  const chkEsp=9, chkFeito=ct.filter(h=>["rotina","cortadeira","enf_qualidade"].includes(h.tipoId)).length;
+  const eficChk=Math.round(Math.min(chkFeito/chkEsp,1)*100);
   const nCrit=ch.filter(c=>c.prazo==="Imediato"||c.prazo==="Urgente").length;
   const eficCham=Math.max(0,100-nCrit*25);
-  // 4. Avarias no turno (peso 15%) — 0=100, cada avaria -10
-  const av=Array.isArray(avarias)?avarias:[];
   const avTurno=av.filter(r=>r.data===hj&&r.teveAvaria).reduce((s,r)=>s+r.total,0);
   const eficAv=Math.max(0,100-avTurno*12);
-  // score final ponderado
   const score=Math.round(eficCln*0.35+eficChk*0.30+eficCham*0.20+eficAv*0.15);
   const cScore=score>=85?C.green:score>=65?C.amber:C.red;
   const label=score>=85?"OTIMO":score>=65?"ATENCAO":"CRITICO";
-
-  const componentes=[
-    {l:"Cleaners",    v:eficCln,  c:C.cyan,   w:35},
-    {l:"Checklists",  v:eficChk,  c:C.purple, w:30},
-    {l:"SAP",         v:eficCham, c:C.amber,  w:20},
-    {l:"Avarias",     v:eficAv,   c:C.orange, w:15},
+  const comps=[
+    {l:"Cleaners",   v:eficCln,  c:C.cyan,   w:35},
+    {l:"Checklists", v:eficChk,  c:C.purple, w:30},
+    {l:"SAP",        v:eficCham, c:C.amber,  w:20},
+    {l:"Avarias",    v:eficAv,   c:C.orange, w:15},
   ];
-
   return (
-    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}}>
+    <div className="cmd-card" style={{padding:"12px 18px",display:"flex",alignItems:"center",gap:20}}>
       <Corners c={cScore}/>
-      <PanelHead code="08" title="Saude do Turno" accent={cScore}
-        right={<span style={{fontFamily:"monospace",fontSize:9,color:C.dim,letterSpacing:"0.1em"}}>{turno}</span>}/>
-      {/* score central */}
-      <div style={{display:"flex",alignItems:"center",gap:16,flex:1}}>
-        <div style={{position:"relative",flexShrink:0}}>
-          <RadialGauge value={score} size={124} stroke={11} color={cScore} idk="saude"/>
-          <div style={{position:"absolute",bottom:-2,left:"50%",transform:"translateX(-50%)",
-            fontFamily:"monospace",fontSize:9,fontWeight:800,color:cScore,
-            letterSpacing:"0.12em",textShadow:`0 0 8px ${cScore}88`,whiteSpace:"nowrap"}}>
-            {label}
-          </div>
-        </div>
-        {/* componentes */}
-        <div style={{flex:1,display:"flex",flexDirection:"column",gap:9}}>
-          {componentes.map(comp=>(
-            <div key={comp.l}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                <div style={{display:"flex",alignItems:"center",gap:5}}>
-                  <span style={{fontFamily:"monospace",fontSize:7,color:C.dim}}>{comp.w}%</span>
-                  <span style={{fontFamily:"sans-serif",fontSize:11,color:C.mute}}>{comp.l}</span>
-                </div>
-                <span style={{fontFamily:"monospace",fontSize:13,fontWeight:900,
-                  color:comp.v>=70?comp.c:comp.v>=40?C.amber:C.red}}>{comp.v}%</span>
-              </div>
-              <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.05)",overflow:"hidden",position:"relative"}}>
-                <div style={{position:"absolute",inset:0,background:`${comp.c}12`}}/>
-                <div style={{height:"100%",width:`${comp.v}%`,borderRadius:2,
-                  background:`linear-gradient(90deg,${comp.c}66,${comp.c})`,
-                  boxShadow:`0 0 6px ${comp.c}88`,transition:"width .8s cubic-bezier(.4,0,.2,1)"}}/>
-              </div>
+      <div style={{flexShrink:0,textAlign:"center",minWidth:76}}>
+        <div style={{fontFamily:mono,fontSize:34,fontWeight:900,color:cScore,lineHeight:1,
+          textShadow:`0 0 20px ${cScore}88`}}>{score}%</div>
+        <div style={{fontFamily:mono,fontSize:9,color:cScore,letterSpacing:"0.14em",marginTop:3}}>{label}</div>
+        <div style={{fontFamily:sans,fontSize:7,color:C.dim,letterSpacing:"0.1em",marginTop:1}}>08 · SAUDE DO TURNO</div>
+      </div>
+      <div style={{width:1,alignSelf:"stretch",background:`linear-gradient(180deg,transparent,${C.line},transparent)`}}/>
+      <div style={{flex:1,display:"flex",flexDirection:"column",gap:7}}>
+        {comps.map(comp=>(
+          <div key={comp.l} style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:5,minWidth:76,flexShrink:0}}>
+              <span style={{fontFamily:mono,fontSize:7,color:C.dim}}>{comp.w}%</span>
+              <span style={{fontFamily:sans,fontSize:10,color:C.mute}}>{comp.l}</span>
             </div>
-          ))}
-        </div>
+            <div style={{flex:1,height:5,borderRadius:3,background:`${comp.c}14`,overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${comp.v}%`,borderRadius:3,
+                background:`linear-gradient(90deg,${comp.c}66,${comp.c})`,
+                boxShadow:`0 0 6px ${comp.c}88`,transition:"width .8s"}}/>
+            </div>
+            <span style={{fontFamily:mono,fontSize:12,fontWeight:900,minWidth:36,textAlign:"right",
+              color:comp.v>=70?comp.c:comp.v>=40?C.amber:C.red}}>{comp.v}%</span>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
+
 
 // ════════ PAINEL: AVARIAS (grafico linha por turno + top3 + total) ════════
 function PanelAvarias({ avarias, setTela }) {
@@ -1009,18 +991,21 @@ export default function DashboardTV({ setTela, setModoVisao }) {
         <HeroBar historico={historico} seguranca={seguranca} cleaners={cleaners} cleanersHist={cleanersHist} avarias={avarias} onEditAcid={()=>setModalAcid(true)}/>
 
         {/* grid principal: 4 col x 2 linhas + faixa */}
-        <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gridTemplateRows:"1fr 1fr",gap:12,minHeight:0}}>
+        <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gridTemplateRows:"1fr 1fr auto",gap:12,minHeight:0}}>
           {/* linha 1 — Cleaners + Mural M2+M3 (span2) + Avarias */}
           <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
           <div style={{gridColumn:"span 2"}}><PanelMural pendencias={pendencias} chamados={chamados} cleaners={cleaners} ocorrencias={ocorrencias} setTela={setTela}/></div>
           <PanelAvarias avarias={avarias} setTela={setTela}/>
-          {/* linha 2 — Altura+Checklists+Chamados+Saude (span2) + Avarias + Carrossel */}
+          {/* linha 2 — Altura+Checklists+Chamados (span2) + Avarias + Carrossel */}
           <div style={{gridColumn:"span 2"}}><PanelAlturaChecklists historico={historico} chamados={chamados} cleaners={cleaners} avarias={avarias} setTela={setTela}/></div>
           <PanelAvarias avarias={avarias} setTela={setTela}/>
           <div className="cmd-card" style={{padding:0,overflow:"hidden",position:"relative"}}>
             <Corners c={C.blue}/>
             <CarrosselViewer/>
           </div>
+          {/* linha 3 — Saude horizontal (span2) + vazio */}
+          <div style={{gridColumn:"span 2"}}><PanelSaude cleaners={cleaners} historico={historico} chamados={chamados} avarias={avarias}/></div>
+          <div/><div/>
         </div>
 
         {/* faixa inferior: ticker + status */}
