@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 import * as React from "react";
 import { COL, doc, onSnapshot, setDoc } from "./firebase";
-// import { CarrosselViewer } from "./carrossel"; // <-- Comentado caso não use mais
+import { CarrosselViewer } from "./carrossel"; // <-- Carrossel de volta e intacto!
 
 const C = {
   void:"#020A12", deep:"#04111D", panel:"#071826", panelHi:"#0A2032",
@@ -498,7 +498,7 @@ function PanelAlturaChecklists({ historico, chamados, setTela }) {
   const cTop=fora.length>0?C.red:cChk;
 
   return (
-    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column",gap:0}}>
+    <div className="cmd-card" style={{flex: 1, padding:16,display:"flex",flexDirection:"column",gap:0, minHeight: 0}}>
       <Corners c={cTop}/>
       <div style={{display:"flex",gap:18,flex:1,minHeight:0}}>
         <div onClick={()=>setTela&&setTela("historico")} style={{cursor:"pointer",flex:"0 0 48%",display:"flex",flexDirection:"column"}}>
@@ -700,53 +700,42 @@ function PanelAvarias({ avarias, setTela }) {
   );
 }
 
-// ════════ PAINEL: PRODUCAO (Mês e Ano) ════════
-function PanelProducao() {
-  // Dados simulados (aleatórios para você substituir com os reais depois)
-  const prodMes = 45200;
-  const metaMes = 48000;
-  const pctMes = Math.round((prodMes / metaMes) * 100);
-  const cMes = pctMes >= 100 ? C.green : pctMes >= 90 ? C.amber : C.red;
+// ════════ PAINEL: MINI CARD PRODUÇÃO (Fica embaixo de Altura/Checklist) ════════
+function PanelProducaoMini() {
+  const prodMes = 45200, metaMes = 48000, pctMes = Math.round((prodMes/metaMes)*100);
+  const cMes = pctMes>=100?C.green:pctMes>=90?C.amber:C.red;
+  const prodAno = 540500, metaAno = 530000, pctAno = Math.round((prodAno/metaAno)*100);
+  const cAno = pctAno>=100?C.green:pctAno>=90?C.amber:C.red;
+  const fmt = (n)=>n.toLocaleString('pt-BR');
 
-  const prodAno = 540500;
-  const metaAno = 530000;
-  const pctAno = Math.round((prodAno / metaAno) * 100);
-  const cAno = pctAno >= 100 ? C.green : pctAno >= 90 ? C.amber : C.red;
-
-  const formatT = (n) => n.toLocaleString('pt-BR') + ' t';
-
-  const Block = ({ title, prod, meta, pct, color }) => (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, padding: 16, background: `linear-gradient(145deg, rgba(10,32,50,0.4), rgba(7,24,38,0.6))` , borderRadius: 12, border: `1px solid ${color}44` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: sans, fontSize: 10, fontWeight: 700, color: C.mute, letterSpacing: "0.1em" }}>{title}</span>
-        <span style={{ fontFamily: mono, fontSize: 20, fontWeight: 900, color: color, textShadow: `0 0 12px ${color}66` }}>{pct}%</span>
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 8 }}>
-        <div>
-          <div style={{ fontFamily: mono, fontSize: 28, fontWeight: 900, color: C.ink }}>{formatT(prod)}</div>
-          <div style={{ fontFamily: sans, fontSize: 8, color: C.dim, letterSpacing: "0.1em", marginTop: 2 }}>REALIZADO</div>
-        </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontFamily: mono, fontSize: 14, fontWeight: 700, color: C.dim }}>{formatT(meta)}</div>
-          <div style={{ fontFamily: sans, fontSize: 8, color: C.dim, letterSpacing: "0.1em", marginTop: 2 }}>ORÇADO</div>
+  const MiniBlock = ({ title, prod, meta, pct, color }) => (
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", background: `linear-gradient(90deg, ${color}11, transparent)`, border: `1px solid ${color}33`, borderRadius: 8, padding: "8px 12px" }}>
+      <div>
+        <div style={{ fontFamily: sans, fontSize: 8, color: C.dim, letterSpacing: "0.1em", marginBottom: 2 }}>{title}</div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+          <span style={{ fontFamily: mono, fontSize: 16, fontWeight: 900, color: C.ink }}>{fmt(prod)}<span style={{ fontSize: 10, color: C.dim }}>t</span></span>
+          <span style={{ fontFamily: mono, fontSize: 10, color: C.dim }}>/ {fmt(meta)}t</span>
         </div>
       </div>
-
-      <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.05)", marginTop: 12, overflow: "hidden", position: "relative" }}>
-        <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${Math.min(pct, 100)}%`, background: color, borderRadius: 3, boxShadow: `0 0 8px ${color}aa`, transition: "width .8s cubic-bezier(.4,0,.2,1)" }} />
-        {pct > 100 && <div style={{ position: "absolute", top: 0, bottom: 0, left: '100%', width: '4px', background: C.ink, marginLeft: -2, boxShadow: `0 0 5px #fff` }} />}
+      <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+        <span style={{ fontFamily: mono, fontSize: 14, fontWeight: 900, color: color, textShadow: `0 0 8px ${color}66` }}>{pct}%</span>
+        <div style={{ width: 40, height: 3, background: `${C.void}`, borderRadius: 2, marginTop: 4, overflow: "hidden" }}>
+          <div style={{ width: `${Math.min(pct,100)}%`, height: "100%", background: color, boxShadow: `0 0 4px ${color}` }}/>
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div className="cmd-card" style={{ padding: 16, display: "flex", flexDirection: "column", height: "100%" }}>
-      <Corners c={C.blue} />
-      <PanelHead code="07" title="Acompanhamento de Produção" accent={C.blue} right={<span style={{ fontFamily: mono, fontSize: 9, color: C.dim }}>REAL vs ORÇADO</span>} />
-      <div style={{ display: "flex", gap: 14, flex: 1, alignItems: "center" }}>
-        <Block title="ACUMULADO DO MÊS" prod={prodMes} meta={metaMes} pct={pctMes} color={cMes} />
-        <Block title="ACUMULADO DO ANO" prod={prodAno} meta={metaAno} pct={pctAno} color={cAno} />
+    <div className="cmd-card" style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", flexShrink: 0 }}>
+      <Corners c={C.blue}/>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, width: 80 }}>
+        <span style={{ width: 3, height: 3, borderRadius: "50%", background: C.blue, boxShadow: `0 0 5px ${C.blue}` }}/>
+        <span style={{ fontFamily: sans, fontSize: 9, fontWeight: 800, color: C.mute, letterSpacing: "0.1em" }}>PRODUCAO</span>
+      </div>
+      <div style={{ flex: 1, display: "flex", gap: 10 }}>
+        <MiniBlock title="MES" prod={prodMes} meta={metaMes} pct={pctMes} color={cMes} />
+        <MiniBlock title="ANO" prod={prodAno} meta={metaAno} pct={pctAno} color={cAno} />
       </div>
     </div>
   );
@@ -872,17 +861,24 @@ export default function DashboardTV({ setTela, setModoVisao }) {
 
         {/* grid principal: 4 col x 2 linhas */}
         <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gridTemplateRows:"1fr 1fr",gap:12,minHeight:0}}>
+          
           {/* linha 1 */}
           <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
           <div style={{gridColumn:"span 2"}}><PanelMural pendencias={pendencias} chamados={chamados} ocorrencias={ocorrencias} setTela={setTela}/></div>
           <PanelAvarias avarias={avarias} setTela={setTela}/>
           
-          {/* linha 2: Altura+Checklists + A Nova Área de Produção */}
-          <div style={{gridColumn:"span 2"}}><PanelAlturaChecklists historico={historico} chamados={chamados} setTela={setTela}/></div>
+          {/* linha 2: Altura/Checklist + Novo Mini Card (Vertical Flex Container para dividir o espaço perfeitamente) */}
+          <div style={{gridColumn:"span 2", display: "flex", flexDirection: "column", gap: 12, minHeight: 0}}>
+            <PanelAlturaChecklists historico={historico} chamados={chamados} setTela={setTela}/>
+            <PanelProducaoMini />
+          </div>
           
-          {/* AQUI ENTROU O NOVO PAINEL DE PRODUÇÃO NO LUGAR DO CARROSSEL */}
-          <div style={{gridColumn:"span 2"}}>
-            <PanelProducao />
+          {/* O Carrossel de volta na mesma coluna "span 2" */}
+          <div style={{gridColumn:"span 2"}} className="cmd-card">
+            <div style={{width:"100%",height:"100%",position:"relative",borderRadius:16,overflow:"hidden"}}>
+              <Corners c={C.blue}/>
+              <CarrosselViewer/>
+            </div>
           </div>
         </div>
 
