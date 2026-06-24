@@ -124,7 +124,7 @@ function RadialGauge({ value, max=100, size=120, stroke=9, color, label, sub="",
 const Delta = ({ v, invert=false }) => {
   if(v===0||v==null) return <span style={{fontFamily:mono,fontSize:9,color:C.dim}}>—</span>;
   const up=v>0, good=invert?!up:up, c=good?C.green:C.red;
-  return <span style={{fontFamily:mono,fontSize:9,fontWeight:700,color:c}}>{up?"\u25B2":"\u25BC"}{Math.abs(v)}</span>;
+  return <span style={{fontFamily:mono,fontSize:9,fontWeight:700,color:c}}>{up?"↑":"↓"}{Math.abs(v)}</span>;
 };
 
 function Spark({ data, color=C.green, w=70, h=22, fill=true, idk="sp" }) {
@@ -176,14 +176,14 @@ function HeroBar({ historico, seguranca, cleaners, cleanersHist, avarias, onEdit
   // avarias mes
   const avMes=(avarias||[]).filter(r=>r.data?.slice(0,7)===mesISO()&&r.teveAvaria).reduce((s,r)=>s+r.total,0);
 
-  const Metric=({val,unit,label,color,icon,onClick,pulse})=>(
+  const Metric=({val,unit,label,color,glyph,onClick,pulse})=>(
     <div onClick={onClick} style={{flex:1,display:"flex",alignItems:"center",gap:12,padding:"0 18px",cursor:onClick?"pointer":"default",position:"relative"}}>
       <div style={{position:"relative",width:42,height:42,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
         <svg width="42" height="42" style={{position:"absolute",inset:0}}>
           <circle cx="21" cy="21" r="18" fill="none" stroke={`${color}22`} strokeWidth="2"/>
           <circle cx="21" cy="21" r="18" fill="none" stroke={color} strokeWidth="2" strokeDasharray="85 200" strokeLinecap="round" transform="rotate(-90 21 21)" style={{filter:`drop-shadow(0 0 3px ${color})`}}/>
         </svg>
-        <span style={{fontSize:18,filter:`drop-shadow(0 0 6px ${color}aa)`}}>{icon}</span>
+        <span style={{filter:`drop-shadow(0 0 5px ${color}aa)`}}>{glyph}</span>
         {pulse&&<span style={{position:"absolute",inset:0,borderRadius:"50%",border:`1.5px solid ${color}`,animation:"cmd-ring 1.6s ease-out infinite"}}/>}
       </div>
       <div style={{minWidth:0}}>
@@ -203,18 +203,24 @@ function HeroBar({ historico, seguranca, cleaners, cleanersHist, avarias, onEdit
   const cEf=eficGlobal>=90?C.green:eficGlobal>=CLN_LIM?C.amber:C.red;
   const cAv=avMes===0?C.green:avMes<=10?C.amber:C.red;
 
+  // glyphs SVG geometricos (sem emoji)
+  const GShield=(c)=>(<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z"/></svg>);
+  const GGear=(c)=>(<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>);
+  const GDrop=(c)=>(<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.5c-3.5 4-6 7-6 10a6 6 0 0 0 12 0c0-3-2.5-6-6-10z"/></svg>);
+  const GBox=(c)=>(<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>);
+
   return (
     <div className="cmd-card" style={{display:"flex",alignItems:"stretch",height:74,flexShrink:0,margin:"0 0 12px"}}>
       <Corners/>
-      <Metric val={dAcid} unit="dias" label="Sem Acidente" color={cAcid} icon="\uD83D\uDEE1\uFE0F" onClick={onEditAcid}/>
+      <Metric val={dAcid} unit="dias" label="Sem Acidente" color={cAcid} glyph={GShield(cAcid)} onClick={onEditAcid}/>
       <Sep/>
-      <Metric val={dM2} unit="dias" label="Sem Quebra M2" color={cM2} icon="\u2699\uFE0F"/>
+      <Metric val={dM2} unit="dias" label="Sem Quebra M2" color={cM2} glyph={GGear(cM2)}/>
       <Sep/>
-      <Metric val={dM3} unit="dias" label="Sem Quebra M3" color={cM3} icon="\u2699\uFE0F"/>
+      <Metric val={dM3} unit="dias" label="Sem Quebra M3" color={cM3} glyph={GGear(cM3)}/>
       <Sep/>
-      <Metric val={eficGlobal} unit="%" label="Eficiencia Cleaners" color={cEf} icon="\uD83D\uDCA7" pulse={eficGlobal<CLN_LIM}/>
+      <Metric val={eficGlobal} unit="%" label="Eficiencia Cleaners" color={cEf} glyph={GDrop(cEf)} pulse={eficGlobal<CLN_LIM}/>
       <Sep/>
-      <Metric val={avMes} unit="" label="Avarias no Mes" color={cAv} icon="\uD83D\uDCE6" pulse={avMes>10}/>
+      <Metric val={avMes} unit="" label="Avarias no Mes" color={cAv} glyph={GBox(cAv)} pulse={avMes>10}/>
     </div>
   );
 }
