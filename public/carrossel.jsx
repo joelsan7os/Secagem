@@ -258,6 +258,7 @@ export function CarrosselViewer({ onClick }) {
   const [imagens, setImagens] = useState([]);
   const [idx, setIdx]         = useState(0);
   const [fade, setFade]       = useState(true);
+  const [prevIdx, setPrevIdx] = useState(null);
   const timerRef              = useRef();
 
   useEffect(() => {
@@ -281,96 +282,154 @@ export function CarrosselViewer({ onClick }) {
     if (imagens.length < 2) return;
     timerRef.current = setInterval(() => {
       setFade(false);
-      setTimeout(() => { setIdx(i => (i + 1) % imagens.length); setFade(true); }, 400);
-    }, 8000);
+      setTimeout(() => {
+        setIdx(i => { setPrevIdx(i); return (i + 1) % imagens.length; });
+        setFade(true);
+      }, 500);
+    }, 9000);
     return () => clearInterval(timerRef.current);
   }, [imagens.length]);
 
+  const navTo = (i) => {
+    setFade(false);
+    setTimeout(() => { setPrevIdx(idx); setIdx(i); setFade(true); }, 400);
+    clearInterval(timerRef.current);
+  };
+
   if (imagens.length === 0) {
     return (
-      <div onClick={onClick} style={{
+      <div style={{
         width:"100%", height:"100%", minHeight:160,
         display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-        gap:10, cursor:onClick?"pointer":"default",
-        background:"rgba(255,255,255,0.02)", border:`1px dashed ${C.border}`,
-        borderRadius:10, color:C.textDim,
+        gap:10, background:"rgba(255,255,255,0.02)",
+        border:`1px dashed rgba(0,230,118,0.15)`, borderRadius:10, color:"#41597A",
       }}>
-        <span style={{fontSize:11,letterSpacing:"0.06em"}}>Sem imagens no carrossel</span>
-        <span style={{fontSize:10,color:C.textDim,opacity:0.6}}>Adicione via Painel Admin</span>
+        <div style={{fontFamily:"monospace",fontSize:10,letterSpacing:"0.12em"}}>SEM IMAGENS</div>
+        <div style={{fontSize:9,opacity:0.5}}>Admin → Carrossel</div>
       </div>
     );
   }
 
   const img = imagens[idx];
-  // detecta orientação pela proporção salva
-  const isVertical = img.h && img.w && (img.h / img.w) > 1.1;
+  const isVertical = img.h && img.w && (img.h / img.w) > 1.15;
 
   return (
     <div onClick={onClick} style={{
       position:"relative", width:"100%", height:"100%", minHeight:160,
-      borderRadius:10, overflow:"hidden", cursor:onClick?"pointer":"default",
-      background:"#020A12",
+      borderRadius:12, overflow:"hidden", cursor:onClick?"pointer":"default",
+      background:"#010810",
     }}>
-      <style>{`@keyframes carr-fade{from{opacity:0}to{opacity:1}}`}</style>
+      <style>{`
+        @keyframes carr-in{from{opacity:0;transform:scale(1.03)}to{opacity:1;transform:scale(1)}}
+        @keyframes carr-ken{0%{transform:scale(1)}100%{transform:scale(1.06)}}
+        .carr-img-active{animation:carr-in 0.55s ease forwards}
+        .carr-ken{animation:carr-ken 9s ease forwards}
+      `}</style>
 
-      {/* ── BACKDROP: imagem borrada e escurecida nas laterais (só para verticais) ── */}
-      {isVertical && (
-        <img src={img.base64} alt="" style={{
-          position:"absolute", inset:0,
-          width:"100%", height:"100%",
-          objectFit:"cover",
-          filter:"blur(18px) brightness(0.35) saturate(1.4)",
-          transform:"scale(1.08)", // evita bordas brancas do blur
-          opacity: fade ? 1 : 0,
-          transition:"opacity 0.4s ease",
-          pointerEvents:"none",
-        }}/>
-      )}
-
-      {/* ── IMAGEM PRINCIPAL ── */}
-      <img src={img.base64} alt={img.nome} style={{
-        position:"absolute", inset:0,
-        width:"100%", height:"100%",
-        objectFit: isVertical ? "contain" : "cover", // vertical=contain, horizontal=cover
+      {/* BACKDROP — sempre presente, imagem desfocada com efeito duplex */}
+      <img src={img.base64} alt="" style={{
+        position:"absolute", inset:"-6%",
+        width:"112%", height:"112%",
+        objectFit:"cover",
+        filter:"blur(22px) brightness(0.22) saturate(1.8)",
         opacity: fade ? 1 : 0,
-        transition:"opacity 0.4s ease",
-        display:"block",
+        transition:"opacity 0.5s ease",
+        pointerEvents:"none",
+        zIndex:0,
       }}/>
 
-      {/* gradiente bottom */}
+      {/* overlay de cor sobre o backdrop — efeito duplex moderno */}
       <div style={{
-        position:"absolute", bottom:0, left:0, right:0, height:52,
-        background:"linear-gradient(to top,rgba(2,10,18,0.9),transparent)",
-        pointerEvents:"none", zIndex:2,
+        position:"absolute", inset:0, zIndex:1, pointerEvents:"none",
+        background:"linear-gradient(135deg,rgba(0,16,32,0.5) 0%,rgba(0,80,40,0.15) 50%,rgba(0,16,32,0.6) 100%)",
+        mixBlendMode:"multiply",
       }}/>
 
-      {/* dots */}
+      {/* IMAGEM PRINCIPAL com ken burns suave */}
+      <div style={{
+        position:"absolute", inset:0, zIndex:2,
+        display:"flex", alignItems:"center", justifyContent:"center",
+        opacity: fade ? 1 : 0, transition:"opacity 0.5s ease",
+      }}>
+        <img
+          key={idx}
+          src={img.base64}
+          alt={img.nome}
+          className={fade ? (isVertical ? "carr-img-active" : "carr-img-active carr-ken") : ""}
+          style={{
+            width: isVertical ? "auto" : "100%",
+            height: isVertical ? "100%" : "auto",
+            maxWidth:"100%", maxHeight:"100%",
+            objectFit: isVertical ? "contain" : "cover",
+            display:"block",
+          }}
+        />
+      </div>
+
+      {/* vinheta lateral — mais suave nas bordas */}
+      <div style={{
+        position:"absolute", inset:0, zIndex:3, pointerEvents:"none",
+        background: isVertical
+          ? "linear-gradient(90deg,rgba(1,8,16,0.7) 0%,transparent 18%,transparent 82%,rgba(1,8,16,0.7) 100%)"
+          : "none",
+      }}/>
+
+      {/* gradiente inferior */}
+      <div style={{
+        position:"absolute", bottom:0, left:0, right:0, height:64, zIndex:4, pointerEvents:"none",
+        background:"linear-gradient(to top,rgba(1,8,16,0.95) 0%,rgba(1,8,16,0.4) 60%,transparent 100%)",
+      }}/>
+
+      {/* linha neon topo */}
+      <div style={{
+        position:"absolute", top:0, left:0, right:0, height:1, zIndex:5, pointerEvents:"none",
+        background:"linear-gradient(90deg,transparent 0%,rgba(0,230,118,0.4) 50%,transparent 100%)",
+      }}/>
+
+      {/* NAVEGAÇÃO — setas laterais */}
+      {imagens.length > 1 && (<>
+        {[{dir:-1,side:"left"},{dir:1,side:"right"}].map(({dir,side})=>(
+          <button key={side}
+            onClick={e=>{e.stopPropagation();navTo((idx+imagens.length+dir)%imagens.length);}}
+            style={{
+              position:"absolute", top:"50%", [side]:10, transform:"translateY(-50%)",
+              zIndex:6, background:"rgba(0,0,0,0.4)", backdropFilter:"blur(8px)",
+              border:"1px solid rgba(255,255,255,0.1)", borderRadius:8,
+              width:28, height:28, cursor:"pointer",
+              color:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:700,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              transition:"all .2s",
+            }}
+          >{dir===-1?"‹":"›"}</button>
+        ))}
+      </>)}
+
+      {/* dots minimalistas */}
       {imagens.length > 1 && (
         <div style={{
-          position:"absolute", bottom:8, left:"50%", transform:"translateX(-50%)",
-          display:"flex", gap:5, zIndex:3,
+          position:"absolute", bottom:10, left:"50%", transform:"translateX(-50%)",
+          display:"flex", gap:6, zIndex:6,
         }}>
           {imagens.map((_,i) => (
             <div key={i}
-              onClick={e=>{e.stopPropagation();setFade(false);setTimeout(()=>{setIdx(i);setFade(true);},300);}}
+              onClick={e=>{e.stopPropagation();navTo(i);}}
               style={{
-                width:i===idx?16:5, height:5, borderRadius:3,
-                background:i===idx?C.accent:"rgba(255,255,255,0.3)",
-                cursor:"pointer", transition:"all .3s",
-                boxShadow:i===idx?`0 0 6px ${C.accent}`:"none",
+                width:i===idx?20:4, height:4, borderRadius:2,
+                background:i===idx?"rgba(0,230,118,0.9)":"rgba(255,255,255,0.25)",
+                cursor:"pointer", transition:"all .35s cubic-bezier(.4,0,.2,1)",
+                boxShadow:i===idx?"0 0 8px rgba(0,230,118,0.7)":"none",
               }}/>
           ))}
         </div>
       )}
 
-      {/* contador */}
+      {/* contador minimalista */}
       <div style={{
-        position:"absolute", top:8, right:8,
-        background:"rgba(2,10,18,0.75)", borderRadius:20,
-        padding:"2px 8px", fontSize:10, color:C.textMuted,
-        fontFamily:"monospace", fontWeight:700, zIndex:3,
+        position:"absolute", top:10, right:10, zIndex:6,
+        fontFamily:"monospace", fontSize:9, fontWeight:700,
+        color:"rgba(255,255,255,0.45)", letterSpacing:"0.1em",
       }}>
-        {idx+1}/{imagens.length}
+        {String(idx+1).padStart(2,"0")}/{String(imagens.length).padStart(2,"0")}
       </div>
     </div>
   );
