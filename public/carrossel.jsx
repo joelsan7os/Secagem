@@ -261,7 +261,6 @@ export function CarrosselViewer({ onClick }) {
   const timerRef              = useRef();
 
   useEffect(() => {
-    // Polling a cada 30s (coleção não suporta onSnapshot facilmente no padrão atual)
     const load = async () => {
       try {
         const snap = await getDocs(query(CARR_COL(), orderBy("ordem","asc")));
@@ -296,39 +295,81 @@ export function CarrosselViewer({ onClick }) {
         background:"rgba(255,255,255,0.02)", border:`1px dashed ${C.border}`,
         borderRadius:10, color:C.textDim,
       }}>
-        <span style={{fontSize:32}}>🖼️</span>
         <span style={{fontSize:11,letterSpacing:"0.06em"}}>Sem imagens no carrossel</span>
-        <span style={{fontSize:10,color:C.textDim,opacity:0.6}}>Adicione via Painel Admin → Carrossel</span>
+        <span style={{fontSize:10,color:C.textDim,opacity:0.6}}>Adicione via Painel Admin</span>
       </div>
     );
   }
 
   const img = imagens[idx];
+  // detecta orientação pela proporção salva
+  const isVertical = img.h && img.w && (img.h / img.w) > 1.1;
+
   return (
     <div onClick={onClick} style={{
       position:"relative", width:"100%", height:"100%", minHeight:160,
-      borderRadius:10, overflow:"hidden", cursor:onClick?"pointer":"default", background:"#000",
+      borderRadius:10, overflow:"hidden", cursor:onClick?"pointer":"default",
+      background:"#020A12",
     }}>
-      <style>{`@keyframes carr-fade-in{from{opacity:0}to{opacity:1}}`}</style>
+      <style>{`@keyframes carr-fade{from{opacity:0}to{opacity:1}}`}</style>
+
+      {/* ── BACKDROP: imagem borrada e escurecida nas laterais (só para verticais) ── */}
+      {isVertical && (
+        <img src={img.base64} alt="" style={{
+          position:"absolute", inset:0,
+          width:"100%", height:"100%",
+          objectFit:"cover",
+          filter:"blur(18px) brightness(0.35) saturate(1.4)",
+          transform:"scale(1.08)", // evita bordas brancas do blur
+          opacity: fade ? 1 : 0,
+          transition:"opacity 0.4s ease",
+          pointerEvents:"none",
+        }}/>
+      )}
+
+      {/* ── IMAGEM PRINCIPAL ── */}
       <img src={img.base64} alt={img.nome} style={{
-        width:"100%", height:"100%", objectFit:"cover",
-        opacity:fade?1:0, transition:"opacity 0.4s ease", display:"block",
+        position:"absolute", inset:0,
+        width:"100%", height:"100%",
+        objectFit: isVertical ? "contain" : "cover", // vertical=contain, horizontal=cover
+        opacity: fade ? 1 : 0,
+        transition:"opacity 0.4s ease",
+        display:"block",
       }}/>
-      <div style={{position:"absolute",bottom:0,left:0,right:0,height:48,
-        background:"linear-gradient(to top,rgba(4,17,29,0.85),transparent)",pointerEvents:"none"}}/>
-      {imagens.length>1&&(
-        <div style={{position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%)",display:"flex",gap:5}}>
-          {imagens.map((_,i)=>(
-            <div key={i} onClick={e=>{e.stopPropagation();setFade(false);setTimeout(()=>{setIdx(i);setFade(true);},300);}}
-              style={{width:i===idx?16:5,height:5,borderRadius:3,
+
+      {/* gradiente bottom */}
+      <div style={{
+        position:"absolute", bottom:0, left:0, right:0, height:52,
+        background:"linear-gradient(to top,rgba(2,10,18,0.9),transparent)",
+        pointerEvents:"none", zIndex:2,
+      }}/>
+
+      {/* dots */}
+      {imagens.length > 1 && (
+        <div style={{
+          position:"absolute", bottom:8, left:"50%", transform:"translateX(-50%)",
+          display:"flex", gap:5, zIndex:3,
+        }}>
+          {imagens.map((_,i) => (
+            <div key={i}
+              onClick={e=>{e.stopPropagation();setFade(false);setTimeout(()=>{setIdx(i);setFade(true);},300);}}
+              style={{
+                width:i===idx?16:5, height:5, borderRadius:3,
                 background:i===idx?C.accent:"rgba(255,255,255,0.3)",
-                cursor:"pointer",transition:"all .3s",
-                boxShadow:i===idx?`0 0 6px ${C.accent}`:"none"}}/>
+                cursor:"pointer", transition:"all .3s",
+                boxShadow:i===idx?`0 0 6px ${C.accent}`:"none",
+              }}/>
           ))}
         </div>
       )}
-      <div style={{position:"absolute",top:8,right:8,background:"rgba(4,17,29,0.7)",
-        borderRadius:20,padding:"2px 8px",fontSize:10,color:C.textMuted,fontFamily:"monospace",fontWeight:700}}>
+
+      {/* contador */}
+      <div style={{
+        position:"absolute", top:8, right:8,
+        background:"rgba(2,10,18,0.75)", borderRadius:20,
+        padding:"2px 8px", fontSize:10, color:C.textMuted,
+        fontFamily:"monospace", fontWeight:700, zIndex:3,
+      }}>
         {idx+1}/{imagens.length}
       </div>
     </div>
