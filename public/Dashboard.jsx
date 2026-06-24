@@ -467,7 +467,7 @@ function PanelCleaners({ cleaners, cleanersHist, sedim, setTela }) {
 }
 
 // ════════ PAINEL: ALTURA UNITS (colunas verticais estilo equalizador) ════════
-function PanelAlturaChecklists({ historico, setTela }) {
+function PanelAlturaChecklists({ historico, chamados, setTela }) {
   const hist=Array.isArray(historico)?historico:[];
 
   // ── Altura das Units ──
@@ -583,6 +583,38 @@ function PanelAlturaChecklists({ historico, setTela }) {
         </div>
 
       </div>
+
+      {/* ── MINI CHAMADOS (faixa fina na base) ── */}
+      {chamados && (()=>{
+        const ch=chamados.filter(c=>c.status==="aberto");
+        const total=ch.length;
+        const prazos=[{k:"Imediato",c:C.red},{k:"Urgente",c:C.orange},{k:"Normal",c:C.amber},{k:"Programável",c:C.blue}];
+        const cnt=(k)=>ch.filter(c=>c.prazo===k).length;
+        const nIme=cnt("Imediato");
+        const cSap=nIme>0?C.red:cnt("Urgente")>0?C.orange:total>0?C.amber:C.green;
+        return(
+          <div onClick={(e)=>{e.stopPropagation();setTela&&setTela("equipamentos");}}
+            style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${C.line}`,
+              display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+              <span style={{fontFamily:mono,fontSize:8,color:C.dim,letterSpacing:"0.1em"}}>05 · SAP</span>
+              <span style={{width:3,height:3,borderRadius:"50%",background:cSap,boxShadow:`0 0 4px ${cSap}`}}/>
+              <span style={{fontFamily:mono,fontSize:20,fontWeight:900,color:cSap,lineHeight:1,
+                textShadow:`0 0 12px ${cSap}66`}}>{total}</span>
+              <span style={{fontFamily:sans,fontSize:8,color:C.dim}}>abertos</span>
+            </div>
+            <div style={{flex:1,display:"flex",gap:6}}>
+              {prazos.map(p=>{const n=cnt(p.k);return(
+                <div key={p.k} style={{flex:1,background:`${p.c}0c`,border:`1px solid ${p.c}${n>0?"44":"18"}`,
+                  borderRadius:7,padding:"4px 6px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontFamily:sans,fontSize:7,color:C.dim}}>{p.k.slice(0,4).toUpperCase()}</span>
+                  <span style={{fontFamily:mono,fontSize:13,fontWeight:900,color:n>0?p.c:C.dim}}>{n}</span>
+                </div>
+              );})}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -849,12 +881,13 @@ export default function DashboardTV({ setTela, setModoVisao }) {
           <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
           <div style={{gridColumn:"span 2"}}><PanelMural pendencias={pendencias} chamados={chamados} ocorrencias={ocorrencias} setTela={setTela}/></div>
           <PanelAvarias avarias={avarias} setTela={setTela}/>
-          {/* linha 2 — Altura+Checklists (span2) + Chamados + Carrossel */}
-          <div style={{gridColumn:"span 2"}}><PanelAlturaChecklists historico={historico} setTela={setTela}/></div>
-          <PanelChamados chamados={chamados} setTela={setTela}/>
-          <div className="cmd-card" style={{padding:0,overflow:"hidden",position:"relative"}}>
-            <Corners c={C.blue}/>
-            <CarrosselViewer/>
+          {/* linha 2 — Altura+Checklists+Chamados (span2) + Carrossel (span2) */}
+          <div style={{gridColumn:"span 2"}}><PanelAlturaChecklists historico={historico} chamados={chamados} setTela={setTela}/></div>
+          <div style={{gridColumn:"span 2"}} className="cmd-card">
+            <div style={{width:"100%",height:"100%",position:"relative",borderRadius:16,overflow:"hidden"}}>
+              <Corners c={C.blue}/>
+              <CarrosselViewer/>
+            </div>
           </div>
         </div>
 
