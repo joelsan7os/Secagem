@@ -1,760 +1,719 @@
-// ─── Dashboard.jsx — Modo TV/Web · Secagem H2 ──────────────────────────────
-// Layout TV 60": banner de segurança + grid 3×2 com gráficos reais.
-// onSnapshot: ocorrencias_h2, chamados_h2, cleaners_h2, cleaners_hist_h2,
-//             cleaners_sedim_h2, historico_h2, pendencias_h2, seguranca_h2
+// ═══════════════════════════════════════════════════════════════════════════
+// Dashboard.jsx — CENTRO DE COMANDO H2 · Secagem · Suzano
+// Painel de operacao futurista. Logica de dados preservada; visual reconstruido.
+// ═══════════════════════════════════════════════════════════════════════════
 import * as React from "react";
-import { COL, doc, onSnapshot, setDoc, getDoc } from "./firebase";
+import { COL, doc, onSnapshot, setDoc } from "./firebase";
 import { CarrosselViewer } from "./carrossel";
-import { PainelAvariasTV } from "./avarias";
-import { MapaLinha } from "./MapaLinha";
 
 const C = {
-  bg:"#04111D", surface:"#071828", card:"#0A1929", cardHover:"#0D2140",
-  accent:"#00E676", accentLight:"#00E676", accentDark:"#006B2E",
-  blue:"#0E2847", blueLight:"#1A5CCC",
-  warning:"#b87d00", warningLight:"#FFC107",
-  danger:"#c0272d", dangerLight:"#FF5252",
-  text:"#FFFFFF", textMuted:"#B5C6DA", textDim:"#3A5880",
-  border:"rgba(60,255,140,0.15)", tagBg:"rgba(255,255,255,0.04)",
+  void:"#020A12", deep:"#04111D", panel:"#071826", panelHi:"#0A2032",
+  line:"rgba(0,230,118,0.12)", lineHi:"rgba(0,230,118,0.28)",
+  green:"#00E676", greenDim:"#00A152", cyan:"#00F0FF", blue:"#5090FF",
+  purple:"#C77DFF", amber:"#FFC107", orange:"#FF8C00", red:"#FF5252",
+  ink:"#FFFFFF", mute:"#9FB4CC", dim:"#41597A", faint:"#22344B",
+};
+const mono = "'SF Mono','Roboto Mono',ui-monospace,monospace";
+const sans = "'Inter','Segoe UI',system-ui,sans-serif";
+
+const sGet = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+const sSet = (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch {} try { setDoc(doc(COL,k),{val:v,ts:Date.now()}); } catch {} };
+const hojeISO = () => new Date().toISOString().slice(0,10);
+const mesISO = () => new Date().toISOString().slice(0,7);
+const autoTurno = () => { const h=new Date().getHours(); if(h<8)return"00x08"; if(h<16)return"08x16"; return"16x24"; };
+const parseAlt = (v) => { if(!v)return null; const n=parseFloat(String(v).replace(",",".")); return isNaN(n)?null:n; };
+const diffDias = (iso) => { if(!iso)return null; const d=new Date(iso+"T00:00:00"); const h=new Date(); h.setHours(0,0,0,0); return Math.floor((h-d)/864e5); };
+
+const CLN_TOTAL = 24, CLN_LIM = 70;
+const ALT_MIN = 1.88, ALT_MAX = 1.92, ALT_TGT = 1.90;
+const LINHAS = ["L4","L5","L6","L7","L8"];
+const PRAZO_COR = { Imediato:"#FF5252", Urgente:"#FF8C00", Normal:"#FFC107", "Programavel":"#5090FF", "Programável":"#5090FF" };
+const TIPOS_AV = [
+  { id:"alt_linha",    label:"Diferenca de altura", cor:"#5090FF" },
+  { id:"capa_rasgada", label:"Capa rasgada",        cor:"#FF5252" },
+  { id:"sem_capa",     label:"Faltando capa",       cor:"#FF8C00" },
+  { id:"arame_esp",    label:"Arame espacado",      cor:"#FFC107" },
+  { id:"arame_cod",    label:"Arame sobre codigo",  cor:"#C77DFF" },
+  { id:"sem_imp",      label:"Falta de impressao",  cor:"#00F0FF" },
+  { id:"sem_logo",     label:"Unit sem logo",       cor:"#00E676" },
+];
+const jReg = (area) => { const a=(area||"").toLowerCase(); if(a==="cortadeira"||a==="cs"||a==="secador")return"cs"; if(a==="enfardamento"||a==="enf")return"enf"; if(a==="cleaners")return"clean"; return"pu"; };
+const pct = (n,d) => d>0?Math.round(n/d*100):0;
+function bezier(pts){ if(pts.length<2)return""; const p=pts.map(s=>{const[x,y]=s.split(",").map(Number);return{x,y};}); let d=`M${p[0].x},${p[0].y}`; for(let i=1;i<p.length;i++){const c=(p[i-1].x+p[i].x)/2;d+=` C${c},${p[i-1].y} ${c},${p[i].y} ${p[i].x},${p[i].y}`;} return d; }
+
+// ── animacoes globais ──
+const GlobalFX = () => (
+  <style>{`
+    @keyframes cmd-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+    @keyframes cmd-ring{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.6);opacity:0}}
+    @keyframes cmd-scan{0%{transform:translateY(-100%)}100%{transform:translateY(2400%)}}
+    @keyframes cmd-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+    @keyframes cmd-marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+    @keyframes cmd-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+    .cmd-card{position:relative;background:linear-gradient(160deg,rgba(10,32,50,.55),rgba(7,24,38,.82));backdrop-filter:blur(14px);border-radius:16px;overflow:hidden;border:1px solid rgba(0,230,118,.1)}
+    .cmd-card::after{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(140deg,rgba(0,230,118,.4),rgba(0,230,118,.03) 45%,transparent 75%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+    .cmd-corner{position:absolute;width:9px;height:9px;pointer-events:none;z-index:2}
+  `}</style>
+);
+
+const Corners = ({c=C.green}) => (
+  <>
+    <div className="cmd-corner" style={{top:7,left:7,borderTop:`1.5px solid ${c}55`,borderLeft:`1.5px solid ${c}55`}}/>
+    <div className="cmd-corner" style={{top:7,right:7,borderTop:`1.5px solid ${c}55`,borderRight:`1.5px solid ${c}55`}}/>
+    <div className="cmd-corner" style={{bottom:7,left:7,borderBottom:`1.5px solid ${c}55`,borderLeft:`1.5px solid ${c}55`}}/>
+    <div className="cmd-corner" style={{bottom:7,right:7,borderBottom:`1.5px solid ${c}55`,borderRight:`1.5px solid ${c}55`}}/>
+  </>
+);
+
+const PanelHead = ({ code, title, accent=C.green, right }) => (
+  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+      <span style={{fontFamily:mono,fontSize:9,fontWeight:700,color:accent,opacity:.65,letterSpacing:"0.1em"}}>{code}</span>
+      <span style={{width:3,height:3,borderRadius:"50%",background:accent,boxShadow:`0 0 5px ${accent}`}}/>
+      <span style={{fontFamily:sans,fontSize:10.5,fontWeight:800,color:C.mute,letterSpacing:"0.16em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{title}</span>
+    </div>
+    {right}
+  </div>
+);
+
+// ── Gauge radial ──
+function RadialGauge({ value, max=100, size=120, stroke=9, color, label, sub="", danger=false, idk="g" }) {
+  const r = (size-stroke)/2 - 4;
+  const circ = 2*Math.PI*r;
+  const frac = Math.max(0,Math.min(1,value/max));
+  const arc = circ*0.75;
+  const fill = arc*frac;
+  const rot = 135;
+  return (
+    <div style={{position:"relative",width:size,height:size}}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <defs>
+          <linearGradient id={`gg${idk}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.45"/><stop offset="100%" stopColor={color}/>
+          </linearGradient>
+          <filter id={`gf${idk}`}><feGaussianBlur stdDeviation="2.5"/></filter>
+        </defs>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.05)"
+          strokeWidth={stroke} strokeDasharray={`${arc} ${circ}`} strokeLinecap="round"
+          transform={`rotate(${rot} ${size/2} ${size/2})`}/>
+        {Array.from({length:28}).map((_,i)=>{
+          const a=(rot+i*(270/27))*Math.PI/180;
+          const x1=size/2+Math.cos(a)*(r+stroke/2+1.5), y1=size/2+Math.sin(a)*(r+stroke/2+1.5);
+          const x2=size/2+Math.cos(a)*(r+stroke/2+4.5), y2=size/2+Math.sin(a)*(r+stroke/2+4.5);
+          const on=i/27<=frac;
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={on?color:C.faint} strokeWidth="1" opacity={on?0.65:0.28}/>;
+        })}
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+          strokeDasharray={`${fill} ${circ}`} strokeLinecap="round" opacity="0.45"
+          filter={`url(#gf${idk})`} transform={`rotate(${rot} ${size/2} ${size/2})`}/>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={`url(#gg${idk})`} strokeWidth={stroke}
+          strokeDasharray={`${fill} ${circ}`} strokeLinecap="round"
+          transform={`rotate(${rot} ${size/2} ${size/2})`}
+          style={{transition:"stroke-dasharray .8s cubic-bezier(.4,0,.2,1)"}}/>
+      </svg>
+      <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+        <span style={{fontFamily:mono,fontSize:size*0.27,fontWeight:900,color:danger?C.red:C.ink,lineHeight:1,textShadow:`0 0 16px ${color}99`}}>
+          {value}<span style={{fontSize:size*0.13,color:C.dim}}>{sub}</span>
+        </span>
+        {label&&<span style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginTop:3,textTransform:"uppercase"}}>{label}</span>}
+      </div>
+    </div>
+  );
+}
+
+const Delta = ({ v, invert=false }) => {
+  if(v===0||v==null) return <span style={{fontFamily:mono,fontSize:9,color:C.dim}}>—</span>;
+  const up=v>0, good=invert?!up:up, c=good?C.green:C.red;
+  return <span style={{fontFamily:mono,fontSize:9,fontWeight:700,color:c}}>{up?"\u25B2":"\u25BC"}{Math.abs(v)}</span>;
 };
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-const storageGet = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
-const storageSet = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} try { setDoc(doc(COL,k),{val:v,ts:Date.now()}); } catch {} };
-const hoje = () => new Date().toISOString().slice(0,10);
-const getAutoTurno = () => { const h=new Date().getHours(); if(h<8)return"00x08"; if(h<16)return"08x16"; return"16x24"; };
-const parseAlt = (v) => { if(!v)return null; const n=parseFloat(String(v).replace(",",".")); return isNaN(n)?null:n; };
-const diffDias = (dataIso) => { if(!dataIso)return null; const d=new Date(dataIso+"T00:00:00"); const hoje2=new Date(); hoje2.setHours(0,0,0,0); return Math.floor((hoje2-d)/86400000); };
-
-const CLEANERS_TOTAL = 24;
-const CLEANERS_LIMITE = 70;
-const ALT_MIN = 1.88, ALT_MAX = 1.92;
-const LINHAS = ["L4","L5","L6","L7","L8"];
-const PRAZOS_COR = { Imediato:"#FF5252", Urgente:"#FF8C00", Normal:"#FFC107", Programável:"#5090FF" };
-const JANELAS = [
-  {id:"pu",   label:"P. Úmida", cor:"#00FF94"},
-  {id:"clean",label:"Cleaners", cor:"#00F0FF"},
-  {id:"cs",   label:"Sec/Cort", cor:"#3B9BFF"},
-  {id:"enf",  label:"Enf.",     cor:"#C77DFF"},
-];
-
-function areaParaJanela(area) {
-  const a=(area||"").toLowerCase();
-  if(a==="cortadeira"||a==="cs"||a==="secador")return"cs";
-  if(a==="enfardamento"||a==="enf")return"enf";
-  if(a==="cleaners")return"clean";
-  return"pu";
+function Spark({ data, color=C.green, w=70, h=22, fill=true, idk="sp" }) {
+  if(!data||data.length<2) return <div style={{width:w,height:h}}/>;
+  const mn=Math.min(...data), mx=Math.max(...data), rng=mx-mn||1;
+  const pts=data.map((v,i)=>`${(i/(data.length-1))*w},${h-((v-mn)/rng)*h}`);
+  const line=bezier(pts), area=line+` L${w},${h} L0,${h} Z`;
+  return (
+    <svg width={w} height={h} style={{display:"block",overflow:"visible"}}>
+      <defs><linearGradient id={idk} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor={color} stopOpacity="0.28"/><stop offset="100%" stopColor={color} stopOpacity="0"/>
+      </linearGradient></defs>
+      {fill&&<path d={area} fill={`url(#${idk})`}/>}
+      <path d={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"
+        style={{filter:`drop-shadow(0 0 3px ${color}aa)`}}/>
+      <circle cx={w} cy={h-((data[data.length-1]-mn)/rng)*h} r="2" fill={color} style={{filter:`drop-shadow(0 0 4px ${color})`}}/>
+    </svg>
+  );
 }
 
-// bezier path helper
-function bPath(pts) {
-  if(pts.length<2) return "";
-  const p=pts.map(s=>{const[x,y]=s.split(",").map(Number);return{x,y};});
-  let d=`M${p[0].x},${p[0].y}`;
-  for(let i=1;i<p.length;i++){const c=(p[i-1].x+p[i].x)/2;d+=` C${c},${p[i-1].y} ${c},${p[i].y} ${p[i].x},${p[i].y}`;}
-  return d;
-}
-
-// ── Relógio ──────────────────────────────────────────────────────────────────
-function Relogio() {
+// ════════ RELOGIO / STATUS BAR ════════
+function CmdClock() {
   const [now,setNow]=React.useState(new Date());
   React.useEffect(()=>{const t=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(t);},[]);
-  const hh=String(now.getHours()).padStart(2,"0");
-  const mm=String(now.getMinutes()).padStart(2,"0");
-  const ss=String(now.getSeconds()).padStart(2,"0");
-  return(
-    <div style={{display:"flex",alignItems:"baseline",gap:6}}>
-      <span style={{fontFamily:"monospace",fontSize:26,fontWeight:900,color:C.accentLight,letterSpacing:"0.06em",textShadow:`0 0 18px ${C.accentLight}88`}}>{hh}:{mm}<span style={{fontSize:14,opacity:.5}}>:{ss}</span></span>
-      <span style={{fontSize:10,color:C.textMuted,fontWeight:700,letterSpacing:"0.12em"}}>{getAutoTurno()}</span>
-    </div>
-  );
-}
-
-// ── Banner de segurança ───────────────────────────────────────────────────────
-function BannerSeguranca({ historicoData, segurancaData, onEditarAcidente }) {
-  const historico = Array.isArray(historicoData)?historicoData:[];
-
-  function diasSemQuebra(mq) {
-    const registros = historico
-      .filter(h => (h.tipoId==="passagem_ponta"||h.tipoId==="passagem_ponta_cs") && h.maquina===mq && h.data)
-      .sort((a,b)=>b.data.localeCompare(a.data));
-    if(!registros.length) return null;
-    return diffDias(registros[0].data);
-  }
-
-  const dM2 = diasSemQuebra("M2");
-  const dM3 = diasSemQuebra("M3");
-  const dAcid = segurancaData?.diasAcidente ?? null;
-
-  function SegBlock({ label, dias, cor, onClick }) {
-    return(
-      <div onClick={onClick} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:10,cursor:onClick?"pointer":"default",padding:"0 12px"}}>
-        <div style={{textAlign:"center"}}>
-          <div style={{fontFamily:"monospace",fontSize:36,fontWeight:900,color:cor,lineHeight:1,
-            textShadow:`0 0 20px ${cor}88, 0 0 40px ${cor}44`}}>
-            {dias!==null?dias:"—"}
-          </div>
-          <div style={{fontSize:9,color:C.textDim,letterSpacing:"0.14em",marginTop:2}}>{label}</div>
-        </div>
+  const hh=String(now.getHours()).padStart(2,"0"), mm=String(now.getMinutes()).padStart(2,"0"), ss=String(now.getSeconds()).padStart(2,"0");
+  const dataFmt=now.toLocaleDateString("pt-BR",{day:"2-digit",month:"short"}).toUpperCase().replace(".","");
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:14}}>
+      <div style={{textAlign:"right"}}>
+        <div style={{fontFamily:mono,fontSize:9,color:C.dim,letterSpacing:"0.1em"}}>{dataFmt}</div>
+        <div style={{fontFamily:mono,fontSize:9,color:C.green,letterSpacing:"0.1em"}}>TURNO {autoTurno()}</div>
       </div>
-    );
-  }
-
-  return(
-    <div style={{display:"flex",alignItems:"stretch",background:"rgba(7,24,40,0.95)",
-      borderBottom:`1px solid ${C.border}`,borderTop:`2px solid ${C.accentLight}`,
-      height:72, flexShrink:0}}>
-      <style>{`@keyframes seg-pulse{0%,100%{opacity:1;}50%{opacity:.6;}} .seg-div{width:1px;background:${C.border};margin:10px 0;}`}</style>
-      <SegBlock label="DIAS SEM ACIDENTE 🛡️" dias={dAcid} cor={dAcid!==null&&dAcid>30?C.accentLight:dAcid!==null&&dAcid>7?C.warningLight:C.dangerLight} onClick={onEditarAcidente}/>
-      <div className="seg-div"/>
-      <SegBlock label="DIAS SEM QUEBRA · M2 ⚙️" dias={dM2} cor={dM2===null?C.textDim:dM2>14?C.accentLight:dM2>3?C.warningLight:C.dangerLight}/>
-      <div className="seg-div"/>
-      <SegBlock label="DIAS SEM QUEBRA · M3 ⚙️" dias={dM3} cor={dM3===null?C.textDim:dM3>14?C.accentLight:dM3>3?C.warningLight:C.dangerLight}/>
-    </div>
-  );
-}
-
-// ── Modal editar dias sem acidente ───────────────────────────────────────────
-function ModalAcidente({ valor, onSalvar, onFechar }) {
-  const [v,setV]=React.useState(valor!==null?String(valor):"");
-  return(
-    <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={onFechar}>
-      <div style={{background:C.surface,border:`1px solid ${C.accentLight}44`,borderRadius:16,padding:28,width:280,maxWidth:"90vw"}} onClick={e=>e.stopPropagation()}>
-        <div style={{color:C.text,fontWeight:800,fontSize:15,marginBottom:4}}>🛡️ Dias sem acidentes</div>
-        <div style={{color:C.textMuted,fontSize:12,marginBottom:16}}>Atualize manualmente.</div>
-        <input type="number" value={v} onChange={e=>setV(e.target.value)} placeholder="ex: 42"
-          style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,borderRadius:8,
-            padding:"12px",color:C.text,fontSize:28,fontWeight:900,fontFamily:"monospace",
-            textAlign:"center",outline:"none",boxSizing:"border-box"}} autoFocus/>
-        <div style={{display:"flex",gap:8,marginTop:14}}>
-          <button onClick={onFechar} style={{flex:1,padding:11,borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted}}>Cancelar</button>
-          <button onClick={()=>{const n=parseInt(v,10);if(!isNaN(n)&&n>=0)onSalvar(n);}} disabled={isNaN(parseInt(v,10))||parseInt(v,10)<0}
-            style={{flex:2,padding:11,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,background:C.accentDark||C.accent,border:"none",color:"#fff",opacity:isNaN(parseInt(v,10))?0.4:1}}>
-            ✓ Salvar
-          </button>
-        </div>
+      <div style={{fontFamily:mono,fontSize:30,fontWeight:900,color:C.green,letterSpacing:"0.04em",textShadow:`0 0 20px ${C.green}77`,lineHeight:1}}>
+        {hh}<span style={{animation:"cmd-pulse 1s infinite"}}>:</span>{mm}<span style={{fontSize:16,color:C.dim}}>:{ss}</span>
       </div>
     </div>
   );
 }
 
-// ── Card base ──────────────────────────────────────────────────────────────
-function PainelCard({ title, icon, corTopo, onClick, children, alerta=false }) {
-  const [hov,setHov]=React.useState(false);
-  return(
-    <div onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{background:hov?C.cardHover:C.card, border:`1px solid ${alerta?C.dangerLight+"44":C.border}`,
-        borderTop:`3px solid ${corTopo}`, borderRadius:14, padding:"14px 18px 12px",
-        cursor:"pointer", transition:"all .2s", display:"flex", flexDirection:"column", gap:10,
-        boxShadow:hov?`0 0 28px ${corTopo}33, 0 4px 32px rgba(0,0,0,.6)`:`0 2px 16px rgba(0,0,0,.5)`,
-        overflow:"hidden", position:"relative"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{display:"flex",alignItems:"center",gap:7}}>
-          <span style={{fontSize:18}}>{icon}</span>
-          <span style={{fontSize:11,fontWeight:800,color:C.textMuted,letterSpacing:"0.09em",textTransform:"uppercase"}}>{title}</span>
-        </div>
-        <span style={{fontSize:12,color:C.textDim,opacity:.6}}>›</span>
+// ════════ BANNER HEROI: SEGURANCA + EFICIENCIA GLOBAL ════════
+function HeroBar({ historico, seguranca, cleaners, cleanersHist, avarias, onEditAcid }) {
+  // dias sem quebra
+  const diasQuebra=(mq)=>{const r=historico.filter(h=>(h.tipoId==="passagem_ponta"||h.tipoId==="passagem_ponta_cs")&&h.maquina===mq&&h.data).sort((a,b)=>b.data.localeCompare(a.data));return r.length?diffDias(r[0].data):null;};
+  const dM2=diasQuebra("M2"), dM3=diasQuebra("M3");
+  const dAcid=seguranca?.diasAcidente??null;
+  // eficiencia cleaners global
+  const foraM2=Object.keys(cleaners?.M2||{}).length, foraM3=Object.keys(cleaners?.M3||{}).length;
+  const eficGlobal=Math.round(((CLN_TOTAL*2)-(foraM2+foraM3))/(CLN_TOTAL*2)*100);
+  // avarias mes
+  const avMes=(avarias||[]).filter(r=>r.data?.slice(0,7)===mesISO()&&r.teveAvaria).reduce((s,r)=>s+r.total,0);
+
+  const Metric=({val,unit,label,color,icon,onClick,pulse})=>(
+    <div onClick={onClick} style={{flex:1,display:"flex",alignItems:"center",gap:12,padding:"0 18px",cursor:onClick?"pointer":"default",position:"relative"}}>
+      <div style={{position:"relative",width:42,height:42,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+        <svg width="42" height="42" style={{position:"absolute",inset:0}}>
+          <circle cx="21" cy="21" r="18" fill="none" stroke={`${color}22`} strokeWidth="2"/>
+          <circle cx="21" cy="21" r="18" fill="none" stroke={color} strokeWidth="2" strokeDasharray="85 200" strokeLinecap="round" transform="rotate(-90 21 21)" style={{filter:`drop-shadow(0 0 3px ${color})`}}/>
+        </svg>
+        <span style={{fontSize:18,filter:`drop-shadow(0 0 6px ${color}aa)`}}>{icon}</span>
+        {pulse&&<span style={{position:"absolute",inset:0,borderRadius:"50%",border:`1.5px solid ${color}`,animation:"cmd-ring 1.6s ease-out infinite"}}/>}
       </div>
-      {children}
+      <div style={{minWidth:0}}>
+        <div style={{display:"flex",alignItems:"baseline",gap:3}}>
+          <span style={{fontFamily:mono,fontSize:30,fontWeight:900,color,lineHeight:1,textShadow:`0 0 16px ${color}66`}}>{val??"--"}</span>
+          <span style={{fontFamily:mono,fontSize:11,color:C.dim}}>{unit}</span>
+        </div>
+        <div style={{fontFamily:sans,fontSize:8.5,color:C.dim,letterSpacing:"0.1em",textTransform:"uppercase",marginTop:2,whiteSpace:"nowrap"}}>{label}</div>
+      </div>
+    </div>
+  );
+  const Sep=()=>(<div style={{width:1,alignSelf:"stretch",margin:"10px 0",background:`linear-gradient(180deg,transparent,${C.line},transparent)`}}/>);
+
+  const cAcid=dAcid==null?C.dim:dAcid>30?C.green:dAcid>7?C.amber:C.red;
+  const cM2=dM2==null?C.dim:dM2>14?C.green:dM2>3?C.amber:C.red;
+  const cM3=dM3==null?C.dim:dM3>14?C.green:dM3>3?C.amber:C.red;
+  const cEf=eficGlobal>=90?C.green:eficGlobal>=CLN_LIM?C.amber:C.red;
+  const cAv=avMes===0?C.green:avMes<=10?C.amber:C.red;
+
+  return (
+    <div className="cmd-card" style={{display:"flex",alignItems:"stretch",height:74,flexShrink:0,margin:"0 0 12px"}}>
+      <Corners/>
+      <Metric val={dAcid} unit="dias" label="Sem Acidente" color={cAcid} icon="\uD83D\uDEE1\uFE0F" onClick={onEditAcid}/>
+      <Sep/>
+      <Metric val={dM2} unit="dias" label="Sem Quebra M2" color={cM2} icon="\u2699\uFE0F"/>
+      <Sep/>
+      <Metric val={dM3} unit="dias" label="Sem Quebra M3" color={cM3} icon="\u2699\uFE0F"/>
+      <Sep/>
+      <Metric val={eficGlobal} unit="%" label="Eficiencia Cleaners" color={cEf} icon="\uD83D\uDCA7" pulse={eficGlobal<CLN_LIM}/>
+      <Sep/>
+      <Metric val={avMes} unit="" label="Avarias no Mes" color={cAv} icon="\uD83D\uDCE6" pulse={avMes>10}/>
     </div>
   );
 }
 
-// ── Painel 1 · Mural de Oportunidades ─────────────────────────────────────
-function PainelMural({ pendenciasData, chamadosData, setTela }) {
-  const pend = Array.isArray(pendenciasData)?pendenciasData:[];
-  const chamAbertos = Array.isArray(chamadosData)?chamadosData.filter(c=>c.status==="aberto"):[];
-
-  // ── LÓGICA (inalterada): contagem por janela ──
-  const cnt = {pu:0,clean:0,cs:0,enf:0};
-  pend.forEach(p=>{
-    if(p.multiJanela) p.multiJanela.forEach(j=>{if(cnt[j]!==undefined)cnt[j]++;});
-    else{const j=p.janela||areaParaJanela(p.area);if(cnt[j]!==undefined)cnt[j]++;}
-  });
-  chamAbertos.forEach(c=>{const j=areaParaJanela(c.area);if(cnt[j]!==undefined)cnt[j]++;});
+// ════════ PAINEL: MURAL (radial multi-anel) ════════
+function PanelMural({ pendencias, chamados, setTela }) {
+  const pend=Array.isArray(pendencias)?pendencias:[];
+  const chA=Array.isArray(chamados)?chamados.filter(c=>c.status==="aberto"):[];
+  const cnt={pu:0,clean:0,cs:0,enf:0};
+  pend.forEach(p=>{if(p.multiJanela)p.multiJanela.forEach(j=>{if(cnt[j]!==undefined)cnt[j]++;});else{const j=p.janela||jReg(p.area);if(cnt[j]!==undefined)cnt[j]++;}});
+  chA.forEach(c=>{const j=jReg(c.area);if(cnt[j]!==undefined)cnt[j]++;});
   const total=Object.values(cnt).reduce((a,b)=>a+b,0);
-
-  // ── severidade por prazo (lógica já existente nos dados) ──
-  const prazoDe = (item) => (item.prazo||"").toLowerCase();
-  let nCrit=0,nMed=0,nBaixa=0;
-  const classifica = (pz) => { if(pz==="imediato"||pz==="urgente")nCrit++; else if(pz==="normal")nMed++; else nBaixa++; };
-  pend.forEach(p=>classifica(prazoDe(p)));
-  chamAbertos.forEach(c=>classifica(prazoDe(c)));
-
-  // ── donut multicolor por severidade (igual mockup: vermelho/amarelo/verde) ──
-  const sevSegs=[
-    {v:nCrit, cor:C.dangerLight},
-    {v:nMed,  cor:C.warningLight},
-    {v:nBaixa,cor:C.accentLight},
-  ].filter(s=>s.v>0);
-  const corCentro = nCrit>0?C.dangerLight:nMed>0?C.warningLight:C.accentLight;
-  const R=52,SW=13,circ=2*Math.PI*R;
-  let acc=0;
-
-  // ── linhas da lista (área-pai → sub) igual mockup ──
-  // Parte Úmida engloba Máquina(pu) + Cleaners(clean); Cortadeira=cs; Enfardamento=enf
-  const puTotal = cnt.pu + cnt.clean;
-  const corBarra = (n,base) => n===0?C.textDim:base;
-  const linhas = [
-    {tipo:"pai", label:"Parte Úmida", n:puTotal, cor: puTotal===0?C.textDim:(nCrit>0?C.dangerLight:C.warningLight)},
-    {tipo:"sub", label:"Máquina",     n:cnt.pu},
-    {tipo:"sub", label:"Cleaners",    n:cnt.clean},
-    {tipo:"pai", label:"Cortadeira",  n:cnt.cs,  cor: cnt.cs===0?C.textDim:C.warningLight},
-    {tipo:"pai", label:"Enfardamento",n:cnt.enf, cor: cnt.enf===0?C.textDim:C.accentLight},
-  ];
-  const maxBar = Math.max(1, puTotal, cnt.cs, cnt.enf);
-
-  return(
-    <PainelCard title="Mural de Oportunidades" icon="🔧" corTopo={corCentro} onClick={()=>setTela("mural")} alerta={nCrit>0}>
-      <div style={{display:"flex",gap:18,alignItems:"center"}}>
-        {/* ── DONUT ── */}
-        <div style={{position:"relative",flexShrink:0,width:140,height:140}}>
-          <svg width={140} height={140} viewBox="0 0 140 140" style={{transform:"rotate(-90deg)"}}>
-            <circle cx="70" cy="70" r={R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={SW}/>
-            {total===0
-              ? <circle cx="70" cy="70" r={R} fill="none" stroke={C.accentLight} strokeWidth={SW} strokeDasharray={`${circ} 0`} style={{filter:`drop-shadow(0 0 8px ${C.accentLight})`}}/>
-              : sevSegs.map((s,i)=>{
-                  const frac=s.v/total; const len=frac*circ; const off=-acc*circ; acc+=frac;
-                  const gap=2; // micro-gap entre segmentos
-                  return <circle key={i} cx="70" cy="70" r={R} fill="none" stroke={s.cor} strokeWidth={SW}
-                    strokeDasharray={`${Math.max(0,len-gap)} ${circ-len+gap}`} strokeDashoffset={off} strokeLinecap="round"
-                    style={{filter:`drop-shadow(0 0 6px ${s.cor}aa)`,transition:"stroke-dasharray .6s"}}/>;
-                })
-            }
+  // severidade
+  let nC=0,nM=0,nB=0; const cl=(pz)=>{const p=(pz||"").toLowerCase();if(p==="imediato"||p==="urgente")nC++;else if(p==="normal")nM++;else nB++;};
+  pend.forEach(p=>cl(p.prazo)); chA.forEach(c=>cl(c.prazo));
+  const cCenter=nC>0?C.red:nM>0?C.amber:C.green;
+  const areas=[{id:"pu",l:"P.UMIDA",c:C.green},{id:"clean",l:"CLEANERS",c:C.cyan},{id:"cs",l:"SEC/CORT",c:C.blue},{id:"enf",l:"ENFARD.",c:C.purple}];
+  // aneis concentricos
+  const cx=72,cy=72; const rings=[54,44,34,24];
+  return (
+    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}}>
+      <Corners c={cCenter}/>
+      <PanelHead code="01" title="Mural de Oportunidades" accent={cCenter}
+        right={<span style={{fontFamily:mono,fontSize:9,color:C.dim}}>{total} ABERTAS</span>}/>
+      <div style={{display:"flex",gap:14,flex:1}}>
+        {/* aneis */}
+        <div style={{position:"relative",width:144,height:144,flexShrink:0}}>
+          <svg width="144" height="144" viewBox="0 0 144 144">
+            {areas.map((a,i)=>{
+              const v=cnt[a.id], frac=total>0?v/total:0, r=rings[i], circ=2*Math.PI*r;
+              return (
+                <g key={a.id}>
+                  <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="6"/>
+                  <circle cx={cx} cy={cy} r={r} fill="none" stroke={a.c} strokeWidth="6"
+                    strokeDasharray={`${frac*circ} ${circ}`} strokeLinecap="round"
+                    transform={`rotate(-90 ${cx} ${cy})`}
+                    style={{filter:`drop-shadow(0 0 4px ${a.c}aa)`,transition:"stroke-dasharray .7s"}}/>
+                </g>
+              );
+            })}
+            <text x={cx} y={cy-2} textAnchor="middle" fontFamily={mono} fontSize="32" fontWeight="900" fill={cCenter} style={{filter:`drop-shadow(0 0 10px ${cCenter})`}}>{total}</text>
+            <text x={cx} y={cy+14} textAnchor="middle" fontFamily={sans} fontSize="7" fill={C.dim} letterSpacing="2">PENDENCIAS</text>
           </svg>
-          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-            <span style={{fontFamily:"monospace",fontSize:46,fontWeight:900,color:corCentro,lineHeight:1,
-              textShadow:`0 0 22px ${corCentro}aa, 0 0 44px ${corCentro}44`}}>{total}</span>
-            <span style={{fontSize:10,color:C.textMuted,letterSpacing:"0.06em",marginTop:2}}>oportunidades</span>
-          </div>
         </div>
-
-        {/* ── LISTA ── */}
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",justifyContent:"space-between",borderBottom:`1px solid ${C.border}`,paddingBottom:5,marginBottom:7}}>
-            <span style={{fontSize:8,color:C.textDim,letterSpacing:"0.14em",fontWeight:700}}>ÁREA / MÁQUINA</span>
-            <span style={{fontSize:8,color:C.textDim,letterSpacing:"0.14em",fontWeight:700}}>TOTAL</span>
-          </div>
-          {linhas.map((ln,i)=>{
-            const isSub=ln.tipo==="sub";
-            const w=ln.tipo==="pai"?Math.round((ln.n/maxBar)*100):0;
-            return(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:isSub?3:5,
-                paddingLeft:isSub?14:0}}>
-                {/* ícone/marcador */}
-                {!isSub&&<span style={{width:5,height:5,borderRadius:"50%",background:ln.cor,flexShrink:0,
-                  boxShadow:ln.n>0?`0 0 6px ${ln.cor}`:"none"}}/>}
-                {isSub&&<span style={{color:C.textDim,fontSize:10,flexShrink:0,marginLeft:-8}}>└</span>}
-                <span style={{fontSize:isSub?10:12,color:isSub?C.textDim:C.text,fontWeight:isSub?500:700,
-                  whiteSpace:"nowrap",flexShrink:0}}>{ln.label}</span>
-                {/* barra (só pai) */}
-                {!isSub&&(
-                  <div style={{flex:1,height:5,borderRadius:3,background:"rgba(255,255,255,0.05)",overflow:"hidden",minWidth:20}}>
-                    <div style={{height:"100%",width:`${w}%`,borderRadius:3,background:ln.cor,transition:"width .5s",
-                      boxShadow:ln.n>0?`0 0 6px ${ln.cor}aa`:"none"}}/>
-                  </div>
-                )}
-                {isSub&&<div style={{flex:1}}/>}
-                <span style={{fontFamily:"monospace",fontSize:isSub?11:13,fontWeight:900,
-                  color:ln.n>0?(isSub?C.textMuted:ln.cor):C.textDim,flexShrink:0,minWidth:16,textAlign:"right"}}>{ln.n}</span>
+        {/* legenda + severidade */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",gap:7}}>
+          {areas.map(a=>{
+            const v=cnt[a.id], w=total>0?Math.round(v/total*100):0;
+            return (
+              <div key={a.id} style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{width:6,height:6,borderRadius:2,background:a.c,boxShadow:v>0?`0 0 5px ${a.c}`:"none",flexShrink:0}}/>
+                <span style={{fontFamily:sans,fontSize:9,color:C.mute,minWidth:54}}>{a.l}</span>
+                <div style={{flex:1,height:3,borderRadius:2,background:"rgba(255,255,255,0.05)",overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${w}%`,background:a.c,borderRadius:2,boxShadow:v>0?`0 0 4px ${a.c}`:"none",transition:"width .6s"}}/>
+                </div>
+                <span style={{fontFamily:mono,fontSize:11,fontWeight:900,color:v>0?a.c:C.dim,minWidth:14,textAlign:"right"}}>{v}</span>
               </div>
             );
           })}
-          {/* total geral */}
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",
-            borderTop:`1px solid ${C.border}`,paddingTop:6,marginTop:4}}>
-            <span style={{fontSize:11,color:C.textMuted,fontWeight:600}}>Total geral</span>
-            <span style={{fontFamily:"monospace",fontSize:14,fontWeight:900,color:corCentro}}>{total}</span>
+        </div>
+      </div>
+      {/* severidade rodape */}
+      <div style={{display:"flex",gap:8,marginTop:12,paddingTop:10,borderTop:`1px solid ${C.line}`}}>
+        {[{n:nC,l:"CRITICAS",c:C.red},{n:nM,l:"MEDIAS",c:C.amber},{n:nB,l:"BAIXAS",c:C.green}].map(s=>(
+          <div key={s.l} onClick={()=>setTela&&setTela("mural")} style={{flex:1,cursor:"pointer",textAlign:"center",padding:"6px 0",borderRadius:8,background:`${s.c}0c`,border:`1px solid ${s.c}22`}}>
+            <div style={{fontFamily:mono,fontSize:20,fontWeight:900,color:s.n>0?s.c:C.dim,lineHeight:1,textShadow:s.n>0?`0 0 10px ${s.c}66`:"none"}}>{s.n}</div>
+            <div style={{fontFamily:sans,fontSize:7,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>{s.l}</div>
           </div>
-        </div>
+        ))}
       </div>
-
-      {/* ── RODAPÉ: severidade + botão ── */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:4,
-        borderTop:`1px solid ${C.border}`,paddingTop:10}}>
-        <div style={{display:"flex",gap:20}}>
-          {[
-            {n:nCrit, label:"CRÍTICAS", cor:C.dangerLight},
-            {n:nMed,  label:"MÉDIAS",   cor:C.warningLight},
-            {n:nBaixa,label:"BAIXAS",   cor:C.accentLight},
-          ].map(({n,label,cor})=>(
-            <div key={label} style={{textAlign:"center"}}>
-              <div style={{fontFamily:"monospace",fontSize:24,fontWeight:900,color:n>0?cor:C.textDim,lineHeight:1,
-                textShadow:n>0?`0 0 14px ${cor}88`:"none"}}>{n}</div>
-              <div style={{fontSize:8,color:C.textDim,letterSpacing:"0.12em",marginTop:3,fontWeight:600}}>{label}</div>
-            </div>
-          ))}
-        </div>
-        <button onClick={(e)=>{e.stopPropagation();setTela("mural");}}
-          style={{background:"transparent",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 14px",
-            cursor:"pointer",color:C.textMuted,fontSize:10,fontWeight:700,letterSpacing:"0.08em",
-            display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-          VER DETALHES <span style={{fontSize:12}}>›</span>
-        </button>
-      </div>
-    </PainelCard>
+    </div>
   );
 }
 
-// ── Painel 2 · Chamados / SAP ─────────────────────────────────────────────
-function PainelChamados({ chamadosData, setTela }) {
-  const chamados=Array.isArray(chamadosData)?chamadosData.filter(c=>c.status==="aberto"):[];
-  const nIme=chamados.filter(c=>c.prazo==="Imediato").length;
-  const nUrg=chamados.filter(c=>c.prazo==="Urgente").length;
-  const nNor=chamados.filter(c=>c.prazo==="Normal").length;
-  const nPro=chamados.filter(c=>c.prazo==="Programável").length;
-  const cor=nIme>0?C.dangerLight:nUrg>0?"#FF8C00":chamados.length>0?C.warningLight:C.accentLight;
-  const blocos=[{l:"Imediato",n:nIme,c:PRAZOS_COR.Imediato},{l:"Urgente",n:nUrg,c:PRAZOS_COR.Urgente},{l:"Normal",n:nNor,c:PRAZOS_COR.Normal},{l:"Program.",n:nPro,c:PRAZOS_COR.Programável}];
-  // mini barras
-  const maxN=Math.max(1,...blocos.map(b=>b.n));
-  return(
-    <PainelCard title="Chamados / SAP" icon="🗒" corTopo={cor} onClick={()=>setTela("equipamentos")} alerta={nIme>0}>
-      <div style={{display:"flex",alignItems:"flex-end",gap:8,marginBottom:2}}>
-        <span style={{fontFamily:"monospace",fontSize:48,fontWeight:900,color:cor,lineHeight:1,
-          textShadow:`0 0 24px ${cor}88`}}>{chamados.length}</span>
-        <span style={{fontSize:13,color:C.textMuted,marginBottom:8}}>abertos</span>
-      </div>
-      {/* barras visuais */}
-      <div style={{display:"flex",gap:8,alignItems:"flex-end",height:52}}>
-        {blocos.map(({l,n,c})=>{
-          const h=Math.max(4,Math.round((n/maxN)*44));
-          return(
-            <div key={l} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-              <span style={{fontFamily:"monospace",fontSize:13,fontWeight:900,color:n>0?c:C.textDim}}>{n}</span>
-              <div style={{width:"100%",height:h,borderRadius:"3px 3px 0 0",background:n>0?c:"rgba(255,255,255,0.06)",
-                boxShadow:n>0?`0 0 8px ${c}66`:"none",transition:"height .5s"}}/>
-              <span style={{fontSize:8,color:C.textDim,textAlign:"center",lineHeight:1.2}}>{l}</span>
-            </div>
-          );
-        })}
-      </div>
-    </PainelCard>
-  );
-}
-
-// ── Painel 3 · Cleaners ────────────────────────────────────────────────────
-function PainelCleaners({ cleanersData, cleanersHistData, sedimData, setTela }) {
-  const dados=cleanersData||{M2:{},M3:{}};
-  const histAll=Array.isArray(cleanersHistData)?cleanersHistData:[];
-  const sedimAll=Array.isArray(sedimData)?sedimData:[];
-
-  // sparkline 7 dias por máquina
-  const sparkDays=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
-  function getSparkMaq(mq) {
-    const snap={};
-    const sorted=[...histAll].sort((a,b)=>(a.data+(a.hora||"00:00")).localeCompare(b.data+(b.hora||"00:00")));
-    return sparkDays.map(d=>{
-      sorted.filter(ev=>ev.data===d&&ev.maquina===mq).forEach(ev=>{
-        if(ev.status==="REMOVIDA")snap[ev.garrafa]=1; else delete snap[ev.garrafa];
-      });
-      return Math.round((CLEANERS_TOTAL-Object.keys(snap).length)/CLEANERS_TOTAL*100);
-    });
-  }
-
-  function CardMaq({ mq }) {
-    const nFora=Object.keys(dados[mq]||{}).length;
-    const nOp=CLEANERS_TOTAL-nFora;
-    const efic=Math.round(nOp/CLEANERS_TOTAL*100);
-    const cor=efic>=90?C.accentLight:efic>=CLEANERS_LIMITE?C.warningLight:C.dangerLight;
-    const spark=getSparkMaq(mq);
-    const R=28,circ=2*Math.PI*R,fillOp=circ*(nOp/CLEANERS_TOTAL),fillFora=circ*(nFora/CLEANERS_TOTAL);
-    const W2=70,H2=22,mn=Math.max(0,Math.min(...spark)-5),mx=Math.min(100,Math.max(...spark)+5),rng=mx-mn||1;
-    const pts=spark.map((v,i)=>`${(i/(spark.length-1))*W2},${H2-(v-mn)/rng*H2}`).join(" ");
-    return(
-      <div style={{flex:1,background:"rgba(255,255,255,0.03)",border:`1px solid ${cor}33`,borderTop:`2px solid ${cor}`,borderRadius:10,padding:"10px 10px 8px"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-          <svg width={64} height={64} viewBox="0 0 80 80">
-            <circle cx="40" cy="40" r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="7"/>
-            <circle cx="40" cy="40" r={R} fill="none" stroke={C.accentLight} strokeWidth="7"
-              strokeDasharray={`${fillOp} ${circ}`} strokeLinecap="butt" strokeDashoffset={circ*0.25}
-              style={{filter:`drop-shadow(0 0 4px ${C.accentLight}88)`,transition:"stroke-dasharray .6s"}}/>
-            {nFora>0&&<circle cx="40" cy="40" r={R} fill="none" stroke={C.warningLight} strokeWidth="7"
-              strokeDasharray={`${fillFora} ${circ}`} strokeLinecap="butt" strokeDashoffset={circ*0.25-fillOp}
-              style={{filter:`drop-shadow(0 0 4px ${C.warningLight}88)`,transition:"stroke-dasharray .6s"}}/>}
-            <text x="40" y="44" textAnchor="middle" fontSize="16" fontWeight="900" fill={cor} fontFamily="monospace">{efic}</text>
-            <text x="40" y="54" textAnchor="middle" fontSize="7" fill={C.textDim}>%</text>
-          </svg>
-          <div>
-            <div style={{fontFamily:"monospace",fontSize:11,fontWeight:900,color:C.textMuted,letterSpacing:"0.1em",marginBottom:2}}>MÁQ {mq.replace("M","")}</div>
-            <div style={{color:C.accentLight,fontWeight:900,fontSize:14,fontFamily:"monospace"}}>{nOp}<span style={{color:C.textDim,fontSize:10}}>/{CLEANERS_TOTAL}</span></div>
-            <div style={{color:nFora>0?C.warningLight:C.textDim,fontWeight:700,fontSize:11,fontFamily:"monospace"}}>{nFora} fora</div>
-          </div>
+// ════════ PAINEL: CLEANERS (duplo gauge + sedimentaveis) ════════
+function PanelCleaners({ cleaners, cleanersHist, sedim, setTela }) {
+  const dados=cleaners||{M2:{},M3:{}};
+  const hist=Array.isArray(cleanersHist)?cleanersHist:[];
+  const sed=Array.isArray(sedim)?sedim:[];
+  // spark por maquina
+  const days=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
+  const sparkMq=(mq)=>{const snap={};const sorted=[...hist].sort((a,b)=>(a.data+(a.hora||"00:00")).localeCompare(b.data+(b.hora||"00:00")));return days.map(d=>{sorted.filter(e=>e.data===d&&e.maquina===mq).forEach(e=>{if(e.status==="REMOVIDA")snap[e.garrafa]=1;else delete snap[e.garrafa];});return Math.round((CLN_TOTAL-Object.keys(snap).length)/CLN_TOTAL*100);});};
+  const MqGauge=({mq,idk})=>{
+    const fora=Object.keys(dados[mq]||{}).length, op=CLN_TOTAL-fora, efic=Math.round(op/CLN_TOTAL*100);
+    const c=efic>=90?C.green:efic>=CLN_LIM?C.amber:C.red;
+    const sp=sparkMq(mq);
+    return (
+      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+        <RadialGauge value={efic} size={104} stroke={8} color={c} label={`MAQUINA ${mq.replace("M","")}`} sub="%" idk={idk}/>
+        <div style={{display:"flex",gap:10,fontFamily:mono,fontSize:10}}>
+          <span style={{color:C.green}}>{op}<span style={{color:C.dim,fontSize:8}}>op</span></span>
+          <span style={{color:fora>0?C.amber:C.dim}}>{fora}<span style={{color:C.dim,fontSize:8}}>fora</span></span>
         </div>
-        {/* sparkline */}
-        <div style={{background:C.tagBg,borderRadius:6,padding:"4px 6px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
-          <span style={{fontSize:7,color:C.textDim}}>7d</span>
-          <svg width={W2} height={H2}>
-            <polyline points={pts} fill="none" stroke={cor} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"
-              style={{filter:`drop-shadow(0 0 3px ${cor}88)`}}/>
-            <circle cx={W2} cy={H2-(spark[spark.length-1]-mn)/rng*H2} r="2.5" fill={cor}/>
-          </svg>
-          <span style={{color:cor,fontFamily:"monospace",fontWeight:900,fontSize:10}}>{spark[spark.length-1]}%</span>
+        <div style={{width:"100%",background:"rgba(255,255,255,0.03)",borderRadius:6,padding:"4px 6px",display:"flex",alignItems:"center",gap:5}}>
+          <span style={{fontFamily:mono,fontSize:7,color:C.dim}}>7D</span>
+          <div style={{flex:1}}><Spark data={sp} color={c} w={68} h={18} idk={"clsp"+idk}/></div>
+          <span style={{fontFamily:mono,fontSize:9,fontWeight:900,color:c}}>{sp[sp.length-1]}%</span>
         </div>
       </div>
     );
-  }
-
-  // ── SEDIMENTÁVEIS: 10 dias × 3 turnos, linha "corre" a cada lançamento ──
-  const shiftBounds=[];
-  for(let day=0;day<10;day++){
-    const d=new Date(); d.setDate(d.getDate()-9+day);
-    const ds=d.toISOString().slice(0,10);
-    for(const h of[8,16,24]){
-      const nd=h===24;
-      const bd=nd?new Date(d.getTime()+86400000).toISOString().slice(0,10):ds;
-      const bh=nd?"00:00":String(h).padStart(2,"0")+":00";
-      shiftBounds.push({ts:bd+"T"+bh,label:ds});
-    }
-  }
-  const sdVals=shiftBounds.map(({ts})=>{const recs=sedimAll.filter(s=>s.data+"T"+(s.hora||"00:00")<=ts);return recs.length>0?recs[recs.length-1].valor:null;});
-  const hasSd=sdVals.some(v=>v!==null);
-  const lastSd=sedimAll.length>0?sedimAll[sedimAll.length-1]:null;
-  const corSd=lastSd?(lastSd.valor<150?C.accentLight:lastSd.valor<=250?C.warningLight:C.dangerLight):C.textDim;
-  // SVG dims
-  const SW_=300,SH=86,PAD_T=8,PAD_B=16,PLOT=SH-PAD_T-PAD_B;
-  const sdMax=Math.max(300,...sdVals.filter(v=>v!==null))+30;
-  const xSd=(i)=>(i/(shiftBounds.length-1))*SW_;
-  const ySd=(v)=>PAD_T+PLOT-(v/sdMax)*PLOT;
-  // preenche buracos iniciais com 1º valor pra linha não cortar
-  const firstSd=sdVals.find(v=>v!==null);
-  const firstIdx=sdVals.findIndex(v=>v!==null);
-  const sdFilled=firstSd!=null?sdVals.map((v,i)=>v!==null?v:(i<firstIdx?firstSd:null)):sdVals;
-  const sdPtsArr=sdFilled.map((v,i)=>v!==null?`${xSd(i)},${ySd(v)}`:null).filter(Boolean);
-  const sdLine=bPath(sdPtsArr);
-  const sdArea=sdLine?sdLine+` L${SW_},${PAD_T+PLOT} L${sdPtsArr.length>0?sdPtsArr[0].split(",")[0]:0},${PAD_T+PLOT} Z`:"";
-  // linhas de referência 150 / 250
-  const yRef150=ySd(150), yRef250=ySd(250);
-  // marcadores de dia (1 a cada 3 pontos)
-  const dayMarks=shiftBounds.filter((_,i)=>i%3===0);
-
-  return(
-    <PainelCard title="Cleaners" icon="🫧" corTopo={C.accentLight} onClick={()=>setTela("cleaners")}>
-      <div style={{display:"flex",gap:8}}>
-        <CardMaq mq="M2"/>
-        <CardMaq mq="M3"/>
+  };
+  const lastSed=sed.length>0?sed[sed.length-1]:null;
+  const cSed=lastSed?(lastSed.valor<150?C.green:lastSed.valor<=250?C.amber:C.red):C.dim;
+  return (
+    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}}>
+      <Corners c={C.cyan}/>
+      <PanelHead code="02" title="Cleaners" accent={C.cyan}
+        right={lastSed?<span style={{fontFamily:mono,fontSize:9,color:cSed,background:`${cSed}18`,border:`1px solid ${cSed}33`,borderRadius:12,padding:"2px 8px"}}>SED {lastSed.valor} mL/L</span>:null}/>
+      <div style={{display:"flex",gap:12,flex:1}}>
+        <MqGauge mq="M2" idk="cm2"/>
+        <div style={{width:1,background:`linear-gradient(180deg,transparent,${C.line},transparent)`}}/>
+        <MqGauge mq="M3" idk="cm3"/>
       </div>
-
-      {/* ── GRÁFICO SEDIMENTÁVEIS (fora a fora, comum às 2 máquinas) ── */}
-      <div style={{background:"rgba(255,255,255,0.025)",border:`1px solid ${C.border}`,borderTop:`2px solid ${corSd}`,
-        borderRadius:10,padding:"10px 12px 8px",marginTop:2}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-          <span style={{fontSize:9,color:C.textDim,letterSpacing:"0.1em",fontWeight:700}}>SEDIMENTÁVEIS · 10 DIAS · COMUM M2/M3</span>
-          {lastSd&&<span style={{background:`${corSd}22`,border:`1px solid ${corSd}44`,color:corSd,
-            borderRadius:20,padding:"2px 9px",fontSize:10,fontFamily:"monospace",fontWeight:800}}>{lastSd.valor} mL/L</span>}
-        </div>
-        {hasSd?(
-          <svg width="100%" height={SH} viewBox={`0 0 ${SW_} ${SH}`} preserveAspectRatio="none" style={{display:"block"}}>
-            <defs>
-              <linearGradient id="sdFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={corSd} stopOpacity="0.22"/>
-                <stop offset="100%" stopColor={corSd} stopOpacity="0.02"/>
-              </linearGradient>
-            </defs>
-            {/* faixas de referência */}
-            {yRef250>PAD_T&&yRef250<PAD_T+PLOT&&<line x1={0} y1={yRef250} x2={SW_} y2={yRef250} stroke={C.dangerLight} strokeWidth="0.7" strokeDasharray="3,3" opacity={0.4}/>}
-            {yRef150>PAD_T&&yRef150<PAD_T+PLOT&&<line x1={0} y1={yRef150} x2={SW_} y2={yRef150} stroke={C.warningLight} strokeWidth="0.7" strokeDasharray="3,3" opacity={0.4}/>}
-            {/* área + linha */}
-            <path d={sdArea} fill="url(#sdFill)" opacity={0.8}/>
-            <path d={sdLine} fill="none" stroke={corSd} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
-              style={{filter:`drop-shadow(0 0 4px ${corSd}aa)`}}/>
-            {/* ponto final */}
-            {sdPtsArr.length>0&&<circle cx={sdPtsArr[sdPtsArr.length-1].split(",")[0]} cy={sdPtsArr[sdPtsArr.length-1].split(",")[1]} r="3.5" fill={corSd}
-              style={{filter:`drop-shadow(0 0 5px ${corSd})`}}/>}
-            {/* labels ref */}
-            {yRef250>PAD_T&&yRef250<PAD_T+PLOT&&<text x={2} y={yRef250-2} fontSize="6.5" fill={C.dangerLight} fontFamily="monospace" opacity={0.6}>250</text>}
-            {yRef150>PAD_T&&yRef150<PAD_T+PLOT&&<text x={2} y={yRef150-2} fontSize="6.5" fill={C.warningLight} fontFamily="monospace" opacity={0.6}>150</text>}
-            {/* marcas de dia eixo X */}
-            {dayMarks.map((m,i)=>{
-              const x=xSd(i*3);
-              const dd=m.label.slice(8,10)+"/"+m.label.slice(5,7);
-              return<text key={i} x={x} y={SH-3} fontSize="6.5" fill={C.textDim} fontFamily="monospace"
-                textAnchor={i===0?"start":i===dayMarks.length-1?"end":"middle"}>{dd}</text>;
-            })}
-          </svg>
-        ):(
-          <div style={{height:SH,display:"flex",alignItems:"center",justifyContent:"center",color:C.textDim,fontSize:10}}>
-            Sem lançamentos de sedimentáveis ainda
-          </div>
-        )}
-      </div>
-    </PainelCard>
+    </div>
   );
 }
 
-// ── Painel 4 · Tendência de Eficiência ────────────────────────────────────
-function PainelTendencia({ cleanersHistData, setTela }) {
-  const histAll=Array.isArray(cleanersHistData)?cleanersHistData:[];
-
-  // 30 pontos: 10 dias × 3 turnos
-  const shiftBounds=[];
-  for(let day=0;day<10;day++){
-    const d=new Date(); d.setDate(d.getDate()-9+day);
-    const ds=d.toISOString().slice(0,10);
-    for(const h of[8,16,24]){
-      const nd=h===24;
-      const bd=nd?new Date(d.getTime()+86400000).toISOString().slice(0,10):ds;
-      const bh=nd?"00:00":String(h).padStart(2,"0")+":00";
-      shiftBounds.push({ts:bd+"T"+bh,label:ds});
-    }
-  }
-  const sortedEf=[...histAll].sort((a,b)=>(a.data+(a.hora||"00:00")).localeCompare(b.data+(b.hora||"00:00")));
-  const snapEf={M2:{},M3:{}}; let eIdx=0;
-  const effVals=shiftBounds.map(({ts})=>{
-    while(eIdx<sortedEf.length){const ev=sortedEf[eIdx];if((ev.data+"T"+(ev.hora||"00:00"))>ts)break;
-      if(ev.maquina&&snapEf[ev.maquina]){if(ev.status==="REMOVIDA")snapEf[ev.maquina][ev.garrafa]=1; else delete snapEf[ev.maquina][ev.garrafa];}eIdx++;}
-    const fora=Object.keys(snapEf.M2||{}).length+Object.keys(snapEf.M3||{}).length;
-    return Math.round(((CLEANERS_TOTAL*2)-fora)/(CLEANERS_TOTAL*2)*100);
-  });
-
-  const W=260,H=92,PAD_T=6,PAD_B=16,PLOT=H-PAD_T-PAD_B;
-  const efMin=Math.max(0,Math.min(...effVals)-5),efMax=Math.min(100,Math.max(...effVals)+5),efRng=efMax-efMin||1;
-  const xOf=(i)=>(i/(shiftBounds.length-1))*W;
-  const yEf=(v)=>PAD_T+PLOT-((v-efMin)/efRng)*PLOT;
-  const efPts=effVals.map((v,i)=>`${xOf(i)},${yEf(v)}`);
-  const efLine=bPath(efPts);
-  const efArea=efLine+` L${W},${PAD_T+PLOT} L0,${PAD_T+PLOT} Z`;
-  const efAtual=effVals[effVals.length-1];
-  const corEf=efAtual>=90?C.accentLight:efAtual>=CLEANERS_LIMITE?C.warningLight:C.dangerLight;
-  // linha de limite 70%
-  const yLim=yEf(CLEANERS_LIMITE);
-  const dayMarks=shiftBounds.filter((_,i)=>i%3===0);
-
-  return(
-    <PainelCard title="Tendência de Eficiência" icon="📈" corTopo={corEf} onClick={()=>setTela("cleaners")}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-        <span style={{fontSize:9,color:C.textDim,letterSpacing:"0.1em"}}>EFICIÊNCIA GERAL · 10 DIAS · 3 TURNOS</span>
-        <span style={{background:`${corEf}22`,border:`1px solid ${corEf}44`,color:corEf,
-          borderRadius:20,padding:"2px 9px",fontSize:11,fontFamily:"monospace",fontWeight:900}}>{efAtual}%</span>
-      </div>
-      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{display:"block"}}>
-        <defs>
-          <linearGradient id="efFillD" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={corEf} stopOpacity="0.25"/>
-            <stop offset="100%" stopColor={corEf} stopOpacity="0.02"/>
-          </linearGradient>
-        </defs>
-        {/* linha limite 70% */}
-        {yLim>PAD_T&&yLim<PAD_T+PLOT&&<>
-          <line x1={0} y1={yLim} x2={W} y2={yLim} stroke={C.warningLight} strokeWidth="0.7" strokeDasharray="3,3" opacity={0.4}/>
-          <text x={2} y={yLim-2} fontSize="6.5" fill={C.warningLight} fontFamily="monospace" opacity={0.6}>70%</text>
-        </>}
-        <path d={efArea} fill="url(#efFillD)" opacity={0.8}/>
-        <path d={efLine} fill="none" stroke={corEf} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
-          style={{filter:`drop-shadow(0 0 4px ${corEf}aa)`}}/>
-        <circle cx={xOf(effVals.length-1)} cy={yEf(efAtual)} r="3.5" fill={corEf} style={{filter:`drop-shadow(0 0 5px ${corEf})`}}/>
-        {/* marcas de dia */}
-        {dayMarks.map((m,i)=>{
-          const x=xOf(i*3);
-          const dd=m.label.slice(8,10)+"/"+m.label.slice(5,7);
-          return<text key={i} x={x} y={H-3} fontSize="6.5" fill={C.textDim} fontFamily="monospace"
-            textAnchor={i===0?"start":i===dayMarks.length-1?"end":"middle"}>{dd}</text>;
-        })}
-      </svg>
-    </PainelCard>
-  );
-}
-
-// ── Painel 5 · Altura das Units ────────────────────────────────────────────
-function PainelAlturaUnits({ historicoData, setTela }) {
-  const historico=Array.isArray(historicoData)?historicoData:[];
-  const ultAlt={};
-  [...historico].sort((a,b)=>b.id-a.id).filter(h=>h.tipoId==="enf_qualidade").forEach(r=>{
-    const ln=r.linha||r.maquina;
-    if(ln&&!ultAlt[ln]){const it=r.items?.find(i=>i.id==="enf_14");const v=it?parseAlt(it.resp):null;if(v!==null)ultAlt[ln]=v;}
-  });
-  const linhas=LINHAS.map(l=>({l,v:ultAlt[l]||null}));
-  const comLeitura=linhas.filter(x=>x.v!==null);
-  const fora=comLeitura.filter(x=>x.v<ALT_MIN||x.v>ALT_MAX);
-  const corTopo=fora.length===0&&comLeitura.length>0?C.accentLight:fora.length>0?C.dangerLight:C.textDim;
-  // SVG barras
-  const H=52,W_BAR=36,GAP=10;
-  const totalW=LINHAS.length*(W_BAR+GAP)-GAP;
-  const vMin=1.80,vMax=1.96,vRng=vMax-vMin;
-  const yFaixaMin=H-(ALT_MIN-vMin)/vRng*H;
-  const yFaixaMax=H-(ALT_MAX-vMin)/vRng*H;
-  const yHeight=yFaixaMin-yFaixaMax;
-  return(
-    <PainelCard title="Altura das Units" icon="📏" corTopo={corTopo} onClick={()=>setTela("historico")} alerta={fora.length>0}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-        <span style={{fontSize:9,color:C.textDim}}>Faixa: <span style={{color:C.accentLight,fontFamily:"monospace",fontWeight:700}}>{ALT_MIN.toFixed(2)}–{ALT_MAX.toFixed(2)} m</span></span>
-        {fora.length>0&&<span style={{background:C.dangerLight+"22",border:`1px solid ${C.dangerLight}44`,color:C.dangerLight,borderRadius:20,padding:"2px 8px",fontSize:9,fontWeight:800}}>⚠ {fora.length} fora</span>}
-      </div>
-      <svg width="100%" height={H+24} viewBox={`0 0 ${totalW} ${H+24}`} preserveAspectRatio="xMidYMid meet">
-        {/* faixa verde */}
-        <rect x={0} y={yFaixaMax} width={totalW} height={yHeight} fill="rgba(0,230,118,0.08)" rx="2"/>
-        <line x1={0} y1={yFaixaMax} x2={totalW} y2={yFaixaMax} stroke={C.accentLight} strokeWidth="0.8" strokeDasharray="3,3" opacity={0.5}/>
-        <line x1={0} y1={yFaixaMin} x2={totalW} y2={yFaixaMin} stroke={C.accentLight} strokeWidth="0.8" strokeDasharray="3,3" opacity={0.5}/>
-        {linhas.map(({l,v},idx)=>{
-          const x=idx*(W_BAR+GAP);
-          const c=v===null?C.textDim:v<ALT_MIN||v>ALT_MAX?C.dangerLight:C.accentLight;
-          const yTop=v!==null?H-(v-vMin)/vRng*H:H;
-          const barH=v!==null?H-yTop:0;
-          return(
-            <g key={l}>
-              {v!==null&&<>
-                <rect x={x} y={yTop} width={W_BAR} height={barH} fill={`${c}33`} rx="2"/>
-                <rect x={x} y={yTop} width={W_BAR} height={3} fill={c} rx="1" style={{filter:`drop-shadow(0 0 4px ${c})`}}/>
-              </>}
-              {v===null&&<rect x={x} y={H-4} width={W_BAR} height={4} fill="rgba(255,255,255,0.06)" rx="2"/>}
-              <text x={x+W_BAR/2} y={H+10} textAnchor="middle" fontSize="8" fill={C.textDim}>{l}</text>
-              <text x={x+W_BAR/2} y={H+20} textAnchor="middle" fontSize="8" fontFamily="monospace" fontWeight="700" fill={c}>
-                {v!==null?v.toFixed(2):"—"}
-              </text>
-            </g>
+// ════════ PAINEL: ALTURA UNITS (colunas verticais estilo equalizador) ════════
+function PanelAltura({ historico, setTela }) {
+  const hist=Array.isArray(historico)?historico:[];
+  const ult={};
+  [...hist].sort((a,b)=>b.id-a.id).filter(h=>h.tipoId==="enf_qualidade").forEach(r=>{const ln=r.linha||r.maquina;if(ln&&!ult[ln]){const it=r.items?.find(i=>i.id==="enf_14");const v=it?parseAlt(it.resp):null;if(v!=null)ult[ln]=v;}});
+  const dados=LINHAS.map(l=>({l,v:ult[l]??null}));
+  const comV=dados.filter(d=>d.v!=null);
+  const fora=comV.filter(d=>d.v<ALT_MIN||d.v>ALT_MAX);
+  const cTop=comV.length===0?C.dim:fora.length>0?C.red:C.green;
+  const vMin=1.84,vMax=1.96,vRng=vMax-vMin;
+  const H=110;
+  const yOf=(v)=>H-((v-vMin)/vRng)*H;
+  const yTgt=yOf(ALT_TGT), yMin=yOf(ALT_MIN), yMax=yOf(ALT_MAX);
+  return (
+    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}}>
+      <Corners c={cTop}/>
+      <PanelHead code="03" title="Altura das Units" accent={cTop}
+        right={<span style={{fontFamily:mono,fontSize:9,color:C.dim}}>ALVO {ALT_TGT.toFixed(2)}m</span>}/>
+      <div onClick={()=>setTela&&setTela("historico")} style={{flex:1,display:"flex",alignItems:"flex-end",gap:10,cursor:"pointer",position:"relative",paddingTop:6}}>
+        {/* faixa alvo */}
+        <div style={{position:"absolute",left:0,right:0,top:yMax+6,height:yMin-yMax,background:`${C.green}0c`,borderTop:`1px dashed ${C.green}44`,borderBottom:`1px dashed ${C.green}44`,pointerEvents:"none",zIndex:0}}/>
+        {dados.map((d,i)=>{
+          const dentro=d.v!=null&&d.v>=ALT_MIN&&d.v<=ALT_MAX;
+          const c=d.v==null?C.faint:dentro?C.green:C.red;
+          const barH=d.v!=null?Math.max(8,H-yOf(d.v)):4;
+          return (
+            <div key={d.l} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:5,position:"relative",zIndex:1}}>
+              {d.v!=null&&<span style={{fontFamily:mono,fontSize:11,fontWeight:900,color:c,textShadow:`0 0 8px ${c}88`}}>{d.v.toFixed(2)}</span>}
+              {d.v==null&&<span style={{fontFamily:mono,fontSize:10,color:C.dim}}>--</span>}
+              <div style={{width:"100%",maxWidth:34,height:barH,borderRadius:"4px 4px 2px 2px",
+                background:`linear-gradient(180deg,${c},${c}44)`,
+                boxShadow:d.v!=null?`0 0 12px ${c}66, inset 0 1px 0 ${c}`:"none",
+                border:`1px solid ${c}66`,position:"relative",transition:"height .6s",transformOrigin:"bottom"}}>
+                <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:c,borderRadius:2,boxShadow:`0 0 6px ${c}`}}/>
+              </div>
+              <span style={{fontFamily:sans,fontSize:9,fontWeight:700,color:dentro?C.mute:c,letterSpacing:"0.05em"}}>{d.l}</span>
+            </div>
           );
         })}
-      </svg>
-    </PainelCard>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",marginTop:8,fontFamily:mono,fontSize:7.5,color:C.dim}}>
+        <span>TOLERANCIA {ALT_MIN}-{ALT_MAX}m</span>
+        {fora.length>0?<span style={{color:C.red}}>{fora.length} FORA DA FAIXA</span>:<span style={{color:C.green}}>TODAS OK</span>}
+      </div>
+    </div>
   );
 }
 
-// ── Painel 6 · Checklists do Turno ────────────────────────────────────────
-function PainelChecklists({ historicoData, setTela }) {
-  const historico=Array.isArray(historicoData)?historicoData:[];
-  const turnoAtual=getAutoTurno();
-  const hj=hoje();
-  const checkTurno=historico.filter(h=>h.data===hj&&h.turno===turnoAtual);
-  const areas=[
-    {area:"pu",  tipo:"rotina",        label:"P.Úmida",  maquinas:["M2","M3"]},
-    {area:"cs",  tipo:"cortadeira",    label:"Sec/Cort", maquinas:["M2","M3"]},
-    {area:"enf", tipo:"enf_qualidade", label:"Enf.",     maquinas:["L4","L5","L6","L7","L8"]},
-  ];
-  let totalFeito=0,totalEsp=0;
-  const blocos=areas.map(a=>{
-    const esp=a.maquinas.length;
-    const feito=a.maquinas.filter(mq=>checkTurno.some(h=>h.tipoId===a.tipo&&(h.maquina===mq||h.linha===mq))).length;
-    totalFeito+=feito; totalEsp+=esp;
-    const c=feito===esp?C.accentLight:feito===0?C.dangerLight:C.warningLight;
-    return{label:a.label,feito,esp,c,maquinas:a.maquinas};
-  });
-  const corTopo=totalFeito===totalEsp?C.accentLight:totalFeito===0?C.dangerLight:C.warningLight;
-  return(
-    <PainelCard title="Checklists do Turno" icon="✓" corTopo={corTopo} onClick={()=>setTela("checklist")} alerta={totalFeito===0}>
-      <div style={{display:"flex",alignItems:"flex-end",gap:6,marginBottom:6}}>
-        <span style={{fontFamily:"monospace",fontSize:44,fontWeight:900,color:corTopo,lineHeight:1,
-          textShadow:`0 0 20px ${corTopo}88`}}>{totalFeito}</span>
-        <span style={{fontFamily:"monospace",fontSize:26,color:C.textDim,lineHeight:1,marginBottom:3}}>/{totalEsp}</span>
-        <span style={{fontSize:12,color:C.textMuted,marginBottom:6}}>lançamentos</span>
+// ════════ PAINEL: AVARIAS (heatmap turnos + top3 + total) ════════
+function PanelAvarias({ avarias, setTela }) {
+  const dados=Array.isArray(avarias)?avarias:[];
+  const mes=mesISO();
+  const totalMes=dados.filter(r=>r.data?.slice(0,7)===mes&&r.teveAvaria).reduce((s,r)=>s+r.total,0);
+  // heatmap: 7 dias x 3 turnos
+  const dias=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
+  const letras=["A","B","C"];
+  const cell=(d,lt)=>dados.filter(r=>r.data===d&&r.letra===lt&&r.teveAvaria).reduce((a,r)=>a+r.total,0);
+  const allVals=[]; dias.forEach(d=>letras.forEach(lt=>allVals.push(cell(d,lt))));
+  const maxCell=Math.max(1,...allVals);
+  const heatColor=(v)=>{if(v===0)return"rgba(255,255,255,0.03)";const t=v/maxCell;if(t<=0.33)return`rgba(255,193,7,${0.25+t})`;if(t<=0.66)return`rgba(255,140,0,${0.4+t*0.3})`;return`rgba(255,82,82,${0.5+t*0.4})`;};
+  // top3
+  const ct={}; TIPOS_AV.forEach(t=>ct[t.id]=0);
+  dados.filter(r=>r.data?.slice(0,7)===mes&&r.teveAvaria).forEach(r=>r.itens?.forEach(it=>{if(ct[it.id]!==undefined)ct[it.id]+=it.quantidade;}));
+  const top3=TIPOS_AV.map(t=>({...t,total:ct[t.id]})).sort((a,b)=>b.total-a.total).slice(0,3);
+  const maxTop=Math.max(1,...top3.map(t=>t.total));
+  const cTop=totalMes===0?C.green:totalMes<=10?C.amber:C.red;
+  return (
+    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}} onClick={()=>setTela&&setTela("historico")}>
+      <Corners c={cTop}/>
+      <PanelHead code="04" title="Avarias por Turno" accent={cTop}
+        right={<span style={{fontFamily:mono,fontSize:18,fontWeight:900,color:cTop,textShadow:`0 0 12px ${cTop}66`}}>{totalMes}<span style={{fontSize:8,color:C.dim}}>/mes</span></span>}/>
+      {/* heatmap */}
+      <div style={{marginBottom:12}}>
+        <div style={{display:"flex",gap:3,marginLeft:18}}>
+          {dias.map((d,i)=>(<span key={i} style={{flex:1,textAlign:"center",fontFamily:mono,fontSize:7,color:C.dim}}>{d.slice(8,10)}</span>))}
+        </div>
+        {letras.map(lt=>(
+          <div key={lt} style={{display:"flex",alignItems:"center",gap:3,marginTop:3}}>
+            <span style={{width:15,fontFamily:mono,fontSize:9,fontWeight:700,color:C.dim}}>{lt}</span>
+            {dias.map((d,i)=>{const v=cell(d,lt);return(
+              <div key={i} style={{flex:1,height:18,borderRadius:4,background:heatColor(v),border:`1px solid ${v>0?"rgba(255,82,82,0.3)":C.line}`,display:"flex",alignItems:"center",justifyContent:"center",transition:"background .4s"}}>
+                {v>0&&<span style={{fontFamily:mono,fontSize:9,fontWeight:900,color:"#fff",textShadow:"0 0 4px #000"}}>{v}</span>}
+              </div>
+            );})}
+          </div>
+        ))}
       </div>
-      <div style={{display:"flex",flexDirection:"column",gap:6}}>
-        {blocos.map(({label,feito,esp,c,maquinas})=>(
-          <div key={label}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-              <span style={{fontSize:10,color:C.textMuted}}>{label}</span>
-              <span style={{fontFamily:"monospace",fontSize:11,fontWeight:900,color:c}}>{feito}/{esp}</span>
+      {/* top3 */}
+      <div style={{paddingTop:10,borderTop:`1px solid ${C.line}`,flex:1}}>
+        <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginBottom:8}}>TOP 3 TIPOS</div>
+        {top3.map((t,i)=>(
+          <div key={t.id} style={{marginBottom:i<2?7:0}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+              <span style={{fontFamily:sans,fontSize:9,color:t.total>0?C.mute:C.dim}}><span style={{fontFamily:mono,color:C.dim,marginRight:5}}>{i+1}</span>{t.label}</span>
+              <span style={{fontFamily:mono,fontSize:11,fontWeight:900,color:t.total>0?t.cor:C.dim}}>{t.total}</span>
             </div>
-            {/* dots por máquina/linha */}
-            <div style={{display:"flex",gap:4}}>
-              {maquinas.map((mq,i)=>{
-                const ok=checkTurno.some(h=>(h.tipoId==="rotina"||h.tipoId==="cortadeira"||h.tipoId==="enf_qualidade")&&(h.maquina===mq||h.linha===mq));
-                return<div key={i} style={{flex:1,height:6,borderRadius:3,background:ok?c:"rgba(255,255,255,0.07)",
-                  boxShadow:ok?`0 0 6px ${c}88`:"none",transition:"background .3s"}}/>;
-              })}
+            <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.04)",overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${t.total/maxTop*100}%`,background:t.cor,borderRadius:2,boxShadow:t.total>0?`0 0 5px ${t.cor}`:"none",transition:"width .6s"}}/>
             </div>
           </div>
         ))}
       </div>
-    </PainelCard>
+    </div>
   );
 }
 
-// ── DashboardTV principal ──────────────────────────────────────────────────
+// ════════ PAINEL: CHAMADOS (matriz de prazo) ════════
+function PanelChamados({ chamados, setTela }) {
+  const ch=Array.isArray(chamados)?chamados.filter(c=>c.status==="aberto"):[];
+  const byP=(p)=>ch.filter(c=>c.prazo===p).length;
+  const prazos=[{k:"Imediato",c:C.red},{k:"Urgente",c:C.orange},{k:"Normal",c:C.amber},{k:"Programavel",c:C.blue}];
+  // tratar "Programável" com acento tambem
+  const cnt=(k)=>k==="Programavel"?ch.filter(c=>c.prazo==="Programavel"||c.prazo==="Programável").length:byP(k);
+  const total=ch.length;
+  const nIme=cnt("Imediato");
+  const cTop=nIme>0?C.red:cnt("Urgente")>0?C.orange:total>0?C.amber:C.green;
+  return (
+    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}} onClick={()=>setTela&&setTela("equipamentos")}>
+      <Corners c={cTop}/>
+      <PanelHead code="05" title="Chamados / SAP" accent={cTop}/>
+      <div style={{display:"flex",alignItems:"center",gap:14,flex:1}}>
+        <div style={{textAlign:"center",flexShrink:0}}>
+          <div style={{fontFamily:mono,fontSize:46,fontWeight:900,color:cTop,lineHeight:1,textShadow:`0 0 20px ${cTop}66`}}>{total}</div>
+          <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>ABERTOS</div>
+        </div>
+        <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+          {prazos.map(p=>{const n=cnt(p.k);return(
+            <div key={p.k} style={{background:`${p.c}0c`,border:`1px solid ${p.c}${n>0?"55":"22"}`,borderRadius:8,padding:"7px 9px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <span style={{fontFamily:sans,fontSize:8,color:C.mute,letterSpacing:"0.05em"}}>{p.k.toUpperCase()}</span>
+              <span style={{fontFamily:mono,fontSize:16,fontWeight:900,color:n>0?p.c:C.dim,textShadow:n>0?`0 0 8px ${p.c}66`:"none"}}>{n}</span>
+            </div>
+          );})}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════ PAINEL: CHECKLISTS (anel de progresso + barras) ════════
+function PanelChecklists({ historico, setTela }) {
+  const hist=Array.isArray(historico)?historico:[];
+  const turno=autoTurno(), hj=hojeISO();
+  const ct=hist.filter(h=>h.data===hj&&h.turno===turno);
+  const areas=[{a:"pu",t:"rotina",l:"P.UMIDA",mq:["M2","M3"]},{a:"cs",t:"cortadeira",l:"SEC/CORT",mq:["M2","M3"]},{a:"enf",t:"enf_qualidade",l:"ENFARD.",mq:["L4","L5","L6","L7","L8"]}];
+  let feito=0,esp=0;
+  const blocos=areas.map(ar=>{const e=ar.mq.length;const f=ar.mq.filter(m=>ct.some(h=>h.tipoId===ar.t&&(h.maquina===m||h.linha===m))).length;feito+=f;esp+=e;return{l:ar.l,f,e,mq:ar.mq,t:ar.t};});
+  const fracTotal=esp>0?feito/esp:0;
+  const cTop=feito===esp?C.green:feito===0?C.red:C.amber;
+  return (
+    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}} onClick={()=>setTela&&setTela("checklist")}>
+      <Corners c={cTop}/>
+      <PanelHead code="06" title="Checklists do Turno" accent={cTop}
+        right={<span style={{fontFamily:mono,fontSize:9,color:C.dim}}>{turno}</span>}/>
+      <div style={{display:"flex",gap:14,flex:1,alignItems:"center"}}>
+        <RadialGauge value={feito} max={esp} size={100} stroke={8} color={cTop} label="LANCAMENTOS" sub={`/${esp}`} idk="chk"/>
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:9}}>
+          {blocos.map(b=>(
+            <div key={b.l}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                <span style={{fontFamily:sans,fontSize:9,color:C.mute}}>{b.l}</span>
+                <span style={{fontFamily:mono,fontSize:10,fontWeight:900,color:b.f===b.e?C.green:b.f===0?C.red:C.amber}}>{b.f}/{b.e}</span>
+              </div>
+              <div style={{display:"flex",gap:3}}>
+                {b.mq.map((m,i)=>{const ok=ct.some(h=>h.tipoId===b.t&&(h.maquina===m||h.linha===m));const c=ok?C.green:C.faint;return(
+                  <div key={i} style={{flex:1,height:5,borderRadius:3,background:c,boxShadow:ok?`0 0 5px ${c}aa`:"none",transition:"background .4s"}}/>
+                );})}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════ PAINEL: TENDENCIA EFICIENCIA (area grande) ════════
+function PanelTendencia({ cleanersHist, setTela }) {
+  const hist=Array.isArray(cleanersHist)?cleanersHist:[];
+  const bounds=[];
+  for(let day=0;day<10;day++){const d=new Date();d.setDate(d.getDate()-9+day);const ds=d.toISOString().slice(0,10);for(const h of[8,16,24]){const nd=h===24;const bd=nd?new Date(d.getTime()+864e5).toISOString().slice(0,10):ds;const bh=nd?"00:00":String(h).padStart(2,"0")+":00";bounds.push({ts:bd+"T"+bh,label:ds});}}
+  const sorted=[...hist].sort((a,b)=>(a.data+(a.hora||"00:00")).localeCompare(b.data+(b.hora||"00:00")));
+  const snap={M2:{},M3:{}};let idx=0;
+  const vals=bounds.map(({ts})=>{while(idx<sorted.length){const e=sorted[idx];if((e.data+"T"+(e.hora||"00:00"))>ts)break;if(e.maquina&&snap[e.maquina]){if(e.status==="REMOVIDA")snap[e.maquina][e.garrafa]=1;else delete snap[e.maquina][e.garrafa];}idx++;}const fora=Object.keys(snap.M2||{}).length+Object.keys(snap.M3||{}).length;return Math.round(((CLN_TOTAL*2)-fora)/(CLN_TOTAL*2)*100);});
+  const W=560,H=120,PT=10,PB=20,PLOT=H-PT-PB;
+  const mn=Math.max(0,Math.min(...vals)-5),mx=Math.min(100,Math.max(...vals)+5),rng=mx-mn||1;
+  const xOf=(i)=>(i/(bounds.length-1))*W, yOf=(v)=>PT+PLOT-((v-mn)/rng)*PLOT;
+  const pts=vals.map((v,i)=>`${xOf(i)},${yOf(v)}`);
+  const line=bezier(pts), area=line+` L${W},${PT+PLOT} L0,${PT+PLOT} Z`;
+  const atual=vals[vals.length-1];
+  const c=atual>=90?C.green:atual>=CLN_LIM?C.amber:C.red;
+  const yLim=yOf(CLN_LIM);
+  const dayMarks=bounds.filter((_,i)=>i%3===0);
+  return (
+    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}} onClick={()=>setTela&&setTela("cleaners")}>
+      <Corners c={c}/>
+      <PanelHead code="07" title="Tendencia de Eficiencia · Cleaners" accent={c}
+        right={<span style={{fontFamily:mono,fontSize:20,fontWeight:900,color:c,textShadow:`0 0 12px ${c}66`}}>{atual}%</span>}/>
+      <div style={{flex:1,position:"relative"}}>
+        <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{display:"block"}}>
+          <defs>
+            <linearGradient id="tendFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={c} stopOpacity="0.3"/><stop offset="100%" stopColor={c} stopOpacity="0.01"/>
+            </linearGradient>
+          </defs>
+          {/* grid horizontal */}
+          {[0,25,50,75,100].map(g=>{const y=yOf(g);if(y<PT||y>PT+PLOT)return null;return(<g key={g}><line x1="0" y1={y} x2={W} y2={y} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/><text x="2" y={y-2} fontFamily={mono} fontSize="7" fill={C.faint}>{g}</text></g>);})}
+          {/* limite */}
+          {yLim>PT&&yLim<PT+PLOT&&<line x1="0" y1={yLim} x2={W} y2={yLim} stroke={C.amber} strokeWidth="1" strokeDasharray="4,4" opacity="0.5"/>}
+          <path d={area} fill="url(#tendFill)"/>
+          <path d={line} fill="none" stroke={c} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 5px ${c}aa)`}}/>
+          <circle cx={xOf(vals.length-1)} cy={yOf(atual)} r="4" fill={c} style={{filter:`drop-shadow(0 0 6px ${c})`}}/>
+          {dayMarks.map((m,i)=>{const x=xOf(i*3);const dd=m.label.slice(8,10)+"/"+m.label.slice(5,7);return(<text key={i} x={x} y={H-4} fontFamily={mono} fontSize="7" fill={C.dim} textAnchor={i===0?"start":i===dayMarks.length-1?"end":"middle"}>{dd}</text>);})}
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ════════ MODAL ACIDENTE ════════
+function ModalAcid({ valor, onSave, onClose }) {
+  const [v,setV]=React.useState(valor!=null?String(valor):"");
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(2,10,18,0.85)",backdropFilter:"blur(4px)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div onClick={e=>e.stopPropagation()} className="cmd-card" style={{padding:28,width:300}}>
+        <Corners/>
+        <div style={{color:C.ink,fontFamily:sans,fontWeight:800,fontSize:15,marginBottom:4}}>Dias sem acidentes</div>
+        <div style={{color:C.dim,fontFamily:sans,fontSize:11,marginBottom:18}}>Atualizacao manual do indicador</div>
+        <input type="number" value={v} onChange={e=>setV(e.target.value)} placeholder="42" autoFocus
+          style={{width:"100%",background:C.void,border:`1px solid ${C.line}`,borderRadius:10,padding:14,color:C.green,fontFamily:mono,fontSize:30,fontWeight:900,textAlign:"center",outline:"none",boxSizing:"border-box"}}/>
+        <div style={{display:"flex",gap:8,marginTop:16}}>
+          <button onClick={onClose} style={{flex:1,padding:11,borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:12,background:"rgba(255,255,255,0.05)",border:`1px solid ${C.line}`,color:C.mute,fontFamily:sans}}>Cancelar</button>
+          <button onClick={()=>{const n=parseInt(v,10);if(!isNaN(n)&&n>=0)onSave(n);}} style={{flex:2,padding:11,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:12,background:C.greenDim,border:"none",color:"#fff",fontFamily:sans}}>Salvar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════ TICKER (eventos correndo na base) ════════
+function Ticker({ historico, chamados, avarias }) {
+  const eventos=[];
+  [...(historico||[])].sort((a,b)=>b.id-a.id).slice(0,4).forEach(h=>{eventos.push({c:C.green,t:`${h.tipoLabel||h.tipoId} registrado · ${h.linha||h.maquina||""} · ${h.hora||""}`});});
+  (chamados||[]).filter(c=>c.status==="aberto").slice(0,3).forEach(c=>{eventos.push({c:PRAZO_COR[c.prazo]||C.amber,t:`Chamado ${c.prazo} · ${c.equipamentoNome||""} · ${c.maquina||""}`});});
+  (avarias||[]).filter(a=>a.teveAvaria).slice(-3).forEach(a=>{eventos.push({c:C.red,t:`${a.total} avaria(s) · ${a.linha} · turno ${a.letra}`});});
+  if(eventos.length===0) eventos.push({c:C.dim,t:"Sistema operando · sem eventos recentes"});
+  const loop=[...eventos,...eventos];
+  return (
+    <div style={{position:"relative",height:26,overflow:"hidden",background:"rgba(2,10,18,0.6)",borderRadius:8,border:`1px solid ${C.line}`,flexShrink:0}}>
+      <div style={{position:"absolute",display:"flex",alignItems:"center",height:"100%",whiteSpace:"nowrap",animation:"cmd-marquee 40s linear infinite"}}>
+        {loop.map((e,i)=>(
+          <span key={i} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"0 20px",fontFamily:mono,fontSize:9.5,color:C.mute}}>
+            <span style={{width:5,height:5,borderRadius:"50%",background:e.c,boxShadow:`0 0 5px ${e.c}`,flexShrink:0}}/>
+            {e.t}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+//  DASHBOARD PRINCIPAL
+// ════════════════════════════════════════════════════════════════
 export default function DashboardTV({ setTela, setModoVisao }) {
-  const [ocorrencias, setOcorrencias] = React.useState(()=>storageGet("ocorrencias_h2")||{M2:null,M3:null});
-  const [chamados,    setChamados]    = React.useState(()=>storageGet("chamados_h2")||[]);
-  const [cleaners,    setCleaners]    = React.useState(()=>storageGet("cleaners_h2")||{M2:{},M3:{}});
-  const [cleanersHist,setCleanersHist]= React.useState(()=>storageGet("cleaners_hist_h2")||[]);
-  const [sedim,       setSedim]       = React.useState(()=>storageGet("cleaners_sedim_h2")||[]);
-  const [historico,   setHistorico]   = React.useState(()=>storageGet("historico_h2")||[]);
-  const [pendencias,  setPendencias]  = React.useState(()=>storageGet("pendencias_h2")||[]);
-  const [seguranca,   setSeguranca]   = React.useState(()=>storageGet("seguranca_h2")||{});
-  const [avarias,     setAvarias]     = React.useState(()=>storageGet("avarias_h2")||[]);
-  const [modalAcid,   setModalAcid]   = React.useState(false);
+  const [ocorrencias,setOcorrencias]=React.useState(()=>sGet("ocorrencias_h2")||{M2:null,M3:null});
+  const [chamados,setChamados]=React.useState(()=>sGet("chamados_h2")||[]);
+  const [cleaners,setCleaners]=React.useState(()=>sGet("cleaners_h2")||{M2:{},M3:{}});
+  const [cleanersHist,setCleanersHist]=React.useState(()=>sGet("cleaners_hist_h2")||[]);
+  const [sedim,setSedim]=React.useState(()=>sGet("cleaners_sedim_h2")||[]);
+  const [historico,setHistorico]=React.useState(()=>sGet("historico_h2")||[]);
+  const [pendencias,setPendencias]=React.useState(()=>sGet("pendencias_h2")||[]);
+  const [seguranca,setSeguranca]=React.useState(()=>sGet("seguranca_h2")||{});
+  const [avarias,setAvarias]=React.useState(()=>sGet("avarias_h2")||[]);
+  const [modalAcid,setModalAcid]=React.useState(false);
 
   React.useEffect(()=>{
-    const unsubs=[
-      onSnapshot(doc(COL,"ocorrencias_h2"), s=>{if(s.exists()&&s.data().val)setOcorrencias(s.data().val);}),
-      onSnapshot(doc(COL,"chamados_h2"),    s=>{if(s.exists()&&s.data().val)setChamados(s.data().val);}),
-      onSnapshot(doc(COL,"cleaners_h2"),    s=>{if(s.exists()&&s.data().val)setCleaners(s.data().val);}),
+    const u=[
+      onSnapshot(doc(COL,"ocorrencias_h2"),s=>{if(s.exists()&&s.data().val)setOcorrencias(s.data().val);}),
+      onSnapshot(doc(COL,"chamados_h2"),s=>{if(s.exists()&&s.data().val)setChamados(s.data().val);}),
+      onSnapshot(doc(COL,"cleaners_h2"),s=>{if(s.exists()&&s.data().val)setCleaners(s.data().val);}),
       onSnapshot(doc(COL,"cleaners_hist_h2"),s=>{if(s.exists()&&s.data().val)setCleanersHist(s.data().val);}),
       onSnapshot(doc(COL,"cleaners_sedim_h2"),s=>{if(s.exists()&&s.data().val)setSedim(s.data().val);}),
-      onSnapshot(doc(COL,"historico_h2"),   s=>{if(s.exists()&&s.data().val)setHistorico(s.data().val);}),
-      onSnapshot(doc(COL,"pendencias_h2"),  s=>{if(s.exists()&&s.data().val)setPendencias(s.data().val);}),
-      onSnapshot(doc(COL,"seguranca_h2"),   s=>{if(s.exists()&&s.data().val)setSeguranca(s.data().val);}),
-      onSnapshot(doc(COL,"avarias_h2"),     s=>{if(s.exists()&&s.data().val)setAvarias(s.data().val);}),
+      onSnapshot(doc(COL,"historico_h2"),s=>{if(s.exists()&&s.data().val)setHistorico(s.data().val);}),
+      onSnapshot(doc(COL,"pendencias_h2"),s=>{if(s.exists()&&s.data().val)setPendencias(s.data().val);}),
+      onSnapshot(doc(COL,"seguranca_h2"),s=>{if(s.exists()&&s.data().val)setSeguranca(s.data().val);}),
+      onSnapshot(doc(COL,"avarias_h2"),s=>{if(s.exists()&&s.data().val)setAvarias(s.data().val);}),
     ];
-    return()=>unsubs.forEach(u=>u());
+    return()=>u.forEach(f=>f());
   },[]);
 
-  function salvarAcidente(dias) {
-    const novo={...seguranca,diasAcidente:dias};
-    setSeguranca(novo); storageSet("seguranca_h2",novo); setModalAcid(false);
-  }
+  const salvarAcid=(d)=>{const novo={...seguranca,diasAcidente:d};setSeguranca(novo);sSet("seguranca_h2",novo);setModalAcid(false);};
 
-  // semáforo operacional — determina cor do painel (usado no fundo)
-  const ocM2=ocorrencias?.M2;
-  const ocM3=ocorrencias?.M3;
-  const hasCritico=ocM2?.cor==="vermelho"||ocM3?.cor==="vermelho";
+  const ocM2=ocorrencias?.M2, ocM3=ocorrencias?.M3;
+  const critico=ocM2?.cor==="vermelho"||ocM3?.cor==="vermelho";
 
-  return(
-    <div style={{background:C.bg,minHeight:"100vh",width:"100vw",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-      <style>{`
-        @keyframes led-d{0%,100%{opacity:1;box-shadow:0 0 6px #00E676,0 0 16px #00E67666;}50%{opacity:.5;box-shadow:0 0 3px #00E676;}}
-        .led-d{animation:led-d 2.5s ease-in-out infinite;}
-        @keyframes crit-pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
-        .crit{animation:crit-pulse 1.2s ease-in-out infinite;}
-      `}</style>
+  return (
+    <div style={{position:"relative",minHeight:"100vh",width:"100vw",background:`radial-gradient(ellipse at 50% 0%,#0a2138 0%,${C.deep} 45%,${C.void} 100%)`,color:C.ink,fontFamily:sans,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+      <GlobalFX/>
+      {/* grid de fundo */}
+      <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,230,118,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,230,118,.025) 1px,transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
+      {/* scanline */}
+      <div style={{position:"absolute",left:0,right:0,height:80,background:"linear-gradient(180deg,transparent,rgba(0,230,118,0.025),transparent)",animation:"cmd-scan 12s linear infinite",pointerEvents:"none",zIndex:1}}/>
 
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 24px",
-        borderBottom:`1px solid ${C.border}`,background:"rgba(7,24,40,0.98)",backdropFilter:"blur(20px)",flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:14}}>
-          <div className="led-d" style={{width:8,height:8,borderRadius:"50%",background:C.accentLight}}/>
-          <span style={{fontSize:10,color:C.textMuted,letterSpacing:"0.2em",fontWeight:800}}>SECAGEM · H2</span>
-          <div style={{width:1,height:20,background:C.border}}/>
-          <span style={{fontSize:12,fontWeight:800,color:C.text}}>Dashboard Operacional</span>
-          {hasCritico&&<span className="crit" style={{background:C.dangerLight+"22",border:`1px solid ${C.dangerLight}55`,
-            color:C.dangerLight,borderRadius:20,padding:"2px 10px",fontSize:10,fontWeight:800}}>🔴 CRÍTICO</span>}
+      {/* ═══ HEADER ═══ */}
+      <div style={{position:"relative",zIndex:10,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 22px",borderBottom:`1px solid ${C.line}`,background:"rgba(4,17,29,0.6)",backdropFilter:"blur(16px)",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:9}}>
+            <div style={{position:"relative",width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <svg width="30" height="30" style={{position:"absolute",animation:"cmd-spin 8s linear infinite"}}>
+                <circle cx="15" cy="15" r="12" fill="none" stroke={`${C.green}33`} strokeWidth="1.5" strokeDasharray="3 6"/>
+              </svg>
+              <span style={{fontFamily:mono,fontWeight:900,fontSize:15,color:C.green,textShadow:`0 0 10px ${C.green}`}}>H2</span>
+            </div>
+            <div>
+              <div style={{fontFamily:sans,fontSize:13,fontWeight:900,color:C.ink,letterSpacing:"0.08em"}}>CENTRO DE COMANDO</div>
+              <div style={{fontFamily:mono,fontSize:8,color:C.dim,letterSpacing:"0.2em"}}>SECAGEM H2 · SUZANO · INDUSTRIA 5.0</div>
+            </div>
+          </div>
+          {critico&&<div style={{display:"flex",alignItems:"center",gap:6,background:`${C.red}1a`,border:`1px solid ${C.red}55`,borderRadius:20,padding:"4px 12px",animation:"cmd-pulse 1.2s infinite"}}><span style={{width:6,height:6,borderRadius:"50%",background:C.red,boxShadow:`0 0 6px ${C.red}`}}/><span style={{fontFamily:mono,fontSize:9,fontWeight:800,color:C.red,letterSpacing:"0.1em"}}>ALERTA CRITICO</span></div>}
         </div>
-        <Relogio/>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          {/* semáforo M2/M3 compacto no header */}
-          {[["M2",ocM2],["M3",ocM3]].map(([mq,oc])=>{
-            const cor=!oc?C.accentLight:oc.cor==="vermelho"?C.dangerLight:C.warningLight;
-            const em=!oc?"🟢":oc.cor==="vermelho"?"🔴":"🟡";
-            return<span key={mq} style={{fontSize:10,color:cor,fontWeight:700}}>{em} {mq}</span>;
-          })}
-          <div style={{width:1,height:20,background:C.border,margin:"0 4px"}}/>
-          <button onClick={()=>setModoVisao("app")} style={{background:"rgba(80,144,255,0.12)",border:`1px solid ${C.blueLight}55`,
-            color:C.blueLight,borderRadius:9,padding:"7px 14px",cursor:"pointer",fontSize:11,fontWeight:800}}>📱 App</button>
+
+        <CmdClock/>
+
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {[["M2",ocM2],["M3",ocM3]].map(([mq,oc])=>{const cor=!oc?C.green:oc.cor==="vermelho"?C.red:C.amber;return(
+            <div key={mq} style={{display:"flex",alignItems:"center",gap:5,background:`${cor}12`,border:`1px solid ${cor}44`,borderRadius:8,padding:"5px 10px"}}>
+              <span style={{width:6,height:6,borderRadius:"50%",background:cor,boxShadow:`0 0 6px ${cor}`,animation:oc?.cor==="vermelho"?"cmd-pulse 1s infinite":"none"}}/>
+              <span style={{fontFamily:mono,fontSize:10,fontWeight:800,color:cor}}>{mq}</span>
+            </div>
+          );})}
+          <button onClick={()=>setModoVisao&&setModoVisao("app")} style={{background:`${C.blue}14`,border:`1px solid ${C.blue}44`,color:C.blue,borderRadius:9,padding:"8px 14px",cursor:"pointer",fontFamily:sans,fontSize:11,fontWeight:800,letterSpacing:"0.05em"}}>APP</button>
         </div>
       </div>
 
-      {/* ── Banner segurança ──────────────────────────────────────────── */}
-      <BannerSeguranca historicoData={historico} segurancaData={seguranca} onEditarAcidente={()=>setModalAcid(true)}/>
+      {/* ═══ CORPO ═══ */}
+      <div style={{position:"relative",zIndex:5,flex:1,padding:"12px 14px",display:"flex",flexDirection:"column",gap:0,overflow:"hidden"}}>
+        <HeroBar historico={historico} seguranca={seguranca} cleaners={cleaners} cleanersHist={cleanersHist} avarias={avarias} onEditAcid={()=>setModalAcid(true)}/>
 
-      {/* ── Grid 3×3 ─────────────────────────────────────────────────── */}
-      <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gridTemplateRows:"1fr 1fr 1fr",gap:14,padding:14,overflow:"hidden"}}>
-        <PainelMural       pendenciasData={pendencias} chamadosData={chamados}    setTela={setTela}/>
-        <PainelChamados    chamadosData={chamados}                                setTela={setTela}/>
-        <PainelCleaners    cleanersData={cleaners}     cleanersHistData={cleanersHist} sedimData={sedim} setTela={setTela}/>
-        <PainelTendencia   cleanersHistData={cleanersHist}                          setTela={setTela}/>
-        <PainelAlturaUnits historicoData={historico}                              setTela={setTela}/>
-        <PainelChecklists  historicoData={historico}                              setTela={setTela}/>
-        {/* Carrossel */}
-        <PainelCard title="Galeria da Linha" icon="🖼️" corTopo={C.blueLight} onClick={()=>{}}>
-          <div style={{flex:1,minHeight:120}}>
+        {/* grid principal: 4 col x 2 linhas + faixa */}
+        <div style={{flex:1,display:"grid",gridTemplateColumns:"1.1fr 1.1fr 1fr 1fr",gridTemplateRows:"1fr 1fr",gap:12,minHeight:0}}>
+          {/* linha 1 */}
+          <PanelMural pendencias={pendencias} chamados={chamados} setTela={setTela}/>
+          <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
+          <PanelAltura historico={historico} setTela={setTela}/>
+          <PanelAvarias avarias={avarias} setTela={setTela}/>
+          {/* linha 2 */}
+          <div style={{gridColumn:"span 2"}}><PanelTendencia cleanersHist={cleanersHist} setTela={setTela}/></div>
+          <PanelChamados chamados={chamados} setTela={setTela}/>
+          <PanelChecklists historico={historico} setTela={setTela}/>
+        </div>
+
+        {/* faixa inferior: galeria + ticker */}
+        <div style={{display:"flex",gap:12,marginTop:12,height:96,flexShrink:0}}>
+          <div className="cmd-card" style={{width:280,padding:0,overflow:"hidden",flexShrink:0,position:"relative"}}>
+            <Corners c={C.blue}/>
             <CarrosselViewer/>
           </div>
-        </PainelCard>
-        {/* Avarias */}
-        <PainelAvariasTV avariasData={avarias} setTela={setTela}/>
-        {/* Mapa da Linha — ocupa slot livre */}
-        <MapaLinha ocorrencias={ocorrencias} pendenciasData={pendencias} chamadosData={chamados} setTela={setTela}/>
+          <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
+            <Ticker historico={historico} chamados={chamados} avarias={avarias}/>
+            {/* mini status strip */}
+            <div className="cmd-card" style={{flex:1,padding:"0 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <Corners/>
+              {[
+                {l:"SISTEMA",v:"ONLINE",c:C.green},
+                {l:"FIREBASE",v:"SYNC",c:C.cyan},
+                {l:"DISPOSITIVOS",v:"3 ATIVOS",c:C.blue},
+                {l:"ATUALIZACAO",v:"AO VIVO",c:C.green},
+              ].map((s,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{width:6,height:6,borderRadius:"50%",background:s.c,boxShadow:`0 0 6px ${s.c}`,animation:"cmd-pulse 2s infinite"}}/>
+                  <div>
+                    <div style={{fontFamily:mono,fontSize:7,color:C.dim,letterSpacing:"0.1em"}}>{s.l}</div>
+                    <div style={{fontFamily:mono,fontSize:10,fontWeight:800,color:s.c}}>{s.v}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* ── Modal acidente ───────────────────────────────────────────── */}
-      {modalAcid&&<ModalAcidente valor={seguranca?.diasAcidente??null} onSalvar={salvarAcidente} onFechar={()=>setModalAcid(false)}/>}
+      {modalAcid&&<ModalAcid valor={seguranca?.diasAcidente??null} onSave={salvarAcid} onClose={()=>setModalAcid(false)}/>}
     </div>
   );
 }
