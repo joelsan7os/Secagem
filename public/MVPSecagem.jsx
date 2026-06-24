@@ -467,7 +467,7 @@ const CATALOGO = [
   { id:"enf_qualidade",    label:"Check List Qualidade",icon:"", desc:"Qualidade do fardo — todas as linhas",                 porMaquina:false, tipo:"enf",      area:"enf", getItems:()=>checklistEnfardamento },
   { id:"rota_enf",         label:"Rota Enfardamento",   icon:"", desc:"Inspeção por turno — todos os equipamentos",           porMaquina:true,  tipo:"rota_enf", area:"enf", getItems:()=>checklistRotaEnfardamento },
   { id:"barcode_enf",      label:"Validação de Fardos", icon:"📦", desc:"Leitura de código de barras — Lado A / Lado B",        porMaquina:false, tipo:"barcode_enf",area:"enf", getItems:()=>[] },
-  { id:"avaria_enf",       label:"Inspeção de Avarias", icon:"⚠️", desc:"Registro de avarias por unit — capa, arame, impressão", porMaquina:false, tipo:"avaria_enf", area:"enf", getItems:()=>[] },
+  { id:"avaria_enf",       label:"Inspecao de Avarias", icon:"", desc:"Registro de avarias por unit — capa, arame, impressao", porMaquina:false, tipo:"avaria_enf", area:"enf", getItems:()=>[] },
 ];
 
 
@@ -478,7 +478,7 @@ import { TelaAuth, usePerfilAtivo, FUNCOES, validarPin } from "./auth";
 import { PainelAdmin } from "./admin";
 import { CleanersTela, RelatorioCleaners, CLEANERS_TOTAL } from "./cleaners";
 import { BarcodeModal } from "./barcode";
-import { AvariasTela } from "./avarias";
+import { AvariasTela, AvariasAnalytics } from "./avarias";
 import { MuralOportunidades } from "./pendencias";
 // Dashboard TV carregado de forma tolerante: se o arquivo ainda não existir no
 // repo, o app NÃO quebra — o modo dashboard apenas fica indisponível até subir.
@@ -2842,7 +2842,7 @@ function RotaEnfardamentoTela({ onSalvar }) {
 
 // ─── HistoricoTela ────────────────────────────────────────────────────────────
 // ─── RelatorioCleaners — relatórios por turno no Histórico ────────────────────
-function HistoricoTela({ historico, areaAtiva }) {
+function HistoricoTela({ historico, areaAtiva, perfil }) {
   const [abaHist,setAbaHist]=useState("reg");
   const [buscaData,setBuscaData]=useState("");
   const [filtroMaq,setFiltroMaq]=useState("M2");
@@ -2939,7 +2939,7 @@ function HistoricoTela({ historico, areaAtiva }) {
       </div>
       <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"8px 0 12px"}}/>
       <div style={{display:"flex",gap:6,marginBottom:14}}>
-        {[{id:"reg",l:"📋 REGISTROS"},{id:"ana",l:"📊 EFICIÊNCIA"}].map(a=>(
+        {[{id:"reg",l:"REGISTROS"},{id:"ana",l:"EFICIENCIA"},{id:"avarias",l:"AVARIAS"}].map(a=>(
           <button key={a.id} onClick={()=>setAbaHist(a.id)} style={{flex:1,padding:"8px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.03em",background:abaHist===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${abaHist===a.id?"rgba(255,255,255,0.55)":C.border}`,color:abaHist===a.id?"#fff":C.textMuted,boxShadow:abaHist===a.id?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>{a.l}</button>
         ))}
       </div>
@@ -2947,6 +2947,8 @@ function HistoricoTela({ historico, areaAtiva }) {
         <div>
           <GraficoEficiencia historico={historico}/>
         </div>
+      ):abaHist==="avarias"?(
+        <AvariasAnalytics avariasData={storageGet("avarias_h2")||[]} perfil={perfil}/>
       ):(
       <>
       {(()=>{
@@ -3358,7 +3360,7 @@ export default function App() {
     if(tela==="dashboard")return <Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil}/>;
     if(tela==="checklist")return <ChecklistTela onSalvar={salvarChecklist} historico={historico} perfil={perfil}/>;
     if(tela==="equipamentos")return <EquipamentosTela eqState={eqState} setEqState={setEqState} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} historico={historico} setTela={setTela}/>;
-    if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil}/>;
+    if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva} perfil={perfil}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil}/>;
     if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout} onAbrirAdmin={()=>setAdminAberto(true)}/>;
     if(tela==="rotas")return <RotasTela historico={historico} onVoltar={()=>setTela("dashboard")}/>;
     if(tela==="mural")return <MuralOportunidades eqState={eqState} onVoltar={()=>setTela("dashboard")}/>;
