@@ -467,48 +467,117 @@ function PanelCleaners({ cleaners, cleanersHist, sedim, setTela }) {
 }
 
 // ════════ PAINEL: ALTURA UNITS (colunas verticais estilo equalizador) ════════
-function PanelAltura({ historico, setTela }) {
+function PanelAlturaChecklists({ historico, setTela }) {
   const hist=Array.isArray(historico)?historico:[];
+
+  // ── Altura das Units ──
   const ult={};
-  [...hist].sort((a,b)=>b.id-a.id).filter(h=>h.tipoId==="enf_qualidade").forEach(r=>{const ln=r.linha||r.maquina;if(ln&&!ult[ln]){const it=r.items?.find(i=>i.id==="enf_14");const v=it?parseAlt(it.resp):null;if(v!=null)ult[ln]=v;}});
-  const dados=LINHAS.map(l=>({l,v:ult[l]??null}));
-  const comV=dados.filter(d=>d.v!=null);
+  [...hist].sort((a,b)=>b.id-a.id).filter(h=>h.tipoId==="enf_qualidade").forEach(r=>{
+    const ln=r.linha||r.maquina;
+    if(ln&&!ult[ln]){const it=r.items?.find(i=>i.id==="enf_14");const v=it?parseAlt(it.resp):null;if(v!=null)ult[ln]=v;}
+  });
+  const dadosAlt=LINHAS.map(l=>({l,v:ult[l]??null}));
+  const comV=dadosAlt.filter(d=>d.v!=null);
   const fora=comV.filter(d=>d.v<ALT_MIN||d.v>ALT_MAX);
-  const cTop=comV.length===0?C.dim:fora.length>0?C.red:C.green;
-  const vMin=1.84,vMax=1.96,vRng=vMax-vMin;
-  const H=110;
-  const yOf=(v)=>H-((v-vMin)/vRng)*H;
-  const yTgt=yOf(ALT_TGT), yMin=yOf(ALT_MIN), yMax=yOf(ALT_MAX);
+  const cAlt=comV.length===0?C.dim:fora.length>0?C.red:C.green;
+  const vMin=1.84,vMax=1.96; const H=80;
+  const yOf=(v)=>H-((v-vMin)/(vMax-vMin))*H;
+  const yFaixaMin=yOf(ALT_MIN), yFaixaMax=yOf(ALT_MAX);
+
+  // ── Checklists ──
+  const turno=autoTurno(), hj=hojeISO();
+  const ct=hist.filter(h=>h.data===hj&&h.turno===turno);
+  const areasChk=[
+    {a:"pu", t:"rotina",        l:"P.UMIDA",  mq:["M2","M3"],       c:C.green},
+    {a:"cs", t:"cortadeira",    l:"SEC/CORT", mq:["M2","M3"],       c:C.blue},
+    {a:"enf",t:"enf_qualidade", l:"ENFARD.",  mq:["L4","L5","L6","L7","L8"], c:C.purple},
+  ];
+  let feito=0,esp=0;
+  const blocos=areasChk.map(ar=>{
+    const e=ar.mq.length;
+    const f=ar.mq.filter(m=>ct.some(h=>h.tipoId===ar.t&&(h.maquina===m||h.linha===m))).length;
+    feito+=f; esp+=e;
+    return {...ar,f,e};
+  });
+  const cChk=feito===esp?C.green:feito===0?C.red:C.amber;
+  const cTop=fora.length>0?C.red:cChk;
+
   return (
-    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}}>
+    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column",gap:0}}>
       <Corners c={cTop}/>
-      <PanelHead code="03" title="Altura das Units" accent={cTop}
-        right={<span style={{fontFamily:mono,fontSize:9,color:C.dim}}>ALVO {ALT_TGT.toFixed(2)}m</span>}/>
-      <div onClick={()=>setTela&&setTela("historico")} style={{flex:1,display:"flex",alignItems:"flex-end",gap:10,cursor:"pointer",position:"relative",paddingTop:6}}>
-        {/* faixa alvo */}
-        <div style={{position:"absolute",left:0,right:0,top:yMax+6,height:yMin-yMax,background:`${C.green}0c`,borderTop:`1px dashed ${C.green}44`,borderBottom:`1px dashed ${C.green}44`,pointerEvents:"none",zIndex:0}}/>
-        {dados.map((d,i)=>{
-          const dentro=d.v!=null&&d.v>=ALT_MIN&&d.v<=ALT_MAX;
-          const c=d.v==null?C.faint:dentro?C.green:C.red;
-          const barH=d.v!=null?Math.max(8,H-yOf(d.v)):4;
-          return (
-            <div key={d.l} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:5,position:"relative",zIndex:1}}>
-              {d.v!=null&&<span style={{fontFamily:mono,fontSize:11,fontWeight:900,color:c,textShadow:`0 0 8px ${c}88`}}>{d.v.toFixed(2)}</span>}
-              {d.v==null&&<span style={{fontFamily:mono,fontSize:10,color:C.dim}}>--</span>}
-              <div style={{width:"100%",maxWidth:34,height:barH,borderRadius:"4px 4px 2px 2px",
-                background:`linear-gradient(180deg,${c},${c}44)`,
-                boxShadow:d.v!=null?`0 0 12px ${c}66, inset 0 1px 0 ${c}`:"none",
-                border:`1px solid ${c}66`,position:"relative",transition:"height .6s",transformOrigin:"bottom"}}>
-                <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:c,borderRadius:2,boxShadow:`0 0 6px ${c}`}}/>
-              </div>
-              <span style={{fontFamily:sans,fontSize:9,fontWeight:700,color:dentro?C.mute:c,letterSpacing:"0.05em"}}>{d.l}</span>
+
+      {/* ── TOPO: Altura das Units ── */}
+      <div onClick={()=>setTela&&setTela("historico")} style={{cursor:"pointer",marginBottom:12}}>
+        <PanelHead code="03" title="Altura das Units" accent={cAlt}
+          right={
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontFamily:mono,fontSize:8,color:C.dim}}>ALV {ALT_TGT.toFixed(2)}m</span>
+              {fora.length>0
+                ?<span style={{fontFamily:mono,fontSize:8,fontWeight:800,color:C.red,background:`${C.red}18`,border:`1px solid ${C.red}44`,borderRadius:10,padding:"1px 6px"}}>{fora.length} FORA</span>
+                :<span style={{fontFamily:mono,fontSize:8,fontWeight:800,color:C.green,background:`${C.green}12`,border:`1px solid ${C.green}33`,borderRadius:10,padding:"1px 6px"}}>OK</span>
+              }
             </div>
-          );
-        })}
+          }/>
+        <div style={{display:"flex",alignItems:"flex-end",gap:8,position:"relative",height:H+24}}>
+          {/* faixa tolerancia */}
+          <div style={{position:"absolute",left:0,right:0,top:yFaixaMax,height:yFaixaMin-yFaixaMax,
+            background:`${C.green}09`,borderTop:`1px dashed ${C.green}40`,borderBottom:`1px dashed ${C.green}40`,
+            pointerEvents:"none",zIndex:0}}/>
+          {dadosAlt.map((d,i)=>{
+            const dentro=d.v!=null&&d.v>=ALT_MIN&&d.v<=ALT_MAX;
+            const c=d.v==null?C.faint:dentro?C.green:C.red;
+            const barH=d.v!=null?Math.max(8,H-yOf(d.v)):4;
+            return (
+              <div key={d.l} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative",zIndex:1}}>
+                <span style={{fontFamily:mono,fontSize:9,fontWeight:900,color:c,
+                  textShadow:d.v!=null?`0 0 6px ${c}88`:"none"}}>
+                  {d.v!=null?d.v.toFixed(2):"--"}
+                </span>
+                <div style={{width:"100%",maxWidth:30,height:barH,borderRadius:"4px 4px 2px 2px",
+                  background:`linear-gradient(180deg,${c},${c}33)`,
+                  boxShadow:d.v!=null?`0 0 10px ${c}55,inset 0 1px 0 ${c}`:"none",
+                  border:`1px solid ${c}55`,transition:"height .6s",transformOrigin:"bottom",position:"relative"}}>
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:c,borderRadius:2,boxShadow:`0 0 5px ${c}`}}/>
+                </div>
+                <span style={{fontFamily:sans,fontSize:8,fontWeight:700,color:dentro?C.mute:c}}>{d.l}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <div style={{display:"flex",justifyContent:"space-between",marginTop:8,fontFamily:mono,fontSize:7.5,color:C.dim}}>
-        <span>TOLERANCIA {ALT_MIN}-{ALT_MAX}m</span>
-        {fora.length>0?<span style={{color:C.red}}>{fora.length} FORA DA FAIXA</span>:<span style={{color:C.green}}>TODAS OK</span>}
+
+      {/* divisoria */}
+      <div style={{height:1,background:`linear-gradient(90deg,transparent,${C.line},transparent)`,margin:"0 -4px 12px"}}/>
+
+      {/* ── BASE: Checklists do Turno ── */}
+      <div onClick={()=>setTela&&setTela("checklist")} style={{cursor:"pointer",flex:1}}>
+        <PanelHead code="06" title="Checklists do Turno" accent={cChk}
+          right={<span style={{fontFamily:mono,fontSize:9,color:C.dim}}>{feito}/{esp} · {turno}</span>}/>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {blocos.map(b=>{
+            const c=b.f===b.e?C.green:b.f===0?C.red:C.amber;
+            return (
+              <div key={b.l}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    <div style={{width:6,height:6,borderRadius:2,background:b.c,boxShadow:`0 0 4px ${b.c}88`}}/>
+                    <span style={{fontFamily:sans,fontSize:9,color:C.mute}}>{b.l}</span>
+                  </div>
+                  <span style={{fontFamily:mono,fontSize:10,fontWeight:900,color:c}}>{b.f}/{b.e}</span>
+                </div>
+                <div style={{display:"flex",gap:3}}>
+                  {b.mq.map((m,i)=>{
+                    const ok=ct.some(h=>h.tipoId===b.t&&(h.maquina===m||h.linha===m));
+                    return <div key={i} style={{flex:1,height:6,borderRadius:3,
+                      background:ok?b.c:C.faint,
+                      boxShadow:ok?`0 0 6px ${b.c}aa`:"none",
+                      transition:"background .4s, box-shadow .4s"}}/>;
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -649,42 +718,6 @@ function PanelChamados({ chamados, setTela }) {
 }
 
 // ════════ PAINEL: CHECKLISTS (anel de progresso + barras) ════════
-function PanelChecklists({ historico, setTela }) {
-  const hist=Array.isArray(historico)?historico:[];
-  const turno=autoTurno(), hj=hojeISO();
-  const ct=hist.filter(h=>h.data===hj&&h.turno===turno);
-  const areas=[{a:"pu",t:"rotina",l:"P.UMIDA",mq:["M2","M3"]},{a:"cs",t:"cortadeira",l:"SEC/CORT",mq:["M2","M3"]},{a:"enf",t:"enf_qualidade",l:"ENFARD.",mq:["L4","L5","L6","L7","L8"]}];
-  let feito=0,esp=0;
-  const blocos=areas.map(ar=>{const e=ar.mq.length;const f=ar.mq.filter(m=>ct.some(h=>h.tipoId===ar.t&&(h.maquina===m||h.linha===m))).length;feito+=f;esp+=e;return{l:ar.l,f,e,mq:ar.mq,t:ar.t};});
-  const fracTotal=esp>0?feito/esp:0;
-  const cTop=feito===esp?C.green:feito===0?C.red:C.amber;
-  return (
-    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}} onClick={()=>setTela&&setTela("checklist")}>
-      <Corners c={cTop}/>
-      <PanelHead code="06" title="Checklists do Turno" accent={cTop}
-        right={<span style={{fontFamily:mono,fontSize:9,color:C.dim}}>{turno}</span>}/>
-      <div style={{display:"flex",gap:14,flex:1,alignItems:"center"}}>
-        <RadialGauge value={feito} max={esp} size={100} stroke={8} color={cTop} label="LANCAMENTOS" sub={`/${esp}`} idk="chk"/>
-        <div style={{flex:1,display:"flex",flexDirection:"column",gap:9}}>
-          {blocos.map(b=>(
-            <div key={b.l}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                <span style={{fontFamily:sans,fontSize:9,color:C.mute}}>{b.l}</span>
-                <span style={{fontFamily:mono,fontSize:10,fontWeight:900,color:b.f===b.e?C.green:b.f===0?C.red:C.amber}}>{b.f}/{b.e}</span>
-              </div>
-              <div style={{display:"flex",gap:3}}>
-                {b.mq.map((m,i)=>{const ok=ct.some(h=>h.tipoId===b.t&&(h.maquina===m||h.linha===m));const c=ok?C.green:C.faint;return(
-                  <div key={i} style={{flex:1,height:5,borderRadius:3,background:c,boxShadow:ok?`0 0 5px ${c}aa`:"none",transition:"background .4s"}}/>
-                );})}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ════════ PAINEL: TENDENCIA EFICIENCIA (area grande) ════════
 // ════════ MODAL ACIDENTE ════════
 function ModalAcid({ valor, onSave, onClose }) {
@@ -812,10 +845,11 @@ export default function DashboardTV({ setTela, setModoVisao }) {
           <div style={{gridColumn:"span 2"}}><PanelMural pendencias={pendencias} chamados={chamados} ocorrencias={ocorrencias} setTela={setTela}/></div>
           <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
           <PanelAvarias avarias={avarias} setTela={setTela}/>
-          {/* linha 2 — Altura + Chamados + Checklists */}
-          <PanelAltura historico={historico} setTela={setTela}/>
+          {/* linha 2 — Altura+Checklists unificado + Chamados + slot livre */}
+          <PanelAlturaChecklists historico={historico} setTela={setTela}/>
           <PanelChamados chamados={chamados} setTela={setTela}/>
-          <div style={{gridColumn:"span 2"}}><PanelChecklists historico={historico} setTela={setTela}/></div>
+          <div/>
+          <div/>
         </div>
 
         {/* faixa inferior: galeria + ticker */}
