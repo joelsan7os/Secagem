@@ -1212,7 +1212,16 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {[...(eq.obsRotaHistorico||[])].reverse().map((o,i)=>(
                 <div key={o.id||i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px"}}>
-                  <span style={{color:C.textDim,fontSize:10}}>📅 {o.data?.split("-").reverse().join("/")} · {o.hora}</span>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+                    <span style={{color:C.textDim,fontSize:10}}>📅 {o.data?.split("-").reverse().join("/")} · {o.hora}</span>
+                    <button onClick={()=>{
+                      const novaHist=(eq.obsRotaHistorico||[]).filter((_,idx)=>(eq.obsRotaHistorico.length-1-idx)!==i);
+                      const key=getListKey();
+                      setEqState(p=>({...p,[key]:p[key].map(e2=>e2.id===eq.id?{...e2,obsRotaHistorico:novaHist}:e2)}));
+                    }} style={{background:"rgba(255,82,82,0.1)",border:`1px solid ${C.dangerLight}44`,color:C.dangerLight,borderRadius:6,padding:"2px 8px",fontSize:9,fontWeight:800,cursor:"pointer",flexShrink:0,marginLeft:8}}>
+                      Encerrar
+                    </button>
+                  </div>
                   {o.obs&&<p style={{color:C.text,fontSize:12,margin:"4px 0 6px",lineHeight:1.5}}>{o.obs}</p>}
                   {o.fotos?.length>0&&<ObsFotos fotos={o.fotos}/>}
                 </div>
