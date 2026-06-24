@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 import * as React from "react";
 import { COL, doc, onSnapshot, setDoc } from "./firebase";
-import { CarrosselViewer } from "./carrossel";
+// import { CarrosselViewer } from "./carrossel"; // <-- Comentado caso não use mais
 
 const C = {
   void:"#020A12", deep:"#04111D", panel:"#071826", panelHi:"#0A2032",
@@ -13,21 +13,26 @@ const C = {
   purple:"#C77DFF", amber:"#FFC107", orange:"#FF8C00", red:"#FF5252",
   ink:"#FFFFFF", mute:"#9FB4CC", dim:"#41597A", faint:"#22344B",
 };
+
 const mono = "'SF Mono','Roboto Mono',ui-monospace,monospace";
 const sans = "'Inter','Segoe UI',system-ui,sans-serif";
 
 const sGet = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const sSet = (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch {} try { setDoc(doc(COL,k),{val:v,ts:Date.now()}); } catch {} };
+
 const hojeISO = () => new Date().toISOString().slice(0,10);
 const mesISO = () => new Date().toISOString().slice(0,7);
 const autoTurno = () => { const h=new Date().getHours(); if(h<8)return"00x08"; if(h<16)return"08x16"; return"16x24"; };
+
 const parseAlt = (v) => { if(!v)return null; const n=parseFloat(String(v).replace(",",".")); return isNaN(n)?null:n; };
 const diffDias = (iso) => { if(!iso)return null; const d=new Date(iso+"T00:00:00"); const h=new Date(); h.setHours(0,0,0,0); return Math.floor((h-d)/864e5); };
 
 const CLN_TOTAL = 24, CLN_LIM = 70;
 const ALT_MIN = 1.88, ALT_MAX = 1.92, ALT_TGT = 1.90;
+
 const LINHAS = ["L4","L5","L6","L7","L8"];
 const PRAZO_COR = { Imediato:"#FF5252", Urgente:"#FF8C00", Normal:"#FFC107", "Programavel":"#5090FF", "Programável":"#5090FF" };
+
 const TIPOS_AV = [
   { id:"alt_linha",    label:"Diferenca de altura", cor:"#5090FF" },
   { id:"capa_rasgada", label:"Capa rasgada",        cor:"#FF5252" },
@@ -37,9 +42,12 @@ const TIPOS_AV = [
   { id:"sem_imp",      label:"Falta de impressao",  cor:"#00F0FF" },
   { id:"sem_logo",     label:"Unit sem logo",       cor:"#00E676" },
 ];
+
 const jReg = (area) => { const a=(area||"").toLowerCase(); if(a==="cortadeira"||a==="cs"||a==="secador")return"cs"; if(a==="enfardamento"||a==="enf")return"enf"; if(a==="cleaners")return"clean"; return"pu"; };
+
 const pct = (n,d) => d>0?Math.round(n/d*100):0;
-function bezier(pts){ if(pts.length<2)return""; const p=pts.map(s=>{const[x,y]=s.split(",").map(Number);return{x,y};}); let d=`M${p[0].x},${p[0].y}`; for(let i=1;i<p.length;i++){const c=(p[i-1].x+p[i].x)/2;d+=` C${c},${p[i-1].y} ${c},${p[i].y} ${p[i].x},${p[i].y}`;} return d; }
+function bezier(pts){ if(pts.length<2)return""; const p=pts.map(s=>{const[x,y]=s.split(",").map(Number);return{x,y};}); let d=`M${p[0].x},${p[0].y}`;
+  for(let i=1;i<p.length;i++){const c=(p[i-1].x+p[i].x)/2;d+=` C${c},${p[i-1].y} ${c},${p[i].y} ${p[i].x},${p[i].y}`;} return d; }
 
 // ── animacoes globais ──
 const GlobalFX = () => (
@@ -84,6 +92,7 @@ function RadialGauge({ value, max=100, size=120, stroke=9, color, label, sub="",
   const arc = circ*0.75;
   const fill = arc*frac;
   const rot = 135;
+
   return (
     <div style={{position:"relative",width:size,height:size}}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -93,7 +102,8 @@ function RadialGauge({ value, max=100, size=120, stroke=9, color, label, sub="",
           </linearGradient>
           <filter id={`gf${idk}`}><feGaussianBlur stdDeviation="2.5"/></filter>
         </defs>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.05)"
+        <circle cx={size/2} cy={size/2} r={r} 
+          fill="none" stroke="rgba(255,255,255,0.05)"
           strokeWidth={stroke} strokeDasharray={`${arc} ${circ}`} strokeLinecap="round"
           transform={`rotate(${rot} ${size/2} ${size/2})`}/>
         {Array.from({length:28}).map((_,i)=>{
@@ -111,6 +121,7 @@ function RadialGauge({ value, max=100, size=120, stroke=9, color, label, sub="",
           transform={`rotate(${rot} ${size/2} ${size/2})`}
           style={{transition:"stroke-dasharray .8s cubic-bezier(.4,0,.2,1)"}}/>
       </svg>
+    
       <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
         <span style={{fontFamily:mono,fontSize:size*0.27,fontWeight:900,color:danger?C.red:C.ink,lineHeight:1,textShadow:`0 0 16px ${color}99`}}>
           {value}<span style={{fontSize:size*0.13,color:C.dim}}>{sub}</span>
@@ -166,14 +177,11 @@ function CmdClock() {
 
 // ════════ BANNER HEROI: SEGURANCA + EFICIENCIA GLOBAL ════════
 function HeroBar({ historico, seguranca, cleaners, cleanersHist, avarias, onEditAcid }) {
-  // dias sem quebra
   const diasQuebra=(mq)=>{const r=historico.filter(h=>(h.tipoId==="passagem_ponta"||h.tipoId==="passagem_ponta_cs")&&h.maquina===mq&&h.data).sort((a,b)=>b.data.localeCompare(a.data));return r.length?diffDias(r[0].data):null;};
   const dM2=diasQuebra("M2"), dM3=diasQuebra("M3");
   const dAcid=seguranca?.diasAcidente??null;
-  // eficiencia cleaners global
   const foraM2=Object.keys(cleaners?.M2||{}).length, foraM3=Object.keys(cleaners?.M3||{}).length;
   const eficGlobal=Math.round(((CLN_TOTAL*2)-(foraM2+foraM3))/(CLN_TOTAL*2)*100);
-  // avarias mes
   const avMes=(avarias||[]).filter(r=>r.data?.slice(0,7)===mesISO()&&r.teveAvaria).reduce((s,r)=>s+r.total,0);
 
   const Metric=({val,unit,label,color,glyph,onClick,pulse})=>(
@@ -184,6 +192,7 @@ function HeroBar({ historico, seguranca, cleaners, cleanersHist, avarias, onEdit
           <circle cx="21" cy="21" r="18" fill="none" stroke={color} strokeWidth="2" strokeDasharray="85 200" strokeLinecap="round" transform="rotate(-90 21 21)" style={{filter:`drop-shadow(0 0 3px ${color})`}}/>
         </svg>
         <span style={{filter:`drop-shadow(0 0 5px ${color}aa)`}}>{glyph}</span>
+      
         {pulse&&<span style={{position:"absolute",inset:0,borderRadius:"50%",border:`1.5px solid ${color}`,animation:"cmd-ring 1.6s ease-out infinite"}}/>}
       </div>
       <div style={{minWidth:0}}>
@@ -203,7 +212,6 @@ function HeroBar({ historico, seguranca, cleaners, cleanersHist, avarias, onEdit
   const cEf=eficGlobal>=90?C.green:eficGlobal>=CLN_LIM?C.amber:C.red;
   const cAv=avMes===0?C.green:avMes<=10?C.amber:C.red;
 
-  // glyphs SVG geometricos (sem emoji)
   const GShield=(c)=>(<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z"/></svg>);
   const GGear=(c)=>(<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>);
   const GDrop=(c)=>(<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.5c-3.5 4-6 7-6 10a6 6 0 0 0 12 0c0-3-2.5-6-6-10z"/></svg>);
@@ -225,7 +233,7 @@ function HeroBar({ historico, seguranca, cleaners, cleanersHist, avarias, onEdit
   );
 }
 
-// ════════ PAINEL: MURAL (duplo M2/M3 — cada maquina com suas areas) ════════
+// ════════ PAINEL: MURAL (duplo M2/M3) ════════
 function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
   const pend=Array.isArray(pendencias)?pendencias:[];
   const chA=Array.isArray(chamados)?chamados.filter(c=>c.status==="aberto"):[];
@@ -235,7 +243,7 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
     {id:"cs",l:"Sec / Cortadeira",c:C.blue},
     {id:"enf",l:"Enfardamento",c:C.purple},
   ];
-  // separa pendencias por maquina (campo maquina; fallback por linha)
+
   const maqDe=(item)=>{
     if(item.maquina==="M2"||item.maquina==="M3")return item.maquina;
     const ln=item.linha||"";
@@ -243,7 +251,6 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
     if(["L6","L7","L8"].includes(ln))return"M3";
     return null;
   };
-  // conta por maquina+area e severidade por maquina
   const dadosMaq=(mq)=>{
     const cnt={pu:0,clean:0,cs:0,enf:0};
     let nC=0,nM=0,nB=0;
@@ -257,12 +264,12 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
   const totalGeral=m2.total+m3.total;
   const cGeral=(m2.nC+m3.nC)>0?C.red:(m2.nM+m3.nM)>0?C.amber:C.green;
 
-  // bloco de uma maquina — visual sofisticado para espaco dobrado
   const MaqBlock=({mq,d,ocr})=>{
     const cor=d.nC>0?C.red:d.nM>0?C.amber:d.total>0?C.amber:C.green;
     const critico=d.nC>0||ocr?.cor==="vermelho";
     const maxArea=Math.max(1,...Object.values(d.cnt));
     const linhas=mq==="M2"?"L4 · L5":"L6 · L7 · L8";
+
     return (
       <div onClick={()=>setTela&&setTela("mural")}
         style={{flex:1,position:"relative",cursor:"pointer",borderRadius:14,padding:"16px 18px",
@@ -272,26 +279,22 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
           border:`1px solid ${critico?C.red+"77":cor+"44"}`,
           boxShadow:critico?`0 0 28px ${C.red}33, inset 0 0 40px ${C.red}0c`:`0 0 18px ${cor}11`,
           transition:"all .3s",overflow:"hidden"}}>
-        {/* borda superior animada */}
+     
         <div style={{position:"absolute",top:0,left:0,right:0,height:2,
           background:`linear-gradient(90deg,transparent 0%,${cor} 50%,transparent 100%)`,
           opacity:critico?1:0.5,
           animation:critico?"cmd-pulse 1.2s infinite":"none"}}/>
-        {/* cantos HUD */}
         <div style={{position:"absolute",top:7,left:7,width:10,height:10,borderTop:`1.5px solid ${cor}88`,borderLeft:`1.5px solid ${cor}88`}}/>
         <div style={{position:"absolute",top:7,right:7,width:10,height:10,borderTop:`1.5px solid ${cor}88`,borderRight:`1.5px solid ${cor}88`}}/>
         <div style={{position:"absolute",bottom:7,left:7,width:10,height:10,borderBottom:`1.5px solid ${cor}88`,borderLeft:`1.5px solid ${cor}88`}}/>
         <div style={{position:"absolute",bottom:7,right:7,width:10,height:10,borderBottom:`1.5px solid ${cor}88`,borderRight:`1.5px solid ${cor}88`}}/>
 
-        {/* cabecalho */}
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:16}}>
           <div style={{display:"flex",alignItems:"center",gap:11}}>
-            {/* badge circular da maquina — arcos multicolor */}
             <div style={{position:"relative",width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
               <svg width="44" height="44" style={{position:"absolute",inset:0}}>
                 {areas.map((a,i)=>{
-                  const r=19,circ=2*Math.PI*r,segLen=circ*0.18,gap=circ*0.055;
-                  const offset=-(circ*(0.18+0.055)*i)+(circ*0.25);
+                  const r=19,circ=2*Math.PI*r,segLen=circ*0.18;
                   return <circle key={a.id} cx="22" cy="22" r={r} fill="none" stroke={a.c} strokeWidth="3"
                     strokeDasharray={`${segLen} ${circ-segLen}`} strokeLinecap="round"
                     transform={`rotate(${-90+i*76} 22 22)`}
@@ -303,6 +306,7 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
               {critico&&<div style={{position:"absolute",inset:0,borderRadius:"50%",
                 border:`1.5px solid ${C.red}`,animation:"cmd-ring 1.6s ease-out infinite"}}/>}
             </div>
+    
             <div>
               <div style={{fontFamily:sans,fontSize:13,fontWeight:900,color:C.ink,
                 letterSpacing:"0.06em",textShadow:critico?`0 0 12px ${C.red}66`:"none"}}>
@@ -311,7 +315,6 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
               <div style={{fontFamily:mono,fontSize:8,color:C.dim,marginTop:1,letterSpacing:"0.1em"}}>{linhas}</div>
             </div>
           </div>
-          {/* total destaque */}
           <div style={{textAlign:"right"}}>
             <div style={{fontFamily:mono,fontSize:36,fontWeight:900,color:cor,lineHeight:1,
               textShadow:`0 0 18px ${cor}88`}}>{d.total}</div>
@@ -319,7 +322,6 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
           </div>
         </div>
 
-        {/* areas — cada uma com sua cor sempre visivel */}
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
           {areas.map(a=>{
             const v=d.cnt[a.id], w=Math.max(v>0?Math.round(v/maxArea*100):0,0);
@@ -337,9 +339,7 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
                     textShadow:v>0?`0 0 8px ${a.c}88`:"none"}}>{v}</span>
                 </div>
                 <div style={{height:3,borderRadius:2,background:`${a.c}15`,overflow:"hidden",position:"relative"}}>
-                  {/* barra base dim sempre visivel */}
                   <div style={{position:"absolute",inset:0,background:`${a.c}18`}}/>
-                  {/* barra de preenchimento */}
                   <div style={{height:"100%",width:`${w}%`,position:"relative",
                     background:`linear-gradient(90deg,${a.c}66,${a.c})`,
                     borderRadius:2,transition:"width .7s cubic-bezier(.4,0,.2,1)",
@@ -350,7 +350,6 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
           })}
         </div>
 
-        {/* severidade rodape */}
         <div style={{display:"flex",gap:7,marginTop:14,paddingTop:12,borderTop:`1px solid rgba(255,255,255,0.06)`}}>
           {[{n:d.nC,l:"CRITICAS",c:C.red},{n:d.nM,l:"MEDIAS",c:C.amber},{n:d.nB,l:"BAIXAS",c:C.green}].map(s=>(
             <div key={s.l} style={{flex:1,textAlign:"center",padding:"7px 0",borderRadius:8,
@@ -366,7 +365,6 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
           ))}
         </div>
 
-        {/* indicador de acao */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,
           marginTop:10,fontFamily:mono,fontSize:7.5,
           color:critico?C.red:C.dim,opacity:critico?1:0.5,
@@ -393,14 +391,15 @@ function PanelMural({ pendencias, chamados, ocorrencias, setTela }) {
   );
 }
 
-// ════════ PAINEL: CLEANERS (duplo gauge + sedimentaveis) ════════
+// ════════ PAINEL: CLEANERS ════════
 function PanelCleaners({ cleaners, cleanersHist, sedim, setTela }) {
   const dados=cleaners||{M2:{},M3:{}};
   const hist=Array.isArray(cleanersHist)?cleanersHist:[];
   const sed=Array.isArray(sedim)?sedim:[];
-  // spark por maquina
   const days=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
+  
   const sparkMq=(mq)=>{const snap={};const sorted=[...hist].sort((a,b)=>(a.data+(a.hora||"00:00")).localeCompare(b.data+(b.hora||"00:00")));return days.map(d=>{sorted.filter(e=>e.data===d&&e.maquina===mq).forEach(e=>{if(e.status==="REMOVIDA")snap[e.garrafa]=1;else delete snap[e.garrafa];});return Math.round((CLN_TOTAL-Object.keys(snap).length)/CLN_TOTAL*100);});};
+  
   const MqGauge=({mq,idk})=>{
     const fora=Object.keys(dados[mq]||{}).length, op=CLN_TOTAL-fora, efic=Math.round(op/CLN_TOTAL*100);
     const c=efic>=90?C.green:efic>=CLN_LIM?C.amber:C.red;
@@ -420,10 +419,10 @@ function PanelCleaners({ cleaners, cleanersHist, sedim, setTela }) {
       </div>
     );
   };
+  
   const lastSed=sed.length>0?sed[sed.length-1]:null;
   const cSed=lastSed?(lastSed.valor<150?C.green:lastSed.valor<=250?C.amber:C.red):C.dim;
 
-  // Top 3 motivos — garrafas atualmente fora (M2+M3), do estado atual
   const motCont={};
   ["M2","M3"].forEach(mq=>{
     Object.values(dados[mq]||{}).forEach(g=>{
@@ -445,7 +444,6 @@ function PanelCleaners({ cleaners, cleanersHist, sedim, setTela }) {
         <div style={{width:1,background:`linear-gradient(180deg,transparent,${C.line},transparent)`}}/>
         <MqGauge mq="M3" idk="cm3"/>
       </div>
-      {/* Top 3 motivos de retirada */}
       <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${C.line}`,flex:1}}>
         <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginBottom:8}}>PRINCIPAIS MOTIVOS · FORA DE OP.</div>
         {top3Mot.length>0?top3Mot.map((t,i)=>(
@@ -466,11 +464,9 @@ function PanelCleaners({ cleaners, cleanersHist, sedim, setTela }) {
   );
 }
 
-// ════════ PAINEL: ALTURA UNITS (colunas verticais estilo equalizador) ════════
+// ════════ PAINEL: ALTURA UNITS ════════
 function PanelAlturaChecklists({ historico, chamados, setTela }) {
   const hist=Array.isArray(historico)?historico:[];
-
-  // ── Altura das Units ──
   const ult={};
   [...hist].sort((a,b)=>b.id-a.id).filter(h=>h.tipoId==="enf_qualidade").forEach(r=>{
     const ln=r.linha||r.maquina;
@@ -484,7 +480,6 @@ function PanelAlturaChecklists({ historico, chamados, setTela }) {
   const yOf=(v)=>H-((v-vMin)/(vMax-vMin))*H;
   const yFaixaMin=yOf(ALT_MIN), yFaixaMax=yOf(ALT_MAX);
 
-  // ── Checklists ──
   const turno=autoTurno(), hj=hojeISO();
   const ct=hist.filter(h=>h.data===hj&&h.turno===turno);
   const areasChk=[
@@ -506,8 +501,6 @@ function PanelAlturaChecklists({ historico, chamados, setTela }) {
     <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column",gap:0}}>
       <Corners c={cTop}/>
       <div style={{display:"flex",gap:18,flex:1,minHeight:0}}>
-
-        {/* ── ESQUERDA: Altura das Units ── */}
         <div onClick={()=>setTela&&setTela("historico")} style={{cursor:"pointer",flex:"0 0 48%",display:"flex",flexDirection:"column"}}>
           <PanelHead code="03" title="Altura das Units" accent={cAlt}
             right={
@@ -545,10 +538,8 @@ function PanelAlturaChecklists({ historico, chamados, setTela }) {
           </div>
         </div>
 
-        {/* divisoria vertical */}
         <div style={{width:1,alignSelf:"stretch",background:`linear-gradient(180deg,transparent,${C.line},transparent)`,flexShrink:0}}/>
 
-        {/* ── DIREITA: Checklists do Turno ── */}
         <div onClick={()=>setTela&&setTela("checklist")} style={{cursor:"pointer",flex:1,display:"flex",flexDirection:"column"}}>
           <PanelHead code="06" title="Checklists do Turno" accent={cChk}
             right={<span style={{fontFamily:mono,fontSize:9,color:C.dim}}>{feito}/{esp} · {turno}</span>}/>
@@ -581,10 +572,8 @@ function PanelAlturaChecklists({ historico, chamados, setTela }) {
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* ── MINI CHAMADOS (faixa fina na base) ── */}
       {chamados && (()=>{
         const ch=chamados.filter(c=>c.status==="aberto");
         const total=ch.length;
@@ -619,12 +608,12 @@ function PanelAlturaChecklists({ historico, chamados, setTela }) {
   );
 }
 
-// ════════ PAINEL: AVARIAS (grafico linha por turno + top3 + total) ════════
+// ════════ PAINEL: AVARIAS ════════
 function PanelAvarias({ avarias, setTela }) {
   const dados=Array.isArray(avarias)?avarias:[];
   const mes=mesISO();
   const totalMes=dados.filter(r=>r.data?.slice(0,7)===mes&&r.teveAvaria).reduce((s,r)=>s+r.total,0);
-  // serie por turno: 10 dias x 3 turnos (ordem cronologica)
+  
   const bounds=[];
   for(let day=0;day<10;day++){
     const d=new Date(); d.setDate(d.getDate()-9+day);
@@ -634,12 +623,9 @@ function PanelAvarias({ avarias, setTela }) {
       bounds.push({data:ds,hLim:tsH,label:ds});
     }
   }
-  // soma de avarias por janela de turno (registros daquele dia com hora <= limite do turno e > limite anterior)
-  // simplificado: agrupa por data e ordena registros por hora, distribui em 3 slots do dia
+  
   const valPorTurno=bounds.map(b=>{
-    // pega registros do dia cujo horario cai no turno
     const recs=dados.filter(r=>r.data===b.data&&r.teveAvaria);
-    // turno por faixa de hora do registro
     const slot=b.hLim==="08:00"?0:b.hLim==="16:00"?1:2;
     return recs.filter(r=>{
       const hr=parseInt((r.hora||"00:00").slice(0,2),10);
@@ -647,14 +633,13 @@ function PanelAvarias({ avarias, setTela }) {
       return s===slot;
     }).reduce((a,r)=>a+r.total,0);
   });
-  // top3
+  
   const ct={}; TIPOS_AV.forEach(t=>ct[t.id]=0);
   dados.filter(r=>r.data?.slice(0,7)===mes&&r.teveAvaria).forEach(r=>r.itens?.forEach(it=>{if(ct[it.id]!==undefined)ct[it.id]+=it.quantidade;}));
   const top3=TIPOS_AV.map(t=>({...t,total:ct[t.id]})).sort((a,b)=>b.total-a.total).slice(0,3);
   const maxTop=Math.max(1,...top3.map(t=>t.total));
   const cTop=totalMes===0?C.green:totalMes<=10?C.amber:C.red;
 
-  // grafico
   const W=300,H=78,PT=12,PB=16,PLOT=H-PT-PB;
   const maxV=Math.max(1,...valPorTurno);
   const xOf=(i)=>PT+(i/(Math.max(1,bounds.length-1)))*(W-PT*2);
@@ -670,7 +655,6 @@ function PanelAvarias({ avarias, setTela }) {
       <Corners c={cTop}/>
       <PanelHead code="04" title="Avarias por Turno" accent={cTop}
         right={<span style={{fontFamily:mono,fontSize:18,fontWeight:900,color:cTop,textShadow:`0 0 12px ${cTop}66`}}>{totalMes}<span style={{fontSize:8,color:C.dim}}>/mes</span></span>}/>
-      {/* grafico de linha por turno */}
       <div style={{marginBottom:10}}>
         <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginBottom:4}}>AVARIAS POR TURNO · 10 DIAS</div>
         {temDados?(
@@ -680,29 +664,24 @@ function PanelAvarias({ avarias, setTela }) {
                 <stop offset="0%" stopColor={cTop} stopOpacity="0.28"/><stop offset="100%" stopColor={cTop} stopOpacity="0.01"/>
               </linearGradient>
             </defs>
-            {/* grid horizontal */}
             {[0,0.5,1].map(g=>{const y=PT+PLOT-g*PLOT;return <line key={g} x1={PT} y1={y} x2={W-PT} y2={y} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>;})}
             <path d={area} fill="url(#avLineFill)"/>
             <path d={line} fill="none" stroke={cTop} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 4px ${cTop}aa)`}}/>
-            {/* bolinhas por turno */}
             {valPorTurno.map((v,i)=>(
               <circle key={i} cx={xOf(i)} cy={yOf(v)} r={v>0?3:1.5}
                 fill={v>0?cTop:C.faint}
                 stroke={v>0?"#04111D":"none"} strokeWidth="1"
                 style={{filter:v>0?`drop-shadow(0 0 4px ${cTop})`:"none"}}/>
             ))}
-            {/* valores nos picos */}
             {valPorTurno.map((v,i)=>v>=maxV&&v>0?(
               <text key={"t"+i} x={xOf(i)} y={yOf(v)-6} textAnchor="middle" fontFamily={mono} fontSize="8" fontWeight="700" fill={cTop}>{v}</text>
             ):null)}
-            {/* marcas de dia */}
             {dayMarks.map((m,i)=>{const x=xOf(i*3);const dd=m.label.slice(8,10)+"/"+m.label.slice(5,7);return(<text key={i} x={x} y={H-3} fontFamily={mono} fontSize="7" fill={C.dim} textAnchor={i===0?"start":i===dayMarks.length-1?"end":"middle"}>{dd}</text>);})}
           </svg>
         ):(
           <div style={{height:H,display:"flex",alignItems:"center",justifyContent:"center",color:C.dim,fontFamily:sans,fontSize:10}}>Sem avarias registradas</div>
         )}
       </div>
-      {/* top3 */}
       <div style={{paddingTop:10,borderTop:`1px solid ${C.line}`,flex:1}}>
         <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginBottom:8}}>TOP 3 TIPOS</div>
         {top3.map((t,i)=>(
@@ -721,40 +700,58 @@ function PanelAvarias({ avarias, setTela }) {
   );
 }
 
-// ════════ PAINEL: CHAMADOS (matriz de prazo) ════════
-function PanelChamados({ chamados, setTela }) {
-  const ch=Array.isArray(chamados)?chamados.filter(c=>c.status==="aberto"):[];
-  const byP=(p)=>ch.filter(c=>c.prazo===p).length;
-  const prazos=[{k:"Imediato",c:C.red},{k:"Urgente",c:C.orange},{k:"Normal",c:C.amber},{k:"Programavel",c:C.blue}];
-  // tratar "Programável" com acento tambem
-  const cnt=(k)=>k==="Programavel"?ch.filter(c=>c.prazo==="Programavel"||c.prazo==="Programável").length:byP(k);
-  const total=ch.length;
-  const nIme=cnt("Imediato");
-  const cTop=nIme>0?C.red:cnt("Urgente")>0?C.orange:total>0?C.amber:C.green;
+// ════════ PAINEL: PRODUCAO (Mês e Ano) ════════
+function PanelProducao() {
+  // Dados simulados (aleatórios para você substituir com os reais depois)
+  const prodMes = 45200;
+  const metaMes = 48000;
+  const pctMes = Math.round((prodMes / metaMes) * 100);
+  const cMes = pctMes >= 100 ? C.green : pctMes >= 90 ? C.amber : C.red;
+
+  const prodAno = 540500;
+  const metaAno = 530000;
+  const pctAno = Math.round((prodAno / metaAno) * 100);
+  const cAno = pctAno >= 100 ? C.green : pctAno >= 90 ? C.amber : C.red;
+
+  const formatT = (n) => n.toLocaleString('pt-BR') + ' t';
+
+  const Block = ({ title, prod, meta, pct, color }) => (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, padding: 16, background: `linear-gradient(145deg, rgba(10,32,50,0.4), rgba(7,24,38,0.6))` , borderRadius: 12, border: `1px solid ${color}44` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontFamily: sans, fontSize: 10, fontWeight: 700, color: C.mute, letterSpacing: "0.1em" }}>{title}</span>
+        <span style={{ fontFamily: mono, fontSize: 20, fontWeight: 900, color: color, textShadow: `0 0 12px ${color}66` }}>{pct}%</span>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 8 }}>
+        <div>
+          <div style={{ fontFamily: mono, fontSize: 28, fontWeight: 900, color: C.ink }}>{formatT(prod)}</div>
+          <div style={{ fontFamily: sans, fontSize: 8, color: C.dim, letterSpacing: "0.1em", marginTop: 2 }}>REALIZADO</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontFamily: mono, fontSize: 14, fontWeight: 700, color: C.dim }}>{formatT(meta)}</div>
+          <div style={{ fontFamily: sans, fontSize: 8, color: C.dim, letterSpacing: "0.1em", marginTop: 2 }}>ORÇADO</div>
+        </div>
+      </div>
+
+      <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.05)", marginTop: 12, overflow: "hidden", position: "relative" }}>
+        <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${Math.min(pct, 100)}%`, background: color, borderRadius: 3, boxShadow: `0 0 8px ${color}aa`, transition: "width .8s cubic-bezier(.4,0,.2,1)" }} />
+        {pct > 100 && <div style={{ position: "absolute", top: 0, bottom: 0, left: '100%', width: '4px', background: C.ink, marginLeft: -2, boxShadow: `0 0 5px #fff` }} />}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}} onClick={()=>setTela&&setTela("equipamentos")}>
-      <Corners c={cTop}/>
-      <PanelHead code="05" title="Chamados / SAP" accent={cTop}/>
-      <div style={{display:"flex",alignItems:"center",gap:14,flex:1}}>
-        <div style={{textAlign:"center",flexShrink:0}}>
-          <div style={{fontFamily:mono,fontSize:46,fontWeight:900,color:cTop,lineHeight:1,textShadow:`0 0 20px ${cTop}66`}}>{total}</div>
-          <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>ABERTOS</div>
-        </div>
-        <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
-          {prazos.map(p=>{const n=cnt(p.k);return(
-            <div key={p.k} style={{background:`${p.c}0c`,border:`1px solid ${p.c}${n>0?"55":"22"}`,borderRadius:8,padding:"7px 9px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <span style={{fontFamily:sans,fontSize:8,color:C.mute,letterSpacing:"0.05em"}}>{p.k.toUpperCase()}</span>
-              <span style={{fontFamily:mono,fontSize:16,fontWeight:900,color:n>0?p.c:C.dim,textShadow:n>0?`0 0 8px ${p.c}66`:"none"}}>{n}</span>
-            </div>
-          );})}
-        </div>
+    <div className="cmd-card" style={{ padding: 16, display: "flex", flexDirection: "column", height: "100%" }}>
+      <Corners c={C.blue} />
+      <PanelHead code="07" title="Acompanhamento de Produção" accent={C.blue} right={<span style={{ fontFamily: mono, fontSize: 9, color: C.dim }}>REAL vs ORÇADO</span>} />
+      <div style={{ display: "flex", gap: 14, flex: 1, alignItems: "center" }}>
+        <Block title="ACUMULADO DO MÊS" prod={prodMes} meta={metaMes} pct={pctMes} color={cMes} />
+        <Block title="ACUMULADO DO ANO" prod={prodAno} meta={metaAno} pct={pctAno} color={cAno} />
       </div>
     </div>
   );
 }
 
-// ════════ PAINEL: CHECKLISTS (anel de progresso + barras) ════════
-// ════════ PAINEL: TENDENCIA EFICIENCIA (area grande) ════════
 // ════════ MODAL ACIDENTE ════════
 function ModalAcid({ valor, onSave, onClose }) {
   const [v,setV]=React.useState(valor!=null?String(valor):"");
@@ -775,7 +772,7 @@ function ModalAcid({ valor, onSave, onClose }) {
   );
 }
 
-// ════════ TICKER (eventos correndo na base) ════════
+// ════════ TICKER ════════
 function Ticker({ historico, chamados, avarias }) {
   const eventos=[];
   [...(historico||[])].sort((a,b)=>b.id-a.id).slice(0,4).forEach(h=>{eventos.push({c:C.green,t:`${h.tipoLabel||h.tipoId} registrado · ${h.linha||h.maquina||""} · ${h.hora||""}`});});
@@ -835,9 +832,7 @@ export default function DashboardTV({ setTela, setModoVisao }) {
   return (
     <div style={{position:"relative",minHeight:"100vh",width:"100vw",background:`radial-gradient(ellipse at 50% 0%,#0a2138 0%,${C.deep} 45%,${C.void} 100%)`,color:C.ink,fontFamily:sans,overflow:"hidden",display:"flex",flexDirection:"column"}}>
       <GlobalFX/>
-      {/* grid de fundo */}
       <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,230,118,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,230,118,.025) 1px,transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
-      {/* scanline */}
       <div style={{position:"absolute",left:0,right:0,height:80,background:"linear-gradient(180deg,transparent,rgba(0,230,118,0.025),transparent)",animation:"cmd-scan 12s linear infinite",pointerEvents:"none",zIndex:1}}/>
 
       {/* ═══ HEADER ═══ */}
@@ -875,23 +870,23 @@ export default function DashboardTV({ setTela, setModoVisao }) {
       <div style={{position:"relative",zIndex:5,flex:1,padding:"12px 14px",display:"flex",flexDirection:"column",gap:0,overflow:"hidden"}}>
         <HeroBar historico={historico} seguranca={seguranca} cleaners={cleaners} cleanersHist={cleanersHist} avarias={avarias} onEditAcid={()=>setModalAcid(true)}/>
 
-        {/* grid principal: 4 col x 2 linhas + faixa */}
+        {/* grid principal: 4 col x 2 linhas */}
         <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gridTemplateRows:"1fr 1fr",gap:12,minHeight:0}}>
-          {/* linha 1 — Cleaners + Mural M2+M3 (span2) + Avarias */}
+          {/* linha 1 */}
           <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
           <div style={{gridColumn:"span 2"}}><PanelMural pendencias={pendencias} chamados={chamados} ocorrencias={ocorrencias} setTela={setTela}/></div>
           <PanelAvarias avarias={avarias} setTela={setTela}/>
-          {/* linha 2 — Altura+Checklists+Chamados (span2) + Carrossel (span2) */}
+          
+          {/* linha 2: Altura+Checklists + A Nova Área de Produção */}
           <div style={{gridColumn:"span 2"}}><PanelAlturaChecklists historico={historico} chamados={chamados} setTela={setTela}/></div>
-          <div style={{gridColumn:"span 2"}} className="cmd-card">
-            <div style={{width:"100%",height:"100%",position:"relative",borderRadius:16,overflow:"hidden"}}>
-              <Corners c={C.blue}/>
-              <CarrosselViewer/>
-            </div>
+          
+          {/* AQUI ENTROU O NOVO PAINEL DE PRODUÇÃO NO LUGAR DO CARROSSEL */}
+          <div style={{gridColumn:"span 2"}}>
+            <PanelProducao />
           </div>
         </div>
 
-        {/* faixa inferior: ticker + status */}
+        {/* faixa inferior */}
         <div style={{display:"flex",gap:12,marginTop:12,height:56,flexShrink:0}}>
           <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
             <Ticker historico={historico} chamados={chamados} avarias={avarias}/>
