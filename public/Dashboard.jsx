@@ -4,6 +4,7 @@
 //             cleaners_sedim_h2, historico_h2, pendencias_h2, seguranca_h2
 import * as React from "react";
 import { COL, doc, onSnapshot, setDoc, getDoc } from "./firebase";
+import { CarrosselViewer } from "./carrossel";
 
 const C = {
   bg:"#04111D", surface:"#071828", card:"#0A1929", cardHover:"#0D2140",
@@ -728,14 +729,30 @@ export default function DashboardTV({ setTela, setModoVisao }) {
       {/* ── Banner segurança ──────────────────────────────────────────── */}
       <BannerSeguranca historicoData={historico} segurancaData={seguranca} onEditarAcidente={()=>setModalAcid(true)}/>
 
-      {/* ── Grid 3×2 ─────────────────────────────────────────────────── */}
-      <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gridTemplateRows:"1fr 1fr",gap:14,padding:14,overflow:"hidden"}}>
+      {/* ── Grid 3×3 ─────────────────────────────────────────────────── */}
+      <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gridTemplateRows:"1fr 1fr 1fr",gap:14,padding:14,overflow:"hidden"}}>
         <PainelMural       pendenciasData={pendencias} chamadosData={chamados}    setTela={setTela}/>
         <PainelChamados    chamadosData={chamados}                                setTela={setTela}/>
         <PainelCleaners    cleanersData={cleaners}     cleanersHistData={cleanersHist} sedimData={sedim} setTela={setTela}/>
         <PainelTendencia   cleanersHistData={cleanersHist}                          setTela={setTela}/>
         <PainelAlturaUnits historicoData={historico}                              setTela={setTela}/>
         <PainelChecklists  historicoData={historico}                              setTela={setTela}/>
+        {/* Carrossel */}
+        <PainelCard title="Galeria da Linha" icon="🖼️" corTopo={C.blueLight} onClick={()=>{}}>
+          <div style={{flex:1,minHeight:120}}>
+            <CarrosselViewer/>
+          </div>
+        </PainelCard>
+        {/* Avarias — Em breve */}
+        <PainelCard title="Avarias por Turno" icon="📦" corTopo={C.textDim} onClick={()=>{}}>
+          <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,opacity:0.45}}>
+            <span style={{fontSize:36}}>📊</span>
+            <span style={{fontSize:13,color:C.textMuted,fontWeight:700,letterSpacing:"0.04em"}}>Em breve</span>
+            <span style={{fontSize:10,color:C.textDim,textAlign:"center",maxWidth:160,lineHeight:1.5}}>Validação de avarias por turno · em desenvolvimento</span>
+          </div>
+        </PainelCard>
+        {/* Slot livre */}
+        <div style={{borderRadius:14,border:`1px dashed rgba(60,255,140,0.08)`,opacity:0.4}}/>
       </div>
 
       {/* ── Modal acidente ───────────────────────────────────────────── */}
