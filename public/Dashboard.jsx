@@ -605,7 +605,7 @@ function PanelAlturaChecklists({ historico, chamados, cleaners, avarias, setTela
 
       </div>
 
-      {/* ── MINI CHAMADOS + MINI SAUDE (faixa na base) ── */}
+      {/* ── MINI CHAMADOS (faixa na base) ── */}
       {chamados && (()=>{
         const ch=chamados.filter(c=>c.status==="aberto");
         const total=ch.length;
@@ -613,63 +613,25 @@ function PanelAlturaChecklists({ historico, chamados, cleaners, avarias, setTela
         const cnt=(k)=>ch.filter(c=>c.prazo===k).length;
         const nIme=cnt("Imediato");
         const cSap=nIme>0?C.red:cnt("Urgente")>0?C.orange:total>0?C.amber:C.green;
-        // saude score
-        const foraTotal=Object.keys((cleaners||{}).M2||{}).length+Object.keys((cleaners||{}).M3||{}).length;
-        const eficCln=Math.round(((CLN_TOTAL*2)-foraTotal)/(CLN_TOTAL*2)*100);
-        const chkEsp=9,chkFeito=ct.filter(h=>["rotina","cortadeira","enf_qualidade"].includes(h.tipoId)).length;
-        const eficChk=Math.round(Math.min(chkFeito/chkEsp,1)*100);
-        const eficCham=Math.max(0,100-cnt("Imediato")*25-cnt("Urgente")*15);
-        const avTurno=(avarias||[]).filter(r=>r.data===hj&&r.teveAvaria).reduce((s,r)=>s+r.total,0);
-        const eficAv=Math.max(0,100-avTurno*12);
-        const score=Math.round(eficCln*0.35+eficChk*0.30+eficCham*0.20+eficAv*0.15);
-        const cScore=score>=85?C.green:score>=65?C.amber:C.red;
-        const label=score>=85?"OTIMO":score>=65?"ATENCAO":"CRITICO";
-        const comps=[{l:"Cleaners",v:eficCln,c:C.cyan},{l:"Checklists",v:eficChk,c:C.purple},{l:"SAP",v:eficCham,c:C.amber},{l:"Avarias",v:eficAv,c:C.orange}];
         return(
-          <div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${C.line}`,display:"flex",gap:14}}>
-            {/* mini chamados */}
-            <div onClick={(e)=>{e.stopPropagation();setTela&&setTela("equipamentos");}}
-              style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",flexShrink:0,minWidth:220}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-                <span style={{fontFamily:mono,fontSize:9,color:C.dim,letterSpacing:"0.1em"}}>05 · SAP</span>
-                <span style={{width:3,height:3,borderRadius:"50%",background:cSap,boxShadow:`0 0 4px ${cSap}`}}/>
-                <span style={{fontFamily:mono,fontSize:22,fontWeight:900,color:cSap,lineHeight:1,
-                  textShadow:`0 0 12px ${cSap}66`}}>{total}</span>
-                <span style={{fontFamily:sans,fontSize:9,color:C.dim}}>abertos</span>
-              </div>
-              <div style={{flex:1,display:"flex",gap:5}}>
-                {prazos.map(p=>{const n=cnt(p.k);return(
-                  <div key={p.k} style={{flex:1,background:`${p.c}0c`,border:`1px solid ${p.c}${n>0?"44":"18"}`,
-                    borderRadius:7,padding:"4px 5px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontFamily:sans,fontSize:8,color:C.dim}}>{p.k.slice(0,4).toUpperCase()}</span>
-                    <span style={{fontFamily:mono,fontSize:14,fontWeight:900,color:n>0?p.c:C.dim}}>{n}</span>
-                  </div>
-                );})}
-              </div>
+          <div onClick={(e)=>{e.stopPropagation();setTela&&setTela("equipamentos");}}
+            style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${C.line}`,
+              display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+              <span style={{fontFamily:mono,fontSize:9,color:C.dim,letterSpacing:"0.1em"}}>05 · SAP</span>
+              <span style={{width:3,height:3,borderRadius:"50%",background:cSap,boxShadow:`0 0 4px ${cSap}`}}/>
+              <span style={{fontFamily:mono,fontSize:22,fontWeight:900,color:cSap,lineHeight:1,
+                textShadow:`0 0 12px ${cSap}66`}}>{total}</span>
+              <span style={{fontFamily:sans,fontSize:9,color:C.dim}}>abertos</span>
             </div>
-            {/* divisoria */}
-            <div style={{width:1,alignSelf:"stretch",background:`linear-gradient(180deg,transparent,${C.line},transparent)`,flexShrink:0}}/>
-            {/* mini saude */}
-            <div style={{flex:1,display:"flex",alignItems:"center",gap:10}}>
-              <div style={{flexShrink:0,textAlign:"center"}}>
-                <div style={{fontFamily:mono,fontSize:28,fontWeight:900,color:cScore,lineHeight:1,
-                  textShadow:`0 0 16px ${cScore}88`}}>{score}%</div>
-                <div style={{fontFamily:mono,fontSize:8,color:cScore,letterSpacing:"0.12em",marginTop:2}}>{label}</div>
-                <div style={{fontFamily:sans,fontSize:7,color:C.dim,letterSpacing:"0.08em",marginTop:1}}>08 · SAUDE</div>
-              </div>
-              <div style={{flex:1,display:"flex",flexDirection:"column",gap:5}}>
-                {comps.map(comp=>(
-                  <div key={comp.l} style={{display:"flex",alignItems:"center",gap:7}}>
-                    <span style={{fontFamily:sans,fontSize:8,color:C.dim,minWidth:52}}>{comp.l}</span>
-                    <div style={{flex:1,height:4,borderRadius:2,background:`${comp.c}14`,overflow:"hidden",position:"relative"}}>
-                      <div style={{height:"100%",width:`${comp.v}%`,borderRadius:2,
-                        background:`linear-gradient(90deg,${comp.c}66,${comp.c})`,
-                        boxShadow:`0 0 5px ${comp.c}88`,transition:"width .8s"}}/>
-                    </div>
-                    <span style={{fontFamily:mono,fontSize:10,fontWeight:900,color:comp.v>=70?comp.c:comp.v>=40?C.amber:C.red,minWidth:28,textAlign:"right"}}>{comp.v}%</span>
-                  </div>
-                ))}
-              </div>
+            <div style={{flex:1,display:"flex",gap:5}}>
+              {prazos.map(p=>{const n=cnt(p.k);return(
+                <div key={p.k} style={{flex:1,background:`${p.c}0c`,border:`1px solid ${p.c}${n>0?"44":"18"}`,
+                  borderRadius:7,padding:"4px 5px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontFamily:sans,fontSize:8,color:C.dim}}>{p.k.slice(0,4).toUpperCase()}</span>
+                  <span style={{fontFamily:mono,fontSize:14,fontWeight:900,color:n>0?p.c:C.dim}}>{n}</span>
+                </div>
+              );})}
             </div>
           </div>
         );
