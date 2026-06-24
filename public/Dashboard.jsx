@@ -5,6 +5,7 @@
 import * as React from "react";
 import { COL, doc, onSnapshot, setDoc, getDoc } from "./firebase";
 import { CarrosselViewer } from "./carrossel";
+import { PainelAvariasTV } from "./avarias";
 
 const C = {
   bg:"#04111D", surface:"#071828", card:"#0A1929", cardHover:"#0D2140",
@@ -666,6 +667,7 @@ export default function DashboardTV({ setTela, setModoVisao }) {
   const [historico,   setHistorico]   = React.useState(()=>storageGet("historico_h2")||[]);
   const [pendencias,  setPendencias]  = React.useState(()=>storageGet("pendencias_h2")||[]);
   const [seguranca,   setSeguranca]   = React.useState(()=>storageGet("seguranca_h2")||{});
+  const [avarias,     setAvarias]     = React.useState(()=>storageGet("avarias_h2")||[]);
   const [modalAcid,   setModalAcid]   = React.useState(false);
 
   React.useEffect(()=>{
@@ -678,6 +680,7 @@ export default function DashboardTV({ setTela, setModoVisao }) {
       onSnapshot(doc(COL,"historico_h2"),   s=>{if(s.exists()&&s.data().val)setHistorico(s.data().val);}),
       onSnapshot(doc(COL,"pendencias_h2"),  s=>{if(s.exists()&&s.data().val)setPendencias(s.data().val);}),
       onSnapshot(doc(COL,"seguranca_h2"),   s=>{if(s.exists()&&s.data().val)setSeguranca(s.data().val);}),
+      onSnapshot(doc(COL,"avarias_h2"),     s=>{if(s.exists()&&s.data().val)setAvarias(s.data().val);}),
     ];
     return()=>unsubs.forEach(u=>u());
   },[]);
@@ -743,14 +746,8 @@ export default function DashboardTV({ setTela, setModoVisao }) {
             <CarrosselViewer/>
           </div>
         </PainelCard>
-        {/* Avarias — Em breve */}
-        <PainelCard title="Avarias por Turno" icon="📦" corTopo={C.textDim} onClick={()=>{}}>
-          <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,opacity:0.45}}>
-            <span style={{fontSize:36}}>📊</span>
-            <span style={{fontSize:13,color:C.textMuted,fontWeight:700,letterSpacing:"0.04em"}}>Em breve</span>
-            <span style={{fontSize:10,color:C.textDim,textAlign:"center",maxWidth:160,lineHeight:1.5}}>Validação de avarias por turno · em desenvolvimento</span>
-          </div>
-        </PainelCard>
+        {/* Avarias */}
+        <PainelAvariasTV avariasData={avarias} setTela={setTela}/>
         {/* Slot livre */}
         <div style={{borderRadius:14,border:`1px dashed rgba(60,255,140,0.08)`,opacity:0.4}}/>
       </div>
