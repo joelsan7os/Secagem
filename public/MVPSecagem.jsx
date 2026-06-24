@@ -467,6 +467,7 @@ const CATALOGO = [
   { id:"enf_qualidade",    label:"Check List Qualidade",icon:"", desc:"Qualidade do fardo — todas as linhas",                 porMaquina:false, tipo:"enf",      area:"enf", getItems:()=>checklistEnfardamento },
   { id:"rota_enf",         label:"Rota Enfardamento",   icon:"", desc:"Inspeção por turno — todos os equipamentos",           porMaquina:true,  tipo:"rota_enf", area:"enf", getItems:()=>checklistRotaEnfardamento },
   { id:"barcode_enf",      label:"Validação de Fardos", icon:"📦", desc:"Leitura de código de barras — Lado A / Lado B",        porMaquina:false, tipo:"barcode_enf",area:"enf", getItems:()=>[] },
+  { id:"avaria_enf",       label:"Inspeção de Avarias", icon:"⚠️", desc:"Registro de avarias por unit — capa, arame, impressão", porMaquina:false, tipo:"avaria_enf", area:"enf", getItems:()=>[] },
 ];
 
 
@@ -477,6 +478,7 @@ import { TelaAuth, usePerfilAtivo, FUNCOES, validarPin } from "./auth";
 import { PainelAdmin } from "./admin";
 import { CleanersTela, RelatorioCleaners, CLEANERS_TOTAL } from "./cleaners";
 import { BarcodeModal } from "./barcode";
+import { AvariasTela } from "./avarias";
 import { MuralOportunidades } from "./pendencias";
 // Dashboard TV carregado de forma tolerante: se o arquivo ainda não existir no
 // repo, o app NÃO quebra — o modo dashboard apenas fica indisponível até subir.
@@ -2019,6 +2021,8 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
         <EnfardamentoTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):tipo?.tipo==="barcode_enf"?(
         <BarcodeSeletorTela/>
+      ):tipo?.tipo==="avaria_enf"?(
+        <AvariasTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):tipo?.tipo==="rejeicao"?(
         <RejeicaoTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):tipo?.tipo==="wft"?(
