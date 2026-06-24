@@ -845,11 +845,11 @@ export default function DashboardTV({ setTela, setModoVisao }) {
 
         {/* grid principal: 4 col x 2 linhas + faixa */}
         <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gridTemplateRows:"1fr 1fr",gap:12,minHeight:0}}>
-          {/* linha 1 — Cleaners + Mural dobrado (M2/M3) + Avarias */}
+          {/* linha 1 — Cleaners + Mural M2+M3 (span2) + Avarias */}
           <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
           <div style={{gridColumn:"span 2"}}><PanelMural pendencias={pendencias} chamados={chamados} ocorrencias={ocorrencias} setTela={setTela}/></div>
           <PanelAvarias avarias={avarias} setTela={setTela}/>
-          {/* linha 2 — Altura+Checklists horizontal (span 2) + Chamados + Carrossel */}
+          {/* linha 2 — Altura+Checklists (span2) + Chamados + Carrossel */}
           <div style={{gridColumn:"span 2"}}><PanelAlturaChecklists historico={historico} setTela={setTela}/></div>
           <PanelChamados chamados={chamados} setTela={setTela}/>
           <div className="cmd-card" style={{padding:0,overflow:"hidden",position:"relative"}}>
