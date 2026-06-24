@@ -953,7 +953,7 @@ export default function DashboardTV({ setTela, setModoVisao }) {
         <HeroBar historico={historico} seguranca={seguranca} cleaners={cleaners} cleanersHist={cleanersHist} avarias={avarias} onEditAcid={()=>setModalAcid(true)}/>
 
         {/* grid principal: 4 col x 2 linhas + faixa */}
-        <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gridTemplateRows:"1fr 1fr auto",gap:12,minHeight:0,overflow:"hidden"}}>
+        <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gridTemplateRows:"1fr auto auto",gap:12,minHeight:0,overflow:"hidden"}}>
           {/* linha 1 — Cleaners + Mural M2+M3 (span2) + Avarias */}
           <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
           <div style={{gridColumn:"span 2"}}><PanelMural pendencias={pendencias} chamados={chamados} cleaners={cleaners} ocorrencias={ocorrencias} setTela={setTela}/></div>
