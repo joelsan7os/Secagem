@@ -181,7 +181,7 @@ export function PainelCarrossel() {
           </button>
         )}
         <input ref={inputRef} type="file" accept="image/*" onChange={onFileChange}
-          style={{ display: "none" }} capture="environment"/>
+          style={{ display: "none" }}/>
       </div>
 
       {/* ── Lista de imagens ── */}
