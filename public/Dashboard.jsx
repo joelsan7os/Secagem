@@ -849,21 +849,19 @@ export default function DashboardTV({ setTela, setModoVisao }) {
           <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
           <div style={{gridColumn:"span 2"}}><PanelMural pendencias={pendencias} chamados={chamados} ocorrencias={ocorrencias} setTela={setTela}/></div>
           <PanelAvarias avarias={avarias} setTela={setTela}/>
-          {/* linha 2 — Altura+Checklists horizontal (span 2) + Chamados + slot livre */}
+          {/* linha 2 — Altura+Checklists horizontal (span 2) + Chamados + Carrossel */}
           <div style={{gridColumn:"span 2"}}><PanelAlturaChecklists historico={historico} setTela={setTela}/></div>
           <PanelChamados chamados={chamados} setTela={setTela}/>
-          <div/>
-        </div>
-
-        {/* faixa inferior: galeria + ticker */}
-        <div style={{display:"flex",gap:12,marginTop:12,height:96,flexShrink:0}}>
-          <div className="cmd-card" style={{width:280,padding:0,overflow:"hidden",flexShrink:0,position:"relative"}}>
+          <div className="cmd-card" style={{padding:0,overflow:"hidden",position:"relative"}}>
             <Corners c={C.blue}/>
             <CarrosselViewer/>
           </div>
+        </div>
+
+        {/* faixa inferior: ticker + status */}
+        <div style={{display:"flex",gap:12,marginTop:12,height:56,flexShrink:0}}>
           <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
             <Ticker historico={historico} chamados={chamados} avarias={avarias}/>
-            {/* mini status strip */}
             <div className="cmd-card" style={{flex:1,padding:"0 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <Corners/>
               {[
