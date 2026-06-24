@@ -553,30 +553,33 @@ function PanelAlturaChecklists({ historico, setTela }) {
       <div onClick={()=>setTela&&setTela("checklist")} style={{cursor:"pointer",flex:1}}>
         <PanelHead code="06" title="Checklists do Turno" accent={cChk}
           right={<span style={{fontFamily:mono,fontSize:9,color:C.dim}}>{feito}/{esp} · {turno}</span>}/>
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {blocos.map(b=>{
-            const c=b.f===b.e?C.green:b.f===0?C.red:C.amber;
-            return (
-              <div key={b.l}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    <div style={{width:6,height:6,borderRadius:2,background:b.c,boxShadow:`0 0 4px ${b.c}88`}}/>
-                    <span style={{fontFamily:sans,fontSize:9,color:C.mute}}>{b.l}</span>
+        <div style={{display:"flex",gap:12,alignItems:"center"}}>
+          <RadialGauge value={feito} max={esp} size={88} stroke={8} color={cChk} label="LANCAMENTOS" sub={`/${esp}`} idk="chk"/>
+          <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
+            {blocos.map(b=>{
+              const c=b.f===b.e?C.green:b.f===0?C.red:C.amber;
+              return (
+                <div key={b.l}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <div style={{width:6,height:6,borderRadius:2,background:b.c,boxShadow:`0 0 4px ${b.c}88`}}/>
+                      <span style={{fontFamily:sans,fontSize:9,color:C.mute}}>{b.l}</span>
+                    </div>
+                    <span style={{fontFamily:mono,fontSize:10,fontWeight:900,color:c}}>{b.f}/{b.e}</span>
                   </div>
-                  <span style={{fontFamily:mono,fontSize:10,fontWeight:900,color:c}}>{b.f}/{b.e}</span>
+                  <div style={{display:"flex",gap:3}}>
+                    {b.mq.map((m,i)=>{
+                      const ok=ct.some(h=>h.tipoId===b.t&&(h.maquina===m||h.linha===m));
+                      return <div key={i} style={{flex:1,height:5,borderRadius:3,
+                        background:ok?b.c:C.faint,
+                        boxShadow:ok?`0 0 5px ${b.c}aa`:"none",
+                        transition:"background .4s, box-shadow .4s"}}/>;
+                    })}
+                  </div>
                 </div>
-                <div style={{display:"flex",gap:3}}>
-                  {b.mq.map((m,i)=>{
-                    const ok=ct.some(h=>h.tipoId===b.t&&(h.maquina===m||h.linha===m));
-                    return <div key={i} style={{flex:1,height:6,borderRadius:3,
-                      background:ok?b.c:C.faint,
-                      boxShadow:ok?`0 0 6px ${b.c}aa`:"none",
-                      transition:"background .4s, box-shadow .4s"}}/>;
-                  })}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
