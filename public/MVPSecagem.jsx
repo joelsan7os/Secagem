@@ -1206,17 +1206,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                 </div>
               );
             })()}
-            {critList.length>0&&(
-              <div style={{background:C.card,border:`1px solid ${C.dangerLight}33`,borderTop:`2px solid ${C.dangerLight}`,borderRadius:12,padding:"13px 14px",marginBottom:10}}>
-                <SecH n="06" t="Equipamentos Críticos" cor={C.dangerLight}/>
-                {critList.map(e=>(
-                  <div key={e.id} onClick={()=>setTela("equipamentos")} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 8px",borderRadius:7,marginBottom:3,background:"rgba(255,82,82,0.06)",cursor:"pointer"}}>
-                    <span style={{color:C.text,fontSize:11,fontWeight:600}}>{e.nome}</span>
-                    <span style={{color:C.textDim,fontSize:9}}>{e.tag} · {e.sub}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Avarias removidas daqui - ver analytics no histórico */}
 
           </div>
         );
