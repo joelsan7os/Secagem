@@ -958,12 +958,13 @@ export default function DashboardTV({ setTela, setModoVisao }) {
           <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
           <div style={{gridColumn:"span 2"}}><PanelMural pendencias={pendencias} chamados={chamados} cleaners={cleaners} ocorrencias={ocorrencias} setTela={setTela}/></div>
           <PanelAvarias avarias={avarias} setTela={setTela}/>
-          {/* linha 2 — Altura+Checklists+Chamados (span2) + Avarias + Carrossel */}
+          {/* linha 2 — Altura+Checklists+Chamados (span2) + Carrossel (span2) */}
           <div style={{gridColumn:"span 2"}}><PanelAlturaChecklists historico={historico} chamados={chamados} cleaners={cleaners} avarias={avarias} setTela={setTela}/></div>
-          <PanelAvarias avarias={avarias} setTela={setTela}/>
-          <div className="cmd-card" style={{padding:0,overflow:"hidden",position:"relative"}}>
-            <Corners c={C.blue}/>
-            <CarrosselViewer/>
+          <div style={{gridColumn:"span 2"}} className="cmd-card">
+            <div style={{width:"100%",height:"100%",position:"relative",borderRadius:16,overflow:"hidden"}}>
+              <Corners c={C.blue}/>
+              <CarrosselViewer/>
+            </div>
           </div>
           {/* linha 3 — Saude horizontal (span2) */}
           <div style={{gridColumn:"span 2"}}><PanelSaude cleaners={cleaners} historico={historico} chamados={chamados} avarias={avarias}/></div>
