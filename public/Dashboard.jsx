@@ -68,9 +68,9 @@ const Corners = ({c=C.green}) => (
 const PanelHead = ({ code, title, accent=C.green, right }) => (
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
     <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
-      <span style={{fontFamily:mono,fontSize:9,fontWeight:700,color:accent,opacity:.65,letterSpacing:"0.1em"}}>{code}</span>
+      <span style={{fontFamily:mono,fontSize:10,fontWeight:700,color:accent,opacity:.75,letterSpacing:"0.1em"}}>{code}</span>
       <span style={{width:3,height:3,borderRadius:"50%",background:accent,boxShadow:`0 0 5px ${accent}`}}/>
-      <span style={{fontFamily:sans,fontSize:10.5,fontWeight:800,color:C.mute,letterSpacing:"0.16em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{title}</span>
+      <span style={{fontFamily:sans,fontSize:13,fontWeight:800,color:C.mute,letterSpacing:"0.16em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{title}</span>
     </div>
     {right}
   </div>
@@ -188,10 +188,10 @@ function HeroBar({ historico, seguranca, cleaners, cleanersHist, avarias, onEdit
       </div>
       <div style={{minWidth:0}}>
         <div style={{display:"flex",alignItems:"baseline",gap:3}}>
-          <span style={{fontFamily:mono,fontSize:30,fontWeight:900,color,lineHeight:1,textShadow:`0 0 16px ${color}66`}}>{val??"--"}</span>
+          <span style={{fontFamily:mono,fontSize:36,fontWeight:900,color,lineHeight:1,textShadow:`0 0 16px ${color}66`}}>{val??"--"}</span>
           <span style={{fontFamily:mono,fontSize:11,color:C.dim}}>{unit}</span>
         </div>
-        <div style={{fontFamily:sans,fontSize:8.5,color:C.dim,letterSpacing:"0.1em",textTransform:"uppercase",marginTop:2,whiteSpace:"nowrap"}}>{label}</div>
+        <div style={{fontFamily:sans,fontSize:10.5,color:C.dim,letterSpacing:"0.1em",textTransform:"uppercase",marginTop:2,whiteSpace:"nowrap"}}>{label}</div>
       </div>
     </div>
   );
@@ -325,16 +325,16 @@ function PanelMural({ pendencias, chamados, chamadosRaw, cleaners, historicoRaw,
                 border:`1.5px solid ${C.red}`,animation:"cmd-ring 1.6s ease-out infinite"}}/>}
             </div>
             <div>
-              <div style={{fontFamily:sans,fontSize:13,fontWeight:900,color:C.ink,
+              <div style={{fontFamily:sans,fontSize:15,fontWeight:900,color:C.ink,
                 letterSpacing:"0.06em",textShadow:critico?`0 0 12px ${C.red}66`:"none"}}>
                 MAQUINA {mq.replace("M","")}
               </div>
-              <div style={{fontFamily:mono,fontSize:8,color:C.dim,marginTop:1,letterSpacing:"0.1em"}}>{linhas}</div>
+              <div style={{fontFamily:mono,fontSize:10,color:C.dim,marginTop:1,letterSpacing:"0.1em"}}>{linhas}</div>
             </div>
           </div>
           {/* total destaque */}
           <div style={{textAlign:"right"}}>
-            <div style={{fontFamily:mono,fontSize:36,fontWeight:900,color:cor,lineHeight:1,
+            <div style={{fontFamily:mono,fontSize:42,fontWeight:900,color:cor,lineHeight:1,
               textShadow:`0 0 18px ${cor}88`}}>{d.total}</div>
             <div style={{fontFamily:sans,fontSize:7,color:C.dim,letterSpacing:"0.12em",marginTop:2}}>PENDENCIAS</div>
           </div>
@@ -349,7 +349,7 @@ function PanelMural({ pendencias, chamados, chamadosRaw, cleaners, historicoRaw,
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                   <div style={{width:8,height:8,borderRadius:3,background:a.c,
                     boxShadow:`0 0 ${v>0?8:3}px ${a.c}${v>0?"bb":"44"}`,flexShrink:0}}/>
-                  <span style={{fontFamily:sans,fontSize:10,fontWeight:700,
+                  <span style={{fontFamily:sans,fontSize:12,fontWeight:700,
                     color:a.c,flex:1,letterSpacing:"0.05em",
                     textShadow:v>0?`0 0 8px ${a.c}66`:"none",
                     opacity:v>0?1:0.45}}>{a.l}</span>
@@ -357,7 +357,7 @@ function PanelMural({ pendencias, chamados, chamadosRaw, cleaners, historicoRaw,
                     color:v>0?a.c:C.dim,minWidth:20,textAlign:"right",
                     textShadow:v>0?`0 0 8px ${a.c}88`:"none"}}>{v}</span>
                 </div>
-                <div style={{height:3,borderRadius:2,background:`${a.c}15`,overflow:"hidden",position:"relative"}}>
+                <div style={{height:5,borderRadius:3,background:`${a.c}15`,overflow:"hidden",position:"relative"}}>
                   {/* barra base dim sempre visivel */}
                   <div style={{position:"absolute",inset:0,background:`${a.c}18`}}/>
                   {/* barra de preenchimento */}
@@ -378,7 +378,7 @@ function PanelMural({ pendencias, chamados, chamadosRaw, cleaners, historicoRaw,
               background:`${s.c}${s.n>0?"14":"08"}`,
               border:`1px solid ${s.c}${s.n>0?"55":"18"}`,
               boxShadow:s.n>0?`0 0 8px ${s.c}22`:"none"}}>
-              <div style={{fontFamily:mono,fontSize:18,fontWeight:900,
+              <div style={{fontFamily:mono,fontSize:22,fontWeight:900,
                 color:s.n>0?s.c:C.dim,lineHeight:1,
                 textShadow:s.n>0?`0 0 10px ${s.c}66`:"none"}}>{s.n}</div>
               <div style={{fontFamily:sans,fontSize:6.5,color:C.dim,
@@ -428,15 +428,15 @@ function PanelCleaners({ cleaners, cleanersHist, sedim, setTela }) {
     const sp=sparkMq(mq);
     return (
       <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-        <RadialGauge value={efic} size={104} stroke={8} color={c} label={`MAQUINA ${mq.replace("M","")}`} sub="%" idk={idk}/>
+        <RadialGauge value={efic} size={118} stroke={9} color={c} label={`MAQUINA ${mq.replace("M","")}`} sub="%" idk={idk}/>
         <div style={{display:"flex",gap:10,fontFamily:mono,fontSize:10}}>
           <span style={{color:C.green}}>{op}<span style={{color:C.dim,fontSize:8}}>op</span></span>
           <span style={{color:fora>0?C.amber:C.dim}}>{fora}<span style={{color:C.dim,fontSize:8}}>fora</span></span>
         </div>
         <div style={{width:"100%",background:"rgba(255,255,255,0.03)",borderRadius:6,padding:"4px 6px",display:"flex",alignItems:"center",gap:5}}>
-          <span style={{fontFamily:mono,fontSize:7,color:C.dim}}>7D</span>
+          <span style={{fontFamily:mono,fontSize:9,color:C.dim}}>7D</span>
           <div style={{flex:1}}><Spark data={sp} color={c} w={68} h={18} idk={"clsp"+idk}/></div>
-          <span style={{fontFamily:mono,fontSize:9,fontWeight:900,color:c}}>{sp[sp.length-1]}%</span>
+          <span style={{fontFamily:mono,fontSize:11,fontWeight:900,color:c}}>{sp[sp.length-1]}%</span>
         </div>
       </div>
     );
@@ -468,12 +468,12 @@ function PanelCleaners({ cleaners, cleanersHist, sedim, setTela }) {
       </div>
       {/* Top 3 motivos de retirada */}
       <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${C.line}`,flex:1}}>
-        <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginBottom:8}}>PRINCIPAIS MOTIVOS · FORA DE OP.</div>
+        <div style={{fontFamily:sans,fontSize:10,color:C.dim,letterSpacing:"0.12em",marginBottom:8}}>PRINCIPAIS MOTIVOS · FORA DE OP.</div>
         {top3Mot.length>0?top3Mot.map((t,i)=>(
           <div key={t.m} style={{marginBottom:i<top3Mot.length-1?7:0}}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
               <span style={{fontFamily:sans,fontSize:9,color:C.mute}}><span style={{fontFamily:mono,color:C.dim,marginRight:5}}>{i+1}</span>{t.m}</span>
-              <span style={{fontFamily:mono,fontSize:11,fontWeight:900,color:motCor(t.m)}}>{t.n}</span>
+              <span style={{fontFamily:mono,fontSize:13,fontWeight:900,color:motCor(t.m)}}>{t.n}</span>
             </div>
             <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.04)",overflow:"hidden"}}>
               <div style={{height:"100%",width:`${t.n/maxMot*100}%`,background:motCor(t.m),borderRadius:2,boxShadow:`0 0 5px ${motCor(t.m)}`,transition:"width .6s"}}/>
@@ -550,7 +550,7 @@ function PanelAlturaChecklists({ historico, chamados, setTela }) {
               const barH=d.v!=null?Math.max(8,H-yOf(d.v)):4;
               return (
                 <div key={d.l} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative",zIndex:1}}>
-                  <span style={{fontFamily:mono,fontSize:9,fontWeight:900,color:c,textShadow:d.v!=null?`0 0 6px ${c}88`:"none"}}>
+                  <span style={{fontFamily:mono,fontSize:12,fontWeight:900,color:c,textShadow:d.v!=null?`0 0 6px ${c}88`:"none"}}>
                     {d.v!=null?d.v.toFixed(2):"--"}
                   </span>
                   <div style={{width:"100%",maxWidth:30,height:barH,borderRadius:"4px 4px 2px 2px",
@@ -559,7 +559,7 @@ function PanelAlturaChecklists({ historico, chamados, setTela }) {
                     border:`1px solid ${c}55`,transition:"height .6s",transformOrigin:"bottom",position:"relative"}}>
                     <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:c,borderRadius:2,boxShadow:`0 0 5px ${c}`}}/>
                   </div>
-                  <span style={{fontFamily:sans,fontSize:8,fontWeight:700,color:dentro?C.mute:c}}>{d.l}</span>
+                  <span style={{fontFamily:sans,fontSize:10,fontWeight:700,color:dentro?C.mute:c}}>{d.l}</span>
                 </div>
               );
             })}
@@ -574,7 +574,7 @@ function PanelAlturaChecklists({ historico, chamados, setTela }) {
           <PanelHead code="06" title="Checklists do Turno" accent={cChk}
             right={<span style={{fontFamily:mono,fontSize:9,color:C.dim}}>{feito}/{esp} · {turno}</span>}/>
           <div style={{display:"flex",gap:12,alignItems:"center",flex:1}}>
-            <RadialGauge value={feito} max={esp} size={88} stroke={8} color={cChk} label="LANCAMENTOS" sub={`/${esp}`} idk="chk"/>
+            <RadialGauge value={feito} max={esp} size={100} stroke={9} color={cChk} label="LANCAMENTOS" sub={`/${esp}`} idk="chk"/>
             <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
               {blocos.map(b=>{
                 const c=b.f===b.e?C.green:b.f===0?C.red:C.amber;
@@ -583,9 +583,9 @@ function PanelAlturaChecklists({ historico, chamados, setTela }) {
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
                       <div style={{display:"flex",alignItems:"center",gap:6}}>
                         <div style={{width:6,height:6,borderRadius:2,background:b.c,boxShadow:`0 0 4px ${b.c}88`}}/>
-                        <span style={{fontFamily:sans,fontSize:9,color:C.mute}}>{b.l}</span>
+                        <span style={{fontFamily:sans,fontSize:11,color:C.mute}}>{b.l}</span>
                       </div>
-                      <span style={{fontFamily:mono,fontSize:10,fontWeight:900,color:c}}>{b.f}/{b.e}</span>
+                      <span style={{fontFamily:mono,fontSize:12,fontWeight:900,color:c}}>{b.f}/{b.e}</span>
                     </div>
                     <div style={{display:"flex",gap:3}}>
                       {b.mq.map((m,i)=>{
@@ -640,6 +640,80 @@ function PanelAlturaChecklists({ historico, chamados, setTela }) {
   );
 }
 
+// ════════ PAINEL: SAUDE OPERACIONAL (score do turno) ════════
+function PanelSaude({ cleaners, historico, chamados, avarias }) {
+  const hj=hojeISO(), turno=autoTurno();
+  // 1. Eficiencia Cleaners (peso 35%)
+  const dados=cleaners||{M2:{},M3:{}};
+  const foraTotal=Object.keys(dados.M2||{}).length+Object.keys(dados.M3||{}).length;
+  const eficCln=Math.round(((CLN_TOTAL*2)-foraTotal)/(CLN_TOTAL*2)*100);
+  // 2. Checklists lancados (peso 30%)
+  const hist=Array.isArray(historico)?historico:[];
+  const ct=hist.filter(h=>h.data===hj&&h.turno===turno);
+  const chkEsp=9; // M2+M3 rotina + cortadeira + 5 linhas qualidade
+  const chkFeito=ct.filter(h=>["rotina","cortadeira","enf_qualidade"].includes(h.tipoId)).length;
+  const eficChk=Math.round(Math.min(chkFeito/chkEsp,1)*100);
+  // 3. Chamados criticos (peso 20%) — 0 criticos=100, cada critico -20
+  const ch=Array.isArray(chamados)?chamados.filter(c=>c.status==="aberto"):[];
+  const nCrit=ch.filter(c=>c.prazo==="Imediato"||c.prazo==="Urgente").length;
+  const eficCham=Math.max(0,100-nCrit*25);
+  // 4. Avarias no turno (peso 15%) — 0=100, cada avaria -10
+  const av=Array.isArray(avarias)?avarias:[];
+  const avTurno=av.filter(r=>r.data===hj&&r.teveAvaria).reduce((s,r)=>s+r.total,0);
+  const eficAv=Math.max(0,100-avTurno*12);
+  // score final ponderado
+  const score=Math.round(eficCln*0.35+eficChk*0.30+eficCham*0.20+eficAv*0.15);
+  const cScore=score>=85?C.green:score>=65?C.amber:C.red;
+  const label=score>=85?"OTIMO":score>=65?"ATENCAO":"CRITICO";
+
+  const componentes=[
+    {l:"Cleaners",    v:eficCln,  c:C.cyan,   w:35},
+    {l:"Checklists",  v:eficChk,  c:C.purple, w:30},
+    {l:"SAP",         v:eficCham, c:C.amber,  w:20},
+    {l:"Avarias",     v:eficAv,   c:C.orange, w:15},
+  ];
+
+  return (
+    <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}}>
+      <Corners c={cScore}/>
+      <PanelHead code="08" title="Saude do Turno" accent={cScore}
+        right={<span style={{fontFamily:"monospace",fontSize:9,color:C.dim,letterSpacing:"0.1em"}}>{turno}</span>}/>
+      {/* score central */}
+      <div style={{display:"flex",alignItems:"center",gap:16,flex:1}}>
+        <div style={{position:"relative",flexShrink:0}}>
+          <RadialGauge value={score} size={124} stroke={11} color={cScore} idk="saude"/>
+          <div style={{position:"absolute",bottom:-2,left:"50%",transform:"translateX(-50%)",
+            fontFamily:"monospace",fontSize:9,fontWeight:800,color:cScore,
+            letterSpacing:"0.12em",textShadow:`0 0 8px ${cScore}88`,whiteSpace:"nowrap"}}>
+            {label}
+          </div>
+        </div>
+        {/* componentes */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:9}}>
+          {componentes.map(comp=>(
+            <div key={comp.l}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                <div style={{display:"flex",alignItems:"center",gap:5}}>
+                  <span style={{fontFamily:"monospace",fontSize:7,color:C.dim}}>{comp.w}%</span>
+                  <span style={{fontFamily:"sans-serif",fontSize:11,color:C.mute}}>{comp.l}</span>
+                </div>
+                <span style={{fontFamily:"monospace",fontSize:13,fontWeight:900,
+                  color:comp.v>=70?comp.c:comp.v>=40?C.amber:C.red}}>{comp.v}%</span>
+              </div>
+              <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.05)",overflow:"hidden",position:"relative"}}>
+                <div style={{position:"absolute",inset:0,background:`${comp.c}12`}}/>
+                <div style={{height:"100%",width:`${comp.v}%`,borderRadius:2,
+                  background:`linear-gradient(90deg,${comp.c}66,${comp.c})`,
+                  boxShadow:`0 0 6px ${comp.c}88`,transition:"width .8s cubic-bezier(.4,0,.2,1)"}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ════════ PAINEL: AVARIAS (grafico linha por turno + top3 + total) ════════
 function PanelAvarias({ avarias, setTela }) {
   const dados=Array.isArray(avarias)?avarias:[];
@@ -690,7 +764,7 @@ function PanelAvarias({ avarias, setTela }) {
     <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}} onClick={()=>setTela&&setTela("historico")}>
       <Corners c={cTop}/>
       <PanelHead code="04" title="Avarias por Turno" accent={cTop}
-        right={<span style={{fontFamily:mono,fontSize:18,fontWeight:900,color:cTop,textShadow:`0 0 12px ${cTop}66`}}>{totalMes}<span style={{fontSize:8,color:C.dim}}>/mes</span></span>}/>
+        right={<span style={{fontFamily:mono,fontSize:22,fontWeight:900,color:cTop,textShadow:`0 0 12px ${cTop}66`}}>{totalMes}<span style={{fontSize:8,color:C.dim}}>/mes</span></span>}/>
       {/* grafico de linha por turno */}
       <div style={{marginBottom:10}}>
         <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginBottom:4}}>AVARIAS POR TURNO · 10 DIAS</div>
@@ -729,8 +803,8 @@ function PanelAvarias({ avarias, setTela }) {
         {top3.map((t,i)=>(
           <div key={t.id} style={{marginBottom:i<2?7:0}}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-              <span style={{fontFamily:sans,fontSize:9,color:t.total>0?C.mute:C.dim}}><span style={{fontFamily:mono,color:C.dim,marginRight:5}}>{i+1}</span>{t.label}</span>
-              <span style={{fontFamily:mono,fontSize:11,fontWeight:900,color:t.total>0?t.cor:C.dim}}>{t.total}</span>
+              <span style={{fontFamily:sans,fontSize:11,color:t.total>0?C.mute:C.dim}}><span style={{fontFamily:mono,color:C.dim,marginRight:5}}>{i+1}</span>{t.label}</span>
+              <span style={{fontFamily:mono,fontSize:14,fontWeight:900,color:t.total>0?t.cor:C.dim}}>{t.total}</span>
             </div>
             <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.04)",overflow:"hidden"}}>
               <div style={{height:"100%",width:`${t.total/maxTop*100}%`,background:t.cor,borderRadius:2,boxShadow:t.total>0?`0 0 5px ${t.cor}`:"none",transition:"width .6s"}}/>
@@ -758,14 +832,14 @@ function PanelChamados({ chamados, setTela }) {
       <PanelHead code="05" title="Chamados / SAP" accent={cTop}/>
       <div style={{display:"flex",alignItems:"center",gap:14,flex:1}}>
         <div style={{textAlign:"center",flexShrink:0}}>
-          <div style={{fontFamily:mono,fontSize:46,fontWeight:900,color:cTop,lineHeight:1,textShadow:`0 0 20px ${cTop}66`}}>{total}</div>
+          <div style={{fontFamily:mono,fontSize:52,fontWeight:900,color:cTop,lineHeight:1,textShadow:`0 0 20px ${cTop}66`}}>{total}</div>
           <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>ABERTOS</div>
         </div>
         <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
           {prazos.map(p=>{const n=cnt(p.k);return(
             <div key={p.k} style={{background:`${p.c}0c`,border:`1px solid ${p.c}${n>0?"55":"22"}`,borderRadius:8,padding:"7px 9px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <span style={{fontFamily:sans,fontSize:8,color:C.mute,letterSpacing:"0.05em"}}>{p.k.toUpperCase()}</span>
-              <span style={{fontFamily:mono,fontSize:16,fontWeight:900,color:n>0?p.c:C.dim,textShadow:n>0?`0 0 8px ${p.c}66`:"none"}}>{n}</span>
+              <span style={{fontFamily:sans,fontSize:10,color:C.mute,letterSpacing:"0.05em"}}>{p.k.toUpperCase()}</span>
+              <span style={{fontFamily:mono,fontSize:20,fontWeight:900,color:n>0?p.c:C.dim,textShadow:n>0?`0 0 8px ${p.c}66`:"none"}}>{n}</span>
             </div>
           );})}
         </div>
@@ -808,7 +882,7 @@ function Ticker({ historico, chamados, avarias }) {
     <div style={{position:"relative",height:26,overflow:"hidden",background:"rgba(2,10,18,0.6)",borderRadius:8,border:`1px solid ${C.line}`,flexShrink:0}}>
       <div style={{position:"absolute",display:"flex",alignItems:"center",height:"100%",whiteSpace:"nowrap",animation:"cmd-marquee 40s linear infinite"}}>
         {loop.map((e,i)=>(
-          <span key={i} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"0 20px",fontFamily:mono,fontSize:9.5,color:C.mute}}>
+          <span key={i} style={{display:"inline-flex",alignItems:"center",gap:7,padding:"0 20px",fontFamily:mono,fontSize:11,color:C.mute}}>
             <span style={{width:5,height:5,borderRadius:"50%",background:e.c,boxShadow:`0 0 5px ${e.c}`,flexShrink:0}}/>
             {e.t}
           </span>
@@ -872,7 +946,7 @@ export default function DashboardTV({ setTela, setModoVisao }) {
               <span style={{fontFamily:mono,fontWeight:900,fontSize:15,color:C.green,textShadow:`0 0 10px ${C.green}`}}>H2</span>
             </div>
             <div>
-              <div style={{fontFamily:sans,fontSize:13,fontWeight:900,color:C.ink,letterSpacing:"0.08em"}}>CENTRO DE COMANDO</div>
+              <div style={{fontFamily:sans,fontSize:15,fontWeight:900,color:C.ink,letterSpacing:"0.08em"}}>CENTRO DE COMANDO</div>
               <div style={{fontFamily:mono,fontSize:8,color:C.dim,letterSpacing:"0.2em"}}>SECAGEM H2 · SUZANO · INDUSTRIA 5.0</div>
             </div>
           </div>
@@ -898,17 +972,16 @@ export default function DashboardTV({ setTela, setModoVisao }) {
 
         {/* grid principal: 4 col x 2 linhas + faixa */}
         <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gridTemplateRows:"1fr 1fr",gap:12,minHeight:0}}>
-          {/* linha 1 — Cleaners + Mural M2+M3 (span2) + Avarias */}
+          {/* linha 1 — Cleaners + Mural M2+M3 (span2) + Saude + Avarias */}
           <PanelCleaners cleaners={cleaners} cleanersHist={cleanersHist} sedim={sedim} setTela={setTela}/>
           <div style={{gridColumn:"span 2"}}><PanelMural pendencias={pendencias} chamados={chamados} cleaners={cleaners} ocorrencias={ocorrencias} setTela={setTela}/></div>
-          <PanelAvarias avarias={avarias} setTela={setTela}/>
-          {/* linha 2 — Altura+Checklists+Chamados (span2) + Carrossel (span2) */}
+          <PanelSaude cleaners={cleaners} historico={historico} chamados={chamados} avarias={avarias}/>
+          {/* linha 2 — Altura+Checklists+Chamados (span2) + Avarias + Carrossel */}
           <div style={{gridColumn:"span 2"}}><PanelAlturaChecklists historico={historico} chamados={chamados} setTela={setTela}/></div>
-          <div style={{gridColumn:"span 2"}} className="cmd-card">
-            <div style={{width:"100%",height:"100%",position:"relative",borderRadius:16,overflow:"hidden"}}>
-              <Corners c={C.blue}/>
-              <CarrosselViewer/>
-            </div>
+          <PanelAvarias avarias={avarias} setTela={setTela}/>
+          <div className="cmd-card" style={{padding:0,overflow:"hidden",position:"relative"}}>
+            <Corners c={C.blue}/>
+            <CarrosselViewer/>
           </div>
         </div>
 
@@ -928,7 +1001,7 @@ export default function DashboardTV({ setTela, setModoVisao }) {
                   <span style={{width:6,height:6,borderRadius:"50%",background:s.c,boxShadow:`0 0 6px ${s.c}`,animation:"cmd-pulse 2s infinite"}}/>
                   <div>
                     <div style={{fontFamily:mono,fontSize:7,color:C.dim,letterSpacing:"0.1em"}}>{s.l}</div>
-                    <div style={{fontFamily:mono,fontSize:10,fontWeight:800,color:s.c}}>{s.v}</div>
+                    <div style={{fontFamily:mono,fontSize:12,fontWeight:800,color:s.c}}>{s.v}</div>
                   </div>
                 </div>
               ))}
