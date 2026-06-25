@@ -51,8 +51,8 @@ const GlobalFX = () => (
     @keyframes cmd-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
     @keyframes cmd-marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
     @keyframes cmd-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-    .cmd-card{position:relative;background:linear-gradient(160deg,rgba(10,34,54,.72),rgba(4,17,29,.92));backdrop-filter:blur(14px);border-radius:16px;overflow:hidden;border:1px solid rgba(0,230,118,.18)}
-    .cmd-card::after{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(140deg,rgba(0,230,118,.55),rgba(0,230,118,.04) 45%,transparent 75%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+    .cmd-card{position:relative;background:linear-gradient(180deg,rgba(14,42,64,.82),rgba(6,19,31,.95));backdrop-filter:blur(16px);border-radius:16px;overflow:hidden;border:1px solid rgba(0,230,118,.16);box-shadow:0 10px 30px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.06) inset}
+    .cmd-card::after{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(140deg,rgba(0,230,118,.6),rgba(0,240,255,.14) 42%,transparent 72%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
     .cmd-card::before{content:'';position:absolute;top:0;bottom:0;width:60px;background:linear-gradient(90deg,transparent,rgba(0,230,118,0.055),transparent);animation:hud-scan-h 7s linear infinite;pointer-events:none;z-index:1}
     .cmd-corner{position:absolute;width:9px;height:9px;pointer-events:none;z-index:2}
   `}</style>
@@ -912,15 +912,15 @@ export default function DashboardTV({ setTela, setModoVisao }) {
   const critico=ocM2?.cor==="vermelho"||ocM3?.cor==="vermelho";
 
   return (
-    <div style={{position:"relative",minHeight:"100vh",width:"100vw",background:`radial-gradient(ellipse at 50% 0%,#0a2138 0%,${C.deep} 45%,${C.void} 100%)`,color:C.ink,fontFamily:sans,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+    <div style={{position:"relative",minHeight:"100vh",width:"100vw",background:"radial-gradient(120% 75% at 50% -8%,rgba(0,230,118,0.10),transparent 45%),radial-gradient(80% 55% at 100% 2%,rgba(0,240,255,0.055),transparent 42%),radial-gradient(70% 50% at 0% 100%,rgba(0,230,118,0.04),transparent 45%),radial-gradient(110% 110% at 50% 45%,transparent 52%,rgba(0,0,0,0.6)),linear-gradient(180deg,#06141f,#04101a 42%,#020a12)",color:C.ink,fontFamily:sans,overflow:"hidden",display:"flex",flexDirection:"column"}}>
       <GlobalFX/>
       {/* grid de fundo */}
-      <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,230,118,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(0,230,118,.055) 1px,transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,230,118,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,.045) 1px,transparent 1px)",backgroundSize:"38px 38px",maskImage:"radial-gradient(ellipse 85% 75% at 50% 32%,#000 38%,transparent 100%)",WebkitMaskImage:"radial-gradient(ellipse 85% 75% at 50% 32%,#000 38%,transparent 100%)",pointerEvents:"none"}}/>
       {/* scanline vertical */}
       <div style={{position:"absolute",left:0,right:0,height:100,background:"linear-gradient(180deg,transparent,rgba(0,230,118,0.045),transparent)",animation:"cmd-scan 12s linear infinite",pointerEvents:"none",zIndex:1}}/>
 
       {/* ═══ HEADER ═══ */}
-      <div style={{position:"relative",zIndex:10,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 22px",borderBottom:`1px solid ${C.line}`,background:"rgba(4,17,29,0.6)",backdropFilter:"blur(16px)",flexShrink:0}}>
+      <div style={{position:"relative",zIndex:10,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 22px",borderBottom:`1px solid ${C.lineHi}`,background:"linear-gradient(180deg,rgba(8,28,45,0.82),rgba(4,17,29,0.5))",backdropFilter:"blur(16px)",boxShadow:`0 6px 22px rgba(0,0,0,0.45),0 1px 0 ${C.green}18`,flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
           <div style={{display:"flex",alignItems:"center",gap:9}}>
             <div style={{position:"relative",width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center"}}>
