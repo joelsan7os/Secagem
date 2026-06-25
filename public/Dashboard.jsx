@@ -55,6 +55,7 @@ const GlobalFX = () => (
     .cmd-card::after{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(140deg,rgba(0,230,118,.9),rgba(0,240,255,.22) 40%,transparent 70%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
     .cmd-card::before{content:'';position:absolute;top:0;bottom:0;width:60px;background:linear-gradient(90deg,transparent,rgba(0,230,118,0.055),transparent);animation:hud-scan-h 7s linear infinite;pointer-events:none;z-index:1}
     .cmd-corner{position:absolute;width:9px;height:9px;pointer-events:none;z-index:2}
+    .cmd-grid{background-color:rgba(0,0,0,.24);background-image:linear-gradient(rgba(0,230,118,.085) 1px,transparent 1px),linear-gradient(90deg,rgba(0,230,118,.085) 1px,transparent 1px);background-size:16px 16px;box-shadow:inset 0 0 18px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,230,118,.07);border-radius:8px}
   `}</style>
 );
 
@@ -435,7 +436,7 @@ function PanelCleaners({ cleaners, cleanersHist, sedim, setTela }) {
           <span style={{color:C.green}}>{op}<span style={{color:C.dim,fontSize:8}}>op</span></span>
           <span style={{color:fora>0?C.amber:C.dim}}>{fora}<span style={{color:C.dim,fontSize:8}}>fora</span></span>
         </div>
-        <div style={{width:"100%",background:"rgba(255,255,255,0.03)",borderRadius:6,padding:"4px 6px",display:"flex",alignItems:"center",gap:5}}>
+        <div className="cmd-grid" style={{width:"100%",borderRadius:6,padding:"4px 6px",display:"flex",alignItems:"center",gap:5}}>
           <span style={{fontFamily:mono,fontSize:9,color:C.dim}}>7D</span>
           <div style={{flex:1}}><Spark data={sp} color={c} w={68} h={18} idk={"clsp"+idk}/></div>
           <span style={{fontFamily:mono,fontSize:11,fontWeight:900,color:c}}>{sp[sp.length-1]}%</span>
@@ -542,7 +543,7 @@ function PanelAlturaChecklists({ historico, chamados, cleaners, avarias, setTela
                 }
               </div>
             }/>
-          <div style={{flex:1,display:"flex",alignItems:"flex-end",gap:8,position:"relative"}}>
+          <div className="cmd-grid" style={{flex:1,display:"flex",alignItems:"flex-end",gap:8,position:"relative"}}>
             <div style={{position:"absolute",left:0,right:0,top:yFaixaMax,height:yFaixaMin-yFaixaMax,
               background:`${C.green}09`,borderTop:`1px dashed ${C.green}40`,borderBottom:`1px dashed ${C.green}40`,
               pointerEvents:"none",zIndex:0}}/>
@@ -676,7 +677,7 @@ function PanelSaude({ cleaners, historico, chamados, avarias }) {
         <div style={{fontFamily:sans,fontSize:7,color:C.dim,letterSpacing:"0.1em",marginTop:1}}>08 · SAUDE DO TURNO</div>
       </div>
       <div style={{width:1,alignSelf:"stretch",background:`linear-gradient(180deg,transparent,${C.line},transparent)`}}/>
-      <div style={{flex:1,display:"flex",flexDirection:"column",gap:7}}>
+      <div className="cmd-grid" style={{flex:1,display:"flex",flexDirection:"column",gap:7,padding:"8px 10px"}}>
         {comps.map(comp=>(
           <div key={comp.l} style={{display:"flex",alignItems:"center",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:5,minWidth:76,flexShrink:0}}>
@@ -759,8 +760,10 @@ function PanelAvarias({ avarias, setTela }) {
                 <stop offset="0%" stopColor={cTop} stopOpacity="0.28"/><stop offset="100%" stopColor={cTop} stopOpacity="0.01"/>
               </linearGradient>
             </defs>
-            {/* grid horizontal */}
-            {[0,0.5,1].map(g=>{const y=PT+PLOT-g*PLOT;return <line key={g} x1={PT} y1={y} x2={W-PT} y2={y} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>;})}
+            {/* fundo recuado + grade quadriculada */}
+            <rect x={PT} y={PT} width={W-PT*2} height={PLOT} fill="rgba(0,0,0,0.25)" rx="3"/>
+            {[0,0.25,0.5,0.75,1].map(g=>{const y=PT+PLOT-g*PLOT;return <line key={"h"+g} x1={PT} y1={y} x2={W-PT} y2={y} stroke="rgba(0,230,118,0.085)" strokeWidth="1"/>;})}
+            {Array.from({length:11}).map((_,i)=>{const x=PT+(i/10)*(W-PT*2);return <line key={"v"+i} x1={x} y1={PT} x2={x} y2={PT+PLOT} stroke="rgba(0,230,118,0.06)" strokeWidth="1"/>;})}
             <path d={area} fill="url(#avLineFill)"/>
             <path d={line} fill="none" stroke={cTop} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" style={{filter:`drop-shadow(0 0 4px ${cTop}aa)`}}/>
             {/* bolinhas por turno */}
