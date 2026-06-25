@@ -208,8 +208,8 @@ export function PainelCarrossel() {
                       setPos({x:nx,y:ny}); }}
                     onPointerUp={()=>{ dragRef.current=null; }}
                     onPointerLeave={()=>{ dragRef.current=null; }}
-                    style={{ position:"relative", width:"100%", height:frameW/ratio, marginBottom:8,
-                      borderRadius:8, overflow:"hidden", border:`1px solid ${C.accent}55`,
+                    style={{ position:"relative", width:"100%", maxWidth:Math.round(340*ratio), height:frameW/ratio,
+                      margin:"0 auto 8px", borderRadius:8, overflow:"hidden", border:`1px solid ${C.accent}55`,
                       background:"#010810", cursor:"grab", touchAction:"none" }}>
                     <img src={preview.base64} alt="recorte" draggable={false}
                       style={{ position:"absolute", left:pos.x, top:pos.y, width:preview.w*ds, height:preview.h*ds,
