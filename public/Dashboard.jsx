@@ -51,8 +51,8 @@ const GlobalFX = () => (
     @keyframes cmd-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
     @keyframes cmd-marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
     @keyframes cmd-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-    .cmd-card{position:relative;background:linear-gradient(180deg,rgba(14,42,64,.82),rgba(6,19,31,.95));backdrop-filter:blur(16px);border-radius:16px;overflow:hidden;border:1px solid rgba(0,230,118,.16);box-shadow:0 10px 30px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.06) inset}
-    .cmd-card::after{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(140deg,rgba(0,230,118,.6),rgba(0,240,255,.14) 42%,transparent 72%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+    .cmd-card{position:relative;background:linear-gradient(180deg,rgba(18,52,78,.88),rgba(5,17,28,.96));backdrop-filter:blur(16px);border-radius:16px;overflow:hidden;border:1px solid rgba(0,230,118,.3);box-shadow:0 0 24px rgba(0,230,118,.06),0 14px 34px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.09) inset,0 0 0 1px rgba(0,230,118,.05) inset}
+    .cmd-card::after{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(140deg,rgba(0,230,118,.9),rgba(0,240,255,.22) 40%,transparent 70%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
     .cmd-card::before{content:'';position:absolute;top:0;bottom:0;width:60px;background:linear-gradient(90deg,transparent,rgba(0,230,118,0.055),transparent);animation:hud-scan-h 7s linear infinite;pointer-events:none;z-index:1}
     .cmd-corner{position:absolute;width:9px;height:9px;pointer-events:none;z-index:2}
   `}</style>
@@ -912,7 +912,7 @@ export default function DashboardTV({ setTela, setModoVisao }) {
   const critico=ocM2?.cor==="vermelho"||ocM3?.cor==="vermelho";
 
   return (
-    <div style={{position:"relative",minHeight:"100vh",width:"100vw",background:"radial-gradient(120% 75% at 50% -8%,rgba(0,230,118,0.10),transparent 45%),radial-gradient(80% 55% at 100% 2%,rgba(0,240,255,0.055),transparent 42%),radial-gradient(70% 50% at 0% 100%,rgba(0,230,118,0.04),transparent 45%),radial-gradient(110% 110% at 50% 45%,transparent 52%,rgba(0,0,0,0.6)),linear-gradient(180deg,#06141f,#04101a 42%,#020a12)",color:C.ink,fontFamily:sans,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+    <div style={{position:"relative",minHeight:"100vh",width:"100vw",background:"radial-gradient(130% 85% at 50% -12%,rgba(0,230,118,0.20),transparent 48%),radial-gradient(85% 60% at 100% 0%,rgba(0,240,255,0.10),transparent 45%),radial-gradient(70% 55% at 0% 100%,rgba(0,230,118,0.07),transparent 48%),radial-gradient(120% 120% at 50% 48%,transparent 42%,rgba(0,0,0,0.78)),linear-gradient(180deg,#0a1f30,#05121e 45%,#010810)",color:C.ink,fontFamily:sans,overflow:"hidden",display:"flex",flexDirection:"column"}}>
       <GlobalFX/>
       {/* grid de fundo */}
       <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,230,118,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,.045) 1px,transparent 1px)",backgroundSize:"38px 38px",maskImage:"radial-gradient(ellipse 85% 75% at 50% 32%,#000 38%,transparent 100%)",WebkitMaskImage:"radial-gradient(ellipse 85% 75% at 50% 32%,#000 38%,transparent 100%)",pointerEvents:"none"}}/>
