@@ -817,19 +817,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
   );
 
   return (
-    <div style={{position:"relative",backgroundImage:"linear-gradient(rgba(0,230,118,0.045) 1px,transparent 1px),linear-gradient(90deg,rgba(0,230,118,0.045) 1px,transparent 1px)",backgroundSize:"32px 32px"}}>
-      {/* ── HUD · CENTRO DE OPERAÇÃO ── */}
-      <div className="hud-c" style={{"--hud":C.accentLight,position:"relative",overflow:"hidden",background:`linear-gradient(135deg,${C.surface},${C.card})`,border:`1px solid ${C.accentLight}33`,borderRadius:12,padding:"11px 14px",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,boxShadow:`0 0 0 1px ${C.accentLight}10,0 10px 30px rgba(0,0,0,.45)`}}>
-        <div className="hud-scan" style={{position:"absolute",top:0,bottom:0,width:90,background:`linear-gradient(90deg,transparent,${C.accentLight}1f,transparent)`,pointerEvents:"none"}}/>
-        <div style={{display:"flex",alignItems:"center",gap:11,position:"relative",minWidth:0}}>
-          <span className="led-line" style={{width:9,height:9,borderRadius:"50%",background:C.accentLight,boxShadow:`0 0 8px ${C.accentLight},0 0 18px ${C.accentLight}88`,flexShrink:0}}/>
-          <div style={{minWidth:0}}>
-            <div style={{color:C.white,fontSize:13,fontWeight:900,letterSpacing:"0.16em",lineHeight:1}}>CENTRO DE OPERAÇÃO</div>
-            <div style={{color:C.textDim,fontSize:8.5,fontFamily:"monospace",letterSpacing:"0.16em",textTransform:"uppercase",marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>SECAGEM H2 · {areaAtiva==="pu"?"PARTE ÚMIDA":areaAtiva==="cs"?"CORTADEIRA / SECADOR":"ENFARDAMENTO"}</div>
-          </div>
-        </div>
-        <span style={{position:"relative",flexShrink:0,color:C.accentLight,fontSize:8.5,fontFamily:"monospace",fontWeight:800,letterSpacing:"0.12em",border:`1px solid ${C.accentLight}44`,borderRadius:6,padding:"4px 8px",background:`${C.accentLight}10`,whiteSpace:"nowrap"}}>● ONLINE</span>
-      </div>
+    <div>
       {notasComum>0&&(
         <div style={{background:"#1a0f0088",border:`2px solid ${C.warningLight}`,borderRadius:12,padding:"12px 16px",marginBottom:18,display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:20}}>⚡</span>
@@ -919,11 +907,10 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
           mkSeg("enf","Enfard.",["L4","L5","L6","L7","L8"].map(L=>({id:L,ok:enfLinhaOk(L)}))),
         ];
         const SecH=({n,t,cor})=>(
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:9}}>
-            <span style={{color:cor||C.accentLight,fontFamily:"monospace",fontSize:9,fontWeight:900,letterSpacing:"0.12em",background:`${(cor||C.accentLight)}14`,border:`1px solid ${(cor||C.accentLight)}3a`,borderRadius:4,padding:"2px 5px",lineHeight:1}}>{n}</span>
-            <span style={{color:cor||C.text,fontSize:11,fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase"}}>{t}</span>
-            <div style={{flex:1,height:1,background:`linear-gradient(90deg,${(cor||C.border)}55,transparent)`}}/>
-            <span style={{width:5,height:5,borderRadius:"50%",background:cor||C.accentLight,boxShadow:`0 0 6px ${cor||C.accentLight}`,flexShrink:0}}/>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <span style={{color:cor||C.textDim,fontSize:9,fontWeight:900,letterSpacing:"0.1em"}}>{n}</span>
+            <span style={{color:cor||C.text,fontSize:11,fontWeight:800,letterSpacing:"0.08em",textTransform:"uppercase"}}>{t}</span>
+            <div style={{flex:1,height:1,background:`linear-gradient(90deg,${(cor||C.border)}44,transparent)`}}/>
           </div>
         );
         return(
@@ -934,7 +921,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
               const vivos=[...atencao].filter(a=>!recon[a.chave]).sort((a,b)=>a.nivel-b.nivel);
               const temCrit=vivos.some(a=>a.nivel<=3);
               return(
-              <div className="hud-c" style={{"--hud":vivos.length>0?C.dangerLight:C.accentLight,background:C.card,border:`1px solid ${vivos.length>0?C.dangerLight+"44":C.border}`,borderTop:`2px solid ${vivos.length>0?C.dangerLight:C.accentLight}`,borderRadius:12,padding:"10px 12px",marginBottom:10,boxShadow:temCrit?`0 0 14px ${C.dangerLight}2a`:"none"}}>
+              <div style={{background:C.card,border:`1px solid ${vivos.length>0?C.dangerLight+"44":C.border}`,borderTop:`2px solid ${vivos.length>0?C.dangerLight:C.accentLight}`,borderRadius:12,padding:"10px 12px",marginBottom:10,boxShadow:temCrit?`0 0 10px ${C.dangerLight}22`:"none"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:vivos.length>0?8:0}}>
                   <span style={{color:vivos.length>0?C.dangerLight:C.textDim,fontSize:9,fontFamily:"monospace",fontWeight:700,letterSpacing:"0.12em"}}>ALARMES</span>
                   <div style={{minWidth:28,textAlign:"center",background:vivos.length>0?C.danger:C.tagBg,color:vivos.length>0?"#fff":C.textDim,fontFamily:"monospace",fontWeight:900,fontSize:13,borderRadius:5,padding:"1px 7px",animation:temCrit?"trava-pulse 1.6s ease-in-out infinite":"none"}}>{vivos.length}</div>
@@ -961,7 +948,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
             })()}
 
             {/* ── 01 STATUS OPERACIONAL ── */}
-            <div className="hud-c" style={{"--hud":stArea.cor,background:C.card,border:`1px solid ${stArea.cor}33`,borderTop:`2px solid ${stArea.cor}`,borderRadius:12,padding:"13px 14px",marginBottom:10}}>
+            <div style={{background:C.card,border:`1px solid ${stArea.cor}33`,borderTop:`2px solid ${stArea.cor}`,borderRadius:12,padding:"13px 14px",marginBottom:10}}>
               <SecH n="01" t="Status Operacional" cor={stArea.cor}/>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                 <div style={{width:12,height:12,borderRadius:"50%",background:stArea.dot,boxShadow:`0 0 8px ${stArea.dot},0 0 18px ${stArea.dot}88`,animation:stArea.anim?`${stArea.anim} 1.6s ease-in-out infinite`:"none",flexShrink:0}}/>
@@ -993,7 +980,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                   const afetada=mCor==="vermelho"||mCor==="amarelo";
                   const ledCor=mCor==="vermelho"?C.dangerLight:C.warningLight;
                   return(
-                  <div key={m} className="hud-c" style={{"--hud":afetada?ledCor:cor,background:afetada?`${ledCor}08`:C.card,border:`1.5px solid ${afetada?ledCor:cor+"33"}`,borderTop:`2px solid ${afetada?ledCor:cor}`,borderRadius:12,padding:"11px 12px",boxShadow:afetada?`0 0 8px ${ledCor}66,0 0 18px ${ledCor}33,inset 0 0 12px ${ledCor}11`:"none",animation:afetada&&mCor==="vermelho"?"trava-pulse 1.6s ease-in-out infinite":"none"}}>
+                  <div key={m} style={{background:afetada?`${ledCor}08`:C.card,border:`1.5px solid ${afetada?ledCor:cor+"33"}`,borderTop:`2px solid ${afetada?ledCor:cor}`,borderRadius:12,padding:"11px 12px",boxShadow:afetada?`0 0 8px ${ledCor}66,0 0 18px ${ledCor}33,inset 0 0 12px ${ledCor}11`:"none",animation:afetada&&mCor==="vermelho"?"trava-pulse 1.6s ease-in-out infinite":"none"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                       <span style={{color:afetada?ledCor:cor,fontWeight:900,fontSize:13,letterSpacing:"0.05em"}}>MÁQ. {m.replace("M","")}</span>
                       <div style={{width:9,height:9,borderRadius:"50%",background:afetada?(mCor==="vermelho"?C.danger:C.warning):d.ok?C.success:d.cr>0?C.danger:C.warning,boxShadow:`0 0 6px ${afetada?(mCor==="vermelho"?C.danger:C.warning):d.ok?C.success:d.cr>0?C.danger:C.warning}`}}/>
@@ -1035,7 +1022,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
             </div>
 
             {/* ── 04 PASSAGEM DE TURNO ── */}
-            <div className="hud-c" style={{"--hud":"#B388FF",background:C.card,border:`1px solid ${C.border}`,borderTop:`2px solid #B388FF`,borderRadius:12,padding:"13px 14px",marginBottom:10}}>
+            <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`2px solid #B388FF`,borderRadius:12,padding:"13px 14px",marginBottom:10}}>
               <SecH n="04" t="Passagem de Turno" cor="#B388FF"/>
               {herdados.length===0&&ultObs.length===0?(
                 <div style={{color:C.textMuted,fontSize:11,fontStyle:"italic"}}>Sem pendências herdadas</div>
@@ -1102,7 +1089,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
               const lastSedim=sedimAll.length>0?sedimAll[sedimAll.length-1]:null;
               const corSedim=lastSedim?(lastSedim.valor<150?C.accentLight:lastSedim.valor<=250?C.warningLight:C.dangerLight):null;
               return(
-                <div onClick={()=>setTela("cleaners")} className="hud-c" style={{"--hud":corEg,background:`linear-gradient(135deg,${C.card},${corEg}08)`,border:`1px solid ${corEg}44`,borderTop:`3px solid ${corEg}`,borderRadius:14,padding:"14px 14px 12px",marginBottom:10,cursor:"pointer",boxShadow:`0 4px 24px ${corEg}15`}}>
+                <div onClick={()=>setTela("cleaners")} style={{background:`linear-gradient(135deg,${C.card},${corEg}08)`,border:`1px solid ${corEg}44`,borderTop:`3px solid ${corEg}`,borderRadius:14,padding:"14px 14px 12px",marginBottom:10,cursor:"pointer",boxShadow:`0 4px 24px ${corEg}15`}}>
                   {/* header */}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -1201,7 +1188,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
               const med=meds.reduce((a,m)=>a+m.v,0)/meds.length;
               const cor=v=>v>=1.88&&v<=1.92?C.accentLight:Math.abs(v-1.90)<=0.04?C.warningLight:C.dangerLight;
               return(
-                <div className="hud-c" style={{"--hud":cor(med),background:C.card,border:`1px solid ${cor(med)}44`,borderTop:`2px solid ${cor(med)}`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+                <div style={{background:C.card,border:`1px solid ${cor(med)}44`,borderTop:`2px solid ${cor(med)}`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                     <span style={{color:cor(med),fontWeight:800,fontSize:11,textTransform:"uppercase",letterSpacing:"0.06em"}}>◉ Altura Units · Enf.</span>
                   </div>
@@ -1224,18 +1211,12 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
           </div>
         );
       })()}
-      {/* Acesso Rápido */}
-      <div style={{display:"flex",alignItems:"center",gap:8,margin:"4px 0 9px"}}>
-        <span style={{color:C.accentLight,fontFamily:"monospace",fontSize:9,fontWeight:900,letterSpacing:"0.12em",background:`${C.accentLight}14`,border:`1px solid ${C.accentLight}3a`,borderRadius:4,padding:"2px 5px",lineHeight:1}}>06</span>
-        <span style={{color:C.text,fontSize:11,fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase"}}>Acesso Rápido</span>
-        <div style={{flex:1,height:1,background:`linear-gradient(90deg,${C.accentLight}55,transparent)`}}/>
-        <span style={{width:5,height:5,borderRadius:"50%",background:C.accentLight,boxShadow:`0 0 6px ${C.accentLight}`,flexShrink:0}}/>
-      </div>
+      <h3 style={{color:C.text,fontSize:12,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.06em"}}>Acesso Rápido</h3>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         {[{label:"📋 Check-list",tela:"checklist"},{label:"🔧 Equipamentos",tela:"equipamentos"},{label:"🎯 Mural de Oportunidades",tela:"mural"},{label:"🗂 Justificar Rotas",tela:"rotas"},{label:"📖 Manual",tela:"manual"}].map(a=>(
-          <button key={a.tela} onClick={()=>setTela(a.tela)} className="hud-c" style={{"--hud":C.accentLight,position:"relative",overflow:"hidden",background:`linear-gradient(135deg,rgba(10,25,45,0.85),rgba(7,24,40,0.85))`,border:`1px solid ${C.border}`,borderLeft:`2px solid ${C.accentLight}`,color:C.text,borderRadius:11,padding:"13px 14px 13px 13px",cursor:"pointer",fontSize:13,fontWeight:600,textAlign:"left",letterSpacing:"0.02em",transition:"all .18s",boxShadow:"0 4px 16px rgba(0,0,0,.35)"}}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.boxShadow=`0 6px 22px ${C.accentLight}33`;e.currentTarget.style.transform="translateY(-1px)";}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.35)";e.currentTarget.style.transform="translateY(0)";}}>{a.label}</button>
+          <button key={a.tela} onClick={()=>setTela(a.tela)} style={{background:"rgba(10,25,45,0.7)",border:`1px solid ${C.border}`,color:C.text,borderRadius:12,padding:"13px 14px",cursor:"pointer",fontSize:13,fontWeight:500,textAlign:"left",transition:"all .2s"}}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.card;}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surface;}}>{a.label}</button>
         ))}
       </div>
 
@@ -3421,12 +3402,6 @@ export default function App() {
           50%     { opacity:0.55; box-shadow: 0 0 3px #FF5252, 0 0 6px #FF525244; }
         }
         .led-line-red { animation: led-pulse-red 1.4s ease-in-out infinite; }
-        .hud-c { position: relative; }
-        .hud-c::before, .hud-c::after { content:""; position:absolute; width:12px; height:12px; pointer-events:none; border-color: var(--hud,#00E676); border-style:solid; opacity:.85; filter: drop-shadow(0 0 2px var(--hud,#00E676)); }
-        .hud-c::before { top:3px; left:3px; border-width:2px 0 0 2px; }
-        .hud-c::after { bottom:3px; right:3px; border-width:0 2px 2px 0; }
-        @keyframes hud-scan { 0%{transform:translateX(-160%)} 100%{transform:translateX(420%)} }
-        .hud-scan { animation: hud-scan 4.2s linear infinite; }
       `}</style>
       {/* Header */}
       <div style={{position:"sticky",top:0,zIndex:100}}>
