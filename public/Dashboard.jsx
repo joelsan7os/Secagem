@@ -8,10 +8,10 @@ import { CarrosselViewer } from "./carrossel";
 
 const C = {
   void:"#020A12", deep:"#04111D", panel:"#071826", panelHi:"#0A2032",
-  line:"rgba(0,230,118,0.12)", lineHi:"rgba(0,230,118,0.28)",
+  line:"rgba(0,230,118,0.15)", lineHi:"rgba(0,230,118,0.38)",
   green:"#00E676", greenDim:"#00A152", cyan:"#00F0FF", blue:"#5090FF",
   purple:"#C77DFF", amber:"#FFC107", orange:"#FF8C00", red:"#FF5252",
-  ink:"#FFFFFF", mute:"#9FB4CC", dim:"#41597A", faint:"#22344B",
+  ink:"#FFFFFF", mute:"#C8DCEE", dim:"#607B9A", faint:"#2A3F58",
 };
 const mono = "'SF Mono','Roboto Mono',ui-monospace,monospace";
 const sans = "'Inter','Segoe UI',system-ui,sans-serif";
@@ -47,30 +47,32 @@ const GlobalFX = () => (
     @keyframes cmd-pulse{0%,100%{opacity:1}50%{opacity:.45}}
     @keyframes cmd-ring{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.6);opacity:0}}
     @keyframes cmd-scan{0%{transform:translateY(-100%)}100%{transform:translateY(2400%)}}
+    @keyframes hud-scan-h{0%{transform:translateX(-100%)}100%{transform:translateX(900%)}}
     @keyframes cmd-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
     @keyframes cmd-marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
     @keyframes cmd-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-    .cmd-card{position:relative;background:linear-gradient(160deg,rgba(10,32,50,.55),rgba(7,24,38,.82));backdrop-filter:blur(14px);border-radius:16px;overflow:hidden;border:1px solid rgba(0,230,118,.1)}
-    .cmd-card::after{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(140deg,rgba(0,230,118,.4),rgba(0,230,118,.03) 45%,transparent 75%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+    .cmd-card{position:relative;background:linear-gradient(160deg,rgba(10,34,54,.72),rgba(4,17,29,.92));backdrop-filter:blur(14px);border-radius:16px;overflow:hidden;border:1px solid rgba(0,230,118,.18)}
+    .cmd-card::after{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(140deg,rgba(0,230,118,.55),rgba(0,230,118,.04) 45%,transparent 75%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+    .cmd-card::before{content:'';position:absolute;top:0;bottom:0;width:60px;background:linear-gradient(90deg,transparent,rgba(0,230,118,0.055),transparent);animation:hud-scan-h 7s linear infinite;pointer-events:none;z-index:1}
     .cmd-corner{position:absolute;width:9px;height:9px;pointer-events:none;z-index:2}
   `}</style>
 );
 
 const Corners = ({c=C.green}) => (
   <>
-    <div className="cmd-corner" style={{top:7,left:7,borderTop:`1.5px solid ${c}55`,borderLeft:`1.5px solid ${c}55`}}/>
-    <div className="cmd-corner" style={{top:7,right:7,borderTop:`1.5px solid ${c}55`,borderRight:`1.5px solid ${c}55`}}/>
-    <div className="cmd-corner" style={{bottom:7,left:7,borderBottom:`1.5px solid ${c}55`,borderLeft:`1.5px solid ${c}55`}}/>
-    <div className="cmd-corner" style={{bottom:7,right:7,borderBottom:`1.5px solid ${c}55`,borderRight:`1.5px solid ${c}55`}}/>
+    <div className="cmd-corner" style={{top:7,left:7,borderTop:`1.5px solid ${c}88`,borderLeft:`1.5px solid ${c}88`}}/>
+    <div className="cmd-corner" style={{top:7,right:7,borderTop:`1.5px solid ${c}88`,borderRight:`1.5px solid ${c}88`}}/>
+    <div className="cmd-corner" style={{bottom:7,left:7,borderBottom:`1.5px solid ${c}88`,borderLeft:`1.5px solid ${c}88`}}/>
+    <div className="cmd-corner" style={{bottom:7,right:7,borderBottom:`1.5px solid ${c}88`,borderRight:`1.5px solid ${c}88`}}/>
   </>
 );
 
 const PanelHead = ({ code, title, accent=C.green, right }) => (
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
     <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
-      <span style={{fontFamily:mono,fontSize:10,fontWeight:700,color:accent,opacity:.75,letterSpacing:"0.1em"}}>{code}</span>
-      <span style={{width:3,height:3,borderRadius:"50%",background:accent,boxShadow:`0 0 5px ${accent}`}}/>
-      <span style={{fontFamily:sans,fontSize:13,fontWeight:800,color:C.mute,letterSpacing:"0.16em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{title}</span>
+      <span style={{fontFamily:mono,fontSize:10,fontWeight:700,color:accent,opacity:.95,letterSpacing:"0.1em"}}>{code}</span>
+      <span style={{width:3,height:3,borderRadius:"50%",background:accent,boxShadow:`0 0 6px ${accent}`}}/>
+      <span style={{fontFamily:sans,fontSize:13,fontWeight:800,color:C.ink,letterSpacing:"0.16em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{title}</span>
     </div>
     {right}
   </div>
@@ -913,9 +915,9 @@ export default function DashboardTV({ setTela, setModoVisao }) {
     <div style={{position:"relative",minHeight:"100vh",width:"100vw",background:`radial-gradient(ellipse at 50% 0%,#0a2138 0%,${C.deep} 45%,${C.void} 100%)`,color:C.ink,fontFamily:sans,overflow:"hidden",display:"flex",flexDirection:"column"}}>
       <GlobalFX/>
       {/* grid de fundo */}
-      <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,230,118,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,230,118,.025) 1px,transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
-      {/* scanline */}
-      <div style={{position:"absolute",left:0,right:0,height:80,background:"linear-gradient(180deg,transparent,rgba(0,230,118,0.025),transparent)",animation:"cmd-scan 12s linear infinite",pointerEvents:"none",zIndex:1}}/>
+      <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,230,118,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(0,230,118,.055) 1px,transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
+      {/* scanline vertical */}
+      <div style={{position:"absolute",left:0,right:0,height:100,background:"linear-gradient(180deg,transparent,rgba(0,230,118,0.045),transparent)",animation:"cmd-scan 12s linear infinite",pointerEvents:"none",zIndex:1}}/>
 
       {/* ═══ HEADER ═══ */}
       <div style={{position:"relative",zIndex:10,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 22px",borderBottom:`1px solid ${C.line}`,background:"rgba(4,17,29,0.6)",backdropFilter:"blur(16px)",flexShrink:0}}>
