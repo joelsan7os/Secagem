@@ -322,8 +322,10 @@ export function CarrosselViewer({ onClick }) {
       <style>{`
         @keyframes carr-in{from{opacity:0;transform:scale(1.03)}to{opacity:1;transform:scale(1)}}
         @keyframes carr-ken{0%{transform:scale(1)}100%{transform:scale(1.06)}}
+        @keyframes carr-sheen{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
         .carr-img-active{animation:carr-in 0.55s ease forwards}
         .carr-ken{animation:carr-ken 9s ease forwards}
+        .carr-sheen{animation:carr-sheen 24s ease-in-out infinite}
       `}</style>
 
       {/* BACKDROP — sempre presente, imagem desfocada com efeito duplex */}
@@ -331,18 +333,20 @@ export function CarrosselViewer({ onClick }) {
         position:"absolute", inset:"-6%",
         width:"112%", height:"112%",
         objectFit:"cover",
-        filter:"blur(22px) brightness(0.22) saturate(1.8)",
+        filter:"blur(24px) brightness(0.5) saturate(1.6)",
         opacity: fade ? 1 : 0,
         transition:"opacity 0.5s ease",
         pointerEvents:"none",
         zIndex:0,
       }}/>
 
-      {/* overlay de cor sobre o backdrop — efeito duplex moderno */}
-      <div style={{
+      {/* sheen tecnologico animado — adiciona cor/luz (so aparece nas laterais da vertical) */}
+      <div className="carr-sheen" style={{
         position:"absolute", inset:0, zIndex:1, pointerEvents:"none",
-        background:"linear-gradient(135deg,rgba(0,16,32,0.5) 0%,rgba(0,80,40,0.15) 50%,rgba(0,16,32,0.6) 100%)",
-        mixBlendMode:"multiply",
+        background:"linear-gradient(120deg,rgba(0,230,118,0.10) 0%,rgba(80,144,255,0.13) 35%,rgba(0,200,255,0.07) 60%,rgba(0,230,118,0.10) 100%)",
+        backgroundSize:"220% 220%",
+        mixBlendMode:"screen",
+        opacity:0.65,
       }}/>
 
       {/* IMAGEM PRINCIPAL com ken burns suave */}
@@ -366,12 +370,12 @@ export function CarrosselViewer({ onClick }) {
         />
       </div>
 
-      {/* vinheta lateral — mais suave nas bordas */}
+      {/* vinheta — moldura radial (sempre) + laterais suaves na vertical */}
       <div style={{
         position:"absolute", inset:0, zIndex:3, pointerEvents:"none",
         background: isVertical
-          ? "linear-gradient(90deg,rgba(1,8,16,0.7) 0%,transparent 18%,transparent 82%,rgba(1,8,16,0.7) 100%)"
-          : "none",
+          ? "radial-gradient(ellipse 92% 96% at 50% 50%,transparent 60%,rgba(1,8,16,0.55) 100%),linear-gradient(90deg,rgba(1,8,16,0.42) 0%,transparent 14%,transparent 86%,rgba(1,8,16,0.42) 100%)"
+          : "radial-gradient(ellipse 94% 96% at 50% 50%,transparent 64%,rgba(1,8,16,0.45) 100%)",
       }}/>
 
       {/* gradiente inferior */}
