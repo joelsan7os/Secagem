@@ -52,6 +52,27 @@ export function PainelCarrossel() {
   const [msg, setMsg]               = useState("");
   const [confirmarRem, setConfirmarRem] = useState(null);
   const inputRef = useRef();
+  const [ratio, setRatio]   = useState(16/9);   // null = Original (sem corte)
+  const [zoom, setZoom]     = useState(1);
+  const [pos, setPos]       = useState({ x:0, y:0 });
+  const [frameW, setFrameW] = useState(320);
+  const frameRef = useRef(null);
+  const dragRef  = useRef(null);
+  const setFrameRef = useCallback(node => { frameRef.current = node; if(node) setFrameW(node.offsetWidth); }, []);
+  const clamp = (v,a,b) => a>b ? (a+b)/2 : Math.max(a, Math.min(b, v));
+  const geom = (z=zoom) => { const fh=frameW/ratio; const bs=Math.max(frameW/preview.w, fh/preview.h); const ds=bs*z; return { fh, ds, iw:preview.w*ds, ih:preview.h*ds }; };
+  const onZoom = (z) => { const g=geom(z); setPos(p=>({ x:clamp(p.x, frameW-g.iw, 0), y:clamp(p.y, g.fh-g.ih, 0) })); setZoom(z); };
+  const buildCropped = () => new Promise((resolve,reject)=>{
+    const g=geom(zoom); const sx=(0-pos.x)/g.ds, sy=(0-pos.y)/g.ds, sW=frameW/g.ds, sH=g.fh/g.ds;
+    const outW=Math.round(Math.min(sW,1600)), outH=Math.round(outW/ratio);
+    const im=new Image();
+    im.onload=()=>{ const cv=document.createElement("canvas"); cv.width=outW; cv.height=outH;
+      const cx=cv.getContext("2d"); cx.drawImage(im,sx,sy,sW,sH,0,0,outW,outH);
+      const b64=cv.toDataURL("image/jpeg",0.82); const kb=Math.round((b64.length*3)/4/1024);
+      resolve({ base64:b64, kb, w:outW, h:outH }); };
+    im.onerror=()=>reject(new Error("Falha no recorte"));
+    im.src=preview.base64;
+  });
 
   const flash = (t, ok=true) => { setMsg({ texto: t, ok }); setTimeout(() => setMsg(""), 3000); };
 
@@ -69,12 +90,21 @@ export function PainelCarrossel() {
 
   useEffect(() => { carregar(); }, [carregar]);
 
+  // recentraliza o recorte ao trocar imagem / formato / largura do quadro
+  useEffect(() => {
+    if(!preview || ratio===null) return;
+    const fh=frameW/ratio, bs=Math.max(frameW/preview.w, fh/preview.h);
+    setZoom(1);
+    setPos({ x:(frameW - preview.w*bs)/2, y:(fh - preview.h*bs)/2 });
+  }, [preview, ratio, frameW]);
+
   const onFileChange = useCallback(async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) { flash("Selecione uma imagem.", false); return; }
     try {
       const result = await comprimirImagem(file);
+      setRatio(16/9);
       setPreview({ ...result, nome: file.name });
     } catch { flash("Erro ao processar imagem.", false); }
     e.target.value = "";
@@ -85,20 +115,21 @@ export function PainelCarrossel() {
     if (!preview) return;
     setSalvando(true);
     try {
+      const dados = ratio===null ? preview : await buildCropped();
       const id = Date.now().toString();
       const maxOrdem = imagens.length > 0 ? Math.max(...imagens.map(i => i.ordem ?? 0)) : -1;
       await setDoc(doc(db, "carrossel_h2", id), {
         id,
-        base64: preview.base64,
+        base64: dados.base64,
         nome: preview.nome,
-        kb: preview.kb,
-        w: preview.w,
-        h: preview.h,
+        kb: dados.kb,
+        w: dados.w,
+        h: dados.h,
         ordem: maxOrdem + 1,
         adicionadaEm: new Date().toISOString(),
       });
       setPreview(null);
-      flash(`Imagem adicionada (${preview.kb} KB).`);
+      flash(`Imagem adicionada (${dados.kb} KB).`);
       await carregar();
     } catch (e) { flash("Erro ao salvar: " + e.message, false); }
     setSalvando(false);
@@ -148,8 +179,59 @@ export function PainelCarrossel() {
 
         {preview ? (
           <div>
-            <img src={preview.base64} alt="preview"
-              style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 8, marginBottom: 10, border: `1px solid ${C.border}` }}/>
+            {/* seletor de formato */}
+            <div style={{ display:"flex", gap:6, marginBottom:10 }}>
+              {[{l:"Original",v:null},{l:"16:9",v:16/9},{l:"4:3",v:4/3},{l:"1:1",v:1}].map(o=>{
+                const on = ratio===o.v;
+                return (
+                  <button key={o.l} onClick={()=>setRatio(o.v)}
+                    style={{ flex:1, padding:"7px 4px", borderRadius:8, cursor:"pointer", fontSize:11, fontWeight:700,
+                      background: on ? C.accent : C.tagBg, color: on ? "#000" : C.textMuted,
+                      border:`1px solid ${on ? C.accent : C.border}` }}>{o.l}</button>
+                );
+              })}
+            </div>
+
+            {ratio===null ? (
+              <img src={preview.base64} alt="preview"
+                style={{ width:"100%", maxHeight:220, objectFit:"contain", borderRadius:8, marginBottom:10,
+                  border:`1px solid ${C.border}`, background:"#010810" }}/>
+            ) : (()=>{
+              const { ds } = geom(zoom);
+              return (
+                <>
+                  <div ref={setFrameRef}
+                    onPointerDown={e=>{ dragRef.current={sx:e.clientX,sy:e.clientY,px:pos.x,py:pos.y}; try{e.currentTarget.setPointerCapture(e.pointerId);}catch{} }}
+                    onPointerMove={e=>{ if(!dragRef.current)return; const g=geom(zoom);
+                      const nx=clamp(dragRef.current.px+(e.clientX-dragRef.current.sx), frameW-g.iw, 0);
+                      const ny=clamp(dragRef.current.py+(e.clientY-dragRef.current.sy), g.fh-g.ih, 0);
+                      setPos({x:nx,y:ny}); }}
+                    onPointerUp={()=>{ dragRef.current=null; }}
+                    onPointerLeave={()=>{ dragRef.current=null; }}
+                    style={{ position:"relative", width:"100%", height:frameW/ratio, marginBottom:8,
+                      borderRadius:8, overflow:"hidden", border:`1px solid ${C.accent}55`,
+                      background:"#010810", cursor:"grab", touchAction:"none" }}>
+                    <img src={preview.base64} alt="recorte" draggable={false}
+                      style={{ position:"absolute", left:pos.x, top:pos.y, width:preview.w*ds, height:preview.h*ds,
+                        maxWidth:"none", userSelect:"none", pointerEvents:"none" }}/>
+                    {/* guias de terços */}
+                    <div style={{ position:"absolute", inset:0, pointerEvents:"none",
+                      backgroundImage:"linear-gradient(90deg,transparent 33.2%,rgba(255,255,255,.14) 33.2%,rgba(255,255,255,.14) 33.5%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.14) 66.5%,rgba(255,255,255,.14) 66.8%,transparent 66.8%),linear-gradient(0deg,transparent 33.2%,rgba(255,255,255,.14) 33.2%,rgba(255,255,255,.14) 33.5%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.14) 66.5%,rgba(255,255,255,.14) 66.8%,transparent 66.8%)" }}/>
+                  </div>
+                  {/* zoom */}
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                    <span style={{ fontSize:13 }}>🔍</span>
+                    <input type="range" min="1" max="3" step="0.01" value={zoom}
+                      onChange={e=>onZoom(parseFloat(e.target.value))}
+                      style={{ flex:1, accentColor:C.accent }}/>
+                    <span style={{ fontSize:10, color:C.textDim, fontFamily:"monospace", minWidth:34, textAlign:"right" }}>{zoom.toFixed(2)}x</span>
+                  </div>
+                  <div style={{ fontSize:10, color:C.textDim, marginBottom:10, textAlign:"center" }}>
+                    Arraste a foto pra enquadrar · slider pra dar zoom
+                  </div>
+                </>
+              );
+            })()}
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
               <span style={{ fontSize: 11, color: C.textDim }}>{preview.nome}</span>
               <span style={{ fontSize: 11, color: C.textMuted, fontFamily: "monospace" }}>
