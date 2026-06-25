@@ -467,6 +467,7 @@ const CATALOGO = [
   { id:"enf_qualidade",    label:"Check List Qualidade",icon:"", desc:"Qualidade do fardo — todas as linhas",                 porMaquina:false, tipo:"enf",      area:"enf", getItems:()=>checklistEnfardamento },
   { id:"rota_enf",         label:"Rota Enfardamento",   icon:"", desc:"Inspeção por turno — todos os equipamentos",           porMaquina:true,  tipo:"rota_enf", area:"enf", getItems:()=>checklistRotaEnfardamento },
   { id:"barcode_enf",      label:"Validação de Fardos", icon:"📦", desc:"Leitura de código de barras — Lado A / Lado B",        porMaquina:false, tipo:"barcode_enf",area:"enf", getItems:()=>[] },
+  { id:"avaria_enf",       label:"Inspecao de Avarias", icon:"", desc:"Registro de avarias por unit — capa, arame, impressao", porMaquina:false, tipo:"avaria_enf", area:"enf", getItems:()=>[] },
 ];
 
 
@@ -477,7 +478,22 @@ import { TelaAuth, usePerfilAtivo, FUNCOES, validarPin } from "./auth";
 import { PainelAdmin } from "./admin";
 import { CleanersTela, RelatorioCleaners, CLEANERS_TOTAL } from "./cleaners";
 import { BarcodeModal } from "./barcode";
+import { AvariasTela, AvariasAnalytics } from "./avarias";
 import { MuralOportunidades } from "./pendencias";
+// Dashboard TV carregado de forma tolerante: se o arquivo ainda não existir no
+// repo, o app NÃO quebra — o modo dashboard apenas fica indisponível até subir.
+const DashboardTV = React.lazy(() =>
+  import("./Dashboard").catch(() => ({
+    default: ({ setModoVisao }) => (
+      <div style={{background:"#04111D",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,color:"#B5C6DA",fontFamily:"'Segoe UI',system-ui,sans-serif",padding:24,textAlign:"center"}}>
+        <div style={{fontSize:40}}>🖥️</div>
+        <div style={{color:"#fff",fontWeight:800,fontSize:16}}>Dashboard ainda não publicado</div>
+        <div style={{fontSize:13,maxWidth:340,lineHeight:1.5}}>O arquivo Dashboard.jsx precisa ser enviado ao repositório. Assim que subir, este modo passa a funcionar.</div>
+        <button onClick={()=>setModoVisao("app")} style={{background:"rgba(80,144,255,0.12)",border:"1px solid #1A5CCC55",color:"#1A5CCC",borderRadius:9,padding:"10px 18px",cursor:"pointer",fontSize:13,fontWeight:800}}>← Voltar ao App</button>
+      </div>
+    ),
+  }))
+);
 
 // Leitura imediata do aparelho (não trava a tela esperando a nuvem)
 const storageGet = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
@@ -1190,17 +1206,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                 </div>
               );
             })()}
-            {critList.length>0&&(
-              <div style={{background:C.card,border:`1px solid ${C.dangerLight}33`,borderTop:`2px solid ${C.dangerLight}`,borderRadius:12,padding:"13px 14px",marginBottom:10}}>
-                <SecH n="06" t="Equipamentos Críticos" cor={C.dangerLight}/>
-                {critList.map(e=>(
-                  <div key={e.id} onClick={()=>setTela("equipamentos")} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 8px",borderRadius:7,marginBottom:3,background:"rgba(255,82,82,0.06)",cursor:"pointer"}}>
-                    <span style={{color:C.text,fontSize:11,fontWeight:600}}>{e.nome}</span>
-                    <span style={{color:C.textDim,fontSize:9}}>{e.tag} · {e.sub}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Avarias removidas daqui - ver analytics no histórico */}
 
           </div>
         );
@@ -2005,6 +2011,8 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
         <EnfardamentoTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):tipo?.tipo==="barcode_enf"?(
         <BarcodeSeletorTela/>
+      ):tipo?.tipo==="avaria_enf"?(
+        <AvariasTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):tipo?.tipo==="rejeicao"?(
         <RejeicaoTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):tipo?.tipo==="wft"?(
@@ -2824,7 +2832,7 @@ function RotaEnfardamentoTela({ onSalvar }) {
 
 // ─── HistoricoTela ────────────────────────────────────────────────────────────
 // ─── RelatorioCleaners — relatórios por turno no Histórico ────────────────────
-function HistoricoTela({ historico, areaAtiva }) {
+function HistoricoTela({ historico, areaAtiva, perfil }) {
   const [abaHist,setAbaHist]=useState("reg");
   const [buscaData,setBuscaData]=useState("");
   const [filtroMaq,setFiltroMaq]=useState("M2");
@@ -2921,7 +2929,7 @@ function HistoricoTela({ historico, areaAtiva }) {
       </div>
       <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"8px 0 12px"}}/>
       <div style={{display:"flex",gap:6,marginBottom:14}}>
-        {[{id:"reg",l:"📋 REGISTROS"},{id:"ana",l:"📊 EFICIÊNCIA"}].map(a=>(
+        {[{id:"reg",l:"REGISTROS"},{id:"ana",l:"EFICIENCIA"},{id:"avarias",l:"AVARIAS"}].map(a=>(
           <button key={a.id} onClick={()=>setAbaHist(a.id)} style={{flex:1,padding:"8px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.03em",background:abaHist===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${abaHist===a.id?"rgba(255,255,255,0.55)":C.border}`,color:abaHist===a.id?"#fff":C.textMuted,boxShadow:abaHist===a.id?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>{a.l}</button>
         ))}
       </div>
@@ -2929,6 +2937,8 @@ function HistoricoTela({ historico, areaAtiva }) {
         <div>
           <GraficoEficiencia historico={historico}/>
         </div>
+      ):abaHist==="avarias"?(
+        <AvariasAnalytics avariasData={storageGet("avarias_h2")||[]} perfil={perfil}/>
       ):(
       <>
       {(()=>{
@@ -3132,7 +3142,6 @@ const ROTAS_CONFIG = {
     motivos:["PP de linha","Quebra na máquina","Variação grande no processo","Falta de operador","Outro"] },
 };
 
-
 function RotasTela({ historico, onVoltar }) {
   const hoje=new Date().toISOString().slice(0,10);
   const turno=getAutoTurno();
@@ -3294,6 +3303,7 @@ export default function App() {
   const { perfil, setPerfil, logout } = usePerfilAtivo();
   const [adminAberto,setAdminAberto]=useState(false);
   const [tela,setTela]=useState("dashboard");
+  const [modoVisao,setModoVisao]=useState("app"); // "app" | "dashboard"
   const [historico,setHistorico]=useState(()=>storageGet("historico_h2")||[]);
   const [areaAtiva,setAreaAtiva]=useState("pu");
   const [ocorrencias,setOcorrencias]=useState({M2:null,M3:null});
@@ -3352,7 +3362,7 @@ export default function App() {
     if(tela==="dashboard")return <Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil}/>;
     if(tela==="checklist")return <ChecklistTela onSalvar={salvarChecklist} historico={historico} perfil={perfil}/>;
     if(tela==="equipamentos")return <EquipamentosTela eqState={eqState} setEqState={setEqState} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} historico={historico} setTela={setTela}/>;
-    if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil}/>;
+    if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva} perfil={perfil}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil}/>;
     if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout} onAbrirAdmin={()=>setAdminAberto(true)}/>;
     if(tela==="rotas")return <RotasTela historico={historico} onVoltar={()=>setTela("dashboard")}/>;
     if(tela==="mural")return <MuralOportunidades eqState={eqState} onVoltar={()=>setTela("dashboard")}/>;
@@ -3360,6 +3370,7 @@ export default function App() {
   };
   if(!perfil) return <TelaAuth onEntrar={setPerfil}/>;
   if(adminAberto && perfil.funcao==="dev") return <PainelAdmin onVoltar={()=>setAdminAberto(false)}/>;
+  if(modoVisao==="dashboard") return <React.Suspense fallback={<div style={{background:C.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",color:C.accentLight,fontFamily:"monospace",fontSize:14}}>Carregando dashboard…</div>}><DashboardTV setTela={(t)=>{setModoVisao("app");setTela(t);}} setModoVisao={setModoVisao}/></React.Suspense>;
   return (
     <div style={{background:C.bg,minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text}}>
       <div style={{maxWidth:860,margin:"0 auto",position:"relative"}}>
@@ -3404,6 +3415,7 @@ export default function App() {
           <div style={{display:"flex",alignItems:"center",gap:7}}>
             {notasComum>0&&<button onClick={()=>setTela("equipamentos")} style={{background:"rgba(240,165,0,0.18)",border:`1px solid ${C.warningLight}`,color:C.warningLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>⚡{notasComum}</button>}
             {totalNotas>0&&<button onClick={()=>setTela("equipamentos")} style={{background:"rgba(232,51,58,0.18)",border:`1px solid ${C.dangerLight}`,color:C.dangerLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🗒{totalNotas}</button>}
+            <button onClick={()=>setModoVisao("dashboard")} style={{background:"rgba(80,144,255,0.12)",border:`1px solid ${C.blueLight}55`,color:C.blueLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🖥️</button>
             <div style={{display:"flex",alignItems:"center",gap:4}}>
               <button onClick={()=>setModalSinal(true)} style={{background:"none",border:"none",cursor:"pointer",padding:"2px 4px",display:"flex",alignItems:"center",gap:4}}>
                 {(()=>{const oc=ocMaisCritica(ocorrencias);const cor=oc?.cor==="vermelho"?C.dangerLight:oc?.cor==="amarelo"?C.warningLight:C.accentLight;return <span style={{fontSize:18,filter:`drop-shadow(0 0 4px ${cor})`}}>🚦</span>;})()}
