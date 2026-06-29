@@ -247,7 +247,7 @@ export function TelaAuth({ onEntrar }) {
         }}>VÉRTICE</div>
 
         <div className="vx-tagline-anim" style={{marginTop:10,fontSize:13,color:"#C8DCEE",letterSpacing:".04em"}}>
-          Três visões. Uma operação.
+          Decida melhor.
         </div>
 
         <div className="vx-ctx-anim" style={{
@@ -255,7 +255,7 @@ export function TelaAuth({ onEntrar }) {
           fontFamily:"monospace", fontSize:9.5, color:"#5E7A99", letterSpacing:".22em",
         }}>
           <span style={{display:"block",width:26,height:1,background:"linear-gradient(90deg,transparent,#5E7A99)"}}/>
-          SECAGEM H2 · SUZANO
+          POR QUEM OPERA
           <span style={{display:"block",width:26,height:1,background:"linear-gradient(90deg,#5E7A99,transparent)"}}/>
         </div>
 
