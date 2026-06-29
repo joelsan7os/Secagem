@@ -926,14 +926,43 @@ export default function DashboardTV({ setTela, setModoVisao }) {
       <div style={{position:"relative",zIndex:10,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 22px",borderBottom:`1px solid ${C.lineHi}`,background:"linear-gradient(180deg,rgba(8,28,45,0.82),rgba(4,17,29,0.5))",backdropFilter:"blur(16px)",boxShadow:`0 6px 22px rgba(0,0,0,0.45),0 1px 0 ${C.green}18`,flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
           <div style={{display:"flex",alignItems:"center",gap:9}}>
-            <div style={{position:"relative",width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <svg width="30" height="30" style={{position:"absolute",animation:"cmd-spin 8s linear infinite"}}>
-                <circle cx="15" cy="15" r="12" fill="none" stroke={`${C.green}33`} strokeWidth="1.5" strokeDasharray="3 6"/>
-              </svg>
-              <span style={{fontFamily:mono,fontWeight:900,fontSize:15,color:C.green,textShadow:`0 0 10px ${C.green}`}}>H2</span>
-            </div>
+            <svg viewBox="0 0 32 28" style={{width:32,height:28,flexShrink:0,overflow:"visible"}}>
+              <defs>
+                <linearGradient id="dvtxA" gradientUnits="userSpaceOnUse" x1="16" y1="3" x2="3" y2="25"><stop offset="0" stopColor="#00E676"/><stop offset="1" stopColor="#00F0FF"/></linearGradient>
+                <linearGradient id="dvtxB" gradientUnits="userSpaceOnUse" x1="3" y1="25" x2="29" y2="25"><stop offset="0" stopColor="#00F0FF"/><stop offset="1" stopColor="#5090FF"/></linearGradient>
+                <linearGradient id="dvtxC" gradientUnits="userSpaceOnUse" x1="29" y1="25" x2="16" y2="3"><stop offset="0" stopColor="#5090FF"/><stop offset="1" stopColor="#00E676"/></linearGradient>
+                <path id="dvtxP1" d="M16,3 L16,16"/>
+                <path id="dvtxP2" d="M3,25 L16,16"/>
+                <path id="dvtxP3" d="M29,25 L16,16"/>
+              </defs>
+              <line x1="16" y1="3" x2="3" y2="25" stroke="url(#dvtxA)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+              <line x1="3" y1="25" x2="29" y2="25" stroke="url(#dvtxB)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+              <line x1="29" y1="25" x2="16" y2="3" stroke="url(#dvtxC)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+              <line x1="16" y1="3" x2="16" y2="16" stroke="#00E676" strokeWidth="1.1" opacity="0.85"/>
+              <line x1="3" y1="25" x2="16" y2="16" stroke="#00F0FF" strokeWidth="1.1" opacity="0.85"/>
+              <line x1="29" y1="25" x2="16" y2="16" stroke="#5090FF" strokeWidth="1.1" opacity="0.85"/>
+              <circle cx="16" cy="3" r="3" fill="#00E676" style={{filter:"drop-shadow(0 0 4px #00E676)"}}/>
+              <circle cx="3" cy="25" r="3" fill="#00F0FF" style={{filter:"drop-shadow(0 0 4px #00F0FF)"}}/>
+              <circle cx="29" cy="25" r="3" fill="#5090FF" style={{filter:"drop-shadow(0 0 4px #5090FF)"}}/>
+              <circle cx="16" cy="16" r="3" fill="#fff" style={{filter:"drop-shadow(0 0 4px #fff)"}}>
+                <animate attributeName="opacity" values="0.5;1;0.5" dur="2.4s" repeatCount="indefinite"/>
+                <animate attributeName="r" values="3;4;3" dur="2.4s" repeatCount="indefinite"/>
+              </circle>
+              <circle r="2.4" fill="#00E676">
+                <animateMotion dur="1.8s" begin="0.3s" repeatCount="indefinite"><mpath href="#dvtxP1"/></animateMotion>
+                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="1.8s" begin="0.3s" repeatCount="indefinite"/>
+              </circle>
+              <circle r="2.4" fill="#00F0FF">
+                <animateMotion dur="1.8s" begin="0.9s" repeatCount="indefinite"><mpath href="#dvtxP2"/></animateMotion>
+                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="1.8s" begin="0.9s" repeatCount="indefinite"/>
+              </circle>
+              <circle r="2.4" fill="#5090FF">
+                <animateMotion dur="1.8s" begin="1.5s" repeatCount="indefinite"><mpath href="#dvtxP3"/></animateMotion>
+                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="1.8s" begin="1.5s" repeatCount="indefinite"/>
+              </circle>
+            </svg>
             <div>
-              <div style={{fontFamily:sans,fontSize:15,fontWeight:900,color:C.ink,letterSpacing:"0.08em"}}>CENTRO DE COMANDO</div>
+              <div style={{fontFamily:sans,fontSize:15,fontWeight:900,color:C.ink,letterSpacing:"0.28em",textShadow:`0 0 14px ${C.green}80`}}>VÉRTICE</div>
               <div style={{fontFamily:mono,fontSize:8,color:C.dim,letterSpacing:"0.2em"}}>SECAGEM H2 · SUZANO · INDUSTRIA 5.0</div>
             </div>
           </div>
