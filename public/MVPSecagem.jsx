@@ -3412,34 +3412,25 @@ export default function App() {
                 <linearGradient id="vtxA" gradientUnits="userSpaceOnUse" x1="16" y1="3" x2="3" y2="25"><stop offset="0" stopColor="#00E676"/><stop offset="1" stopColor="#00F0FF"/></linearGradient>
                 <linearGradient id="vtxB" gradientUnits="userSpaceOnUse" x1="3" y1="25" x2="29" y2="25"><stop offset="0" stopColor="#00F0FF"/><stop offset="1" stopColor="#5090FF"/></linearGradient>
                 <linearGradient id="vtxC" gradientUnits="userSpaceOnUse" x1="29" y1="25" x2="16" y2="3"><stop offset="0" stopColor="#5090FF"/><stop offset="1" stopColor="#00E676"/></linearGradient>
-                <path id="vtxP1" d="M16,3 L16,16"/>
-                <path id="vtxP2" d="M3,25 L16,16"/>
-                <path id="vtxP3" d="M29,25 L16,16"/>
+                <linearGradient id="vtxfT" gradientUnits="userSpaceOnUse" x1="16" y1="3" x2="16" y2="17"><stop offset="0" stopColor="#00E676" stopOpacity="0.40"/><stop offset="1" stopColor="#00E676" stopOpacity="0.05"/></linearGradient>
+                <linearGradient id="vtxfL" gradientUnits="userSpaceOnUse" x1="3" y1="25" x2="14" y2="15"><stop offset="0" stopColor="#00F0FF" stopOpacity="0.34"/><stop offset="1" stopColor="#00F0FF" stopOpacity="0.04"/></linearGradient>
+                <linearGradient id="vtxfR" gradientUnits="userSpaceOnUse" x1="29" y1="25" x2="18" y2="15"><stop offset="0" stopColor="#5090FF" stopOpacity="0.36"/><stop offset="1" stopColor="#5090FF" stopOpacity="0.04"/></linearGradient>
               </defs>
+              <polygon points="16,3 3,25 16,17" fill="url(#vtxfL)"/>
+              <polygon points="16,3 29,25 16,17" fill="url(#vtxfT)"/>
+              <polygon points="3,25 29,25 16,17" fill="url(#vtxfR)"/>
               <line x1="16" y1="3" x2="3" y2="25" stroke="url(#vtxA)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
               <line x1="3" y1="25" x2="29" y2="25" stroke="url(#vtxB)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
               <line x1="29" y1="25" x2="16" y2="3" stroke="url(#vtxC)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
-              <line x1="16" y1="3" x2="16" y2="16" stroke="#00E676" strokeWidth="1.1" opacity="0.85"/>
-              <line x1="3" y1="25" x2="16" y2="16" stroke="#00F0FF" strokeWidth="1.1" opacity="0.85"/>
-              <line x1="29" y1="25" x2="16" y2="16" stroke="#5090FF" strokeWidth="1.1" opacity="0.85"/>
-              <circle cx="16" cy="3" r="2.8" fill="#00E676" style={{filter:"drop-shadow(0 0 3px #00E676)"}}/>
-              <circle cx="3" cy="25" r="2.8" fill="#00F0FF" style={{filter:"drop-shadow(0 0 3px #00F0FF)"}}/>
-              <circle cx="29" cy="25" r="2.8" fill="#5090FF" style={{filter:"drop-shadow(0 0 3px #5090FF)"}}/>
-              <circle cx="16" cy="16" r="2.5" fill="#fff" style={{filter:"drop-shadow(0 0 4px #fff)"}}>
-                <animate attributeName="opacity" values="0.5;1;0.5" dur="2.4s" repeatCount="indefinite"/>
-                <animate attributeName="r" values="2.5;3.8;2.5" dur="2.4s" repeatCount="indefinite"/>
-              </circle>
-              <circle r="2.2" fill="#00E676">
-                <animateMotion dur="1.8s" begin="0.5s" repeatCount="indefinite"><mpath href="#vtxP1"/></animateMotion>
-                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="1.8s" begin="0.5s" repeatCount="indefinite"/>
-              </circle>
-              <circle r="2.2" fill="#00F0FF">
-                <animateMotion dur="1.8s" begin="1.1s" repeatCount="indefinite"><mpath href="#vtxP2"/></animateMotion>
-                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="1.8s" begin="1.1s" repeatCount="indefinite"/>
-              </circle>
-              <circle r="2.2" fill="#5090FF">
-                <animateMotion dur="1.8s" begin="1.7s" repeatCount="indefinite"><mpath href="#vtxP3"/></animateMotion>
-                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="1.8s" begin="1.7s" repeatCount="indefinite"/>
+              <line x1="16" y1="3" x2="16" y2="17" stroke="#00E676" strokeWidth="0.8" opacity="0.6"/>
+              <line x1="3" y1="25" x2="16" y2="17" stroke="#00F0FF" strokeWidth="0.8" opacity="0.6"/>
+              <line x1="29" y1="25" x2="16" y2="17" stroke="#5090FF" strokeWidth="0.8" opacity="0.6"/>
+              <circle cx="16" cy="3" r="2.3" fill="#00E676" style={{filter:"drop-shadow(0 0 2px #00E676)"}}/>
+              <circle cx="3" cy="25" r="2.3" fill="#00F0FF" style={{filter:"drop-shadow(0 0 2px #00F0FF)"}}/>
+              <circle cx="29" cy="25" r="2.3" fill="#5090FF" style={{filter:"drop-shadow(0 0 2px #5090FF)"}}/>
+              <circle cx="16" cy="17" r="2" fill="#fff" style={{filter:"drop-shadow(0 0 3px #fff)"}}>
+                <animate attributeName="opacity" values="0.55;1;0.55" dur="2.4s" repeatCount="indefinite"/>
+                <animate attributeName="r" values="2;2.9;2" dur="2.4s" repeatCount="indefinite"/>
               </circle>
             </svg>
             <div style={{minWidth:0}}>
