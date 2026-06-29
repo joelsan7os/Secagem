@@ -25,13 +25,13 @@ const COR_LINHA = { L4:"#5090FF", L5:"#00E676", L6:"#FFC107", L7:"#FF8C00", L8:"
 const MAX_W = 1280, MAX_H = 720, QUALITY = 0.80;
 
 export const TIPOS_AVARIA = [
-  { id:"alt_linha",    label:"Dif. de altura",      cor:"#5090FF" },
-  { id:"capa_rasgada", label:"Capa rasgada",         cor:"#FF5252" },
-  { id:"sem_capa",     label:"Faltando capa",        cor:"#FF8C00" },
-  { id:"arame_esp",    label:"Arame espaçado",       cor:"#FFC107" },
-  { id:"arame_cod",    label:"Arame s/ código",      cor:"#C77DFF" },
-  { id:"sem_imp",      label:"Falta impressão",      cor:"#00F0FF" },
-  { id:"sem_logo",     label:"Unit sem logo",        cor:"#00E676" },
+  { id:"alt_linha",    label:"Dif. de altura",   cor:"#5090FF" },
+  { id:"capa_rasgada", label:"Capa rasgada",      cor:"#FF5252" },
+  { id:"sem_capa",     label:"Faltando capa",     cor:"#FF8C00" },
+  { id:"arame_esp",    label:"Arame espaçado",    cor:"#FFC107" },
+  { id:"arame_cod",    label:"Arame s/ código",   cor:"#C77DFF" },
+  { id:"sem_imp",      label:"Falta impressão",   cor:"#00F0FF" },
+  { id:"sem_logo",     label:"Unit sem logo",     cor:"#00E676" },
 ];
 
 function comprimirImagem(file) {
@@ -62,75 +62,184 @@ function bPath(pts) {
   return d;
 }
 
-// Estado inicial de uma linha da grade
-const linhaVazia = () => ({ qtd:0, linha:null, lote:"", unidade:"", fotos:[] });
+// formulário inline de um tipo — reseta após OK
+function FormTipo({ tipo, inicial, onOk, onCancelar }) {
+  const [qtd, setQtd]         = useState(inicial?.qtd||0);
+  const [linha, setLinha]     = useState(inicial?.linha||null);
+  const [lote, setLote]       = useState(inicial?.lote||"");
+  const [unidade, setUnidade] = useState(inicial?.unidade||"");
+  const [fotos, setFotos]     = useState(inicial?.fotos||[]);
+  const [fotoProc, setFotoProc] = useState(false);
+  const inputRef = useRef(null);
 
-// ── AvariasTela ───────────────────────────────────────────────────────────────
-export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, data }) {
-  const letra = calcularLetra();
+  const pronto = qtd > 0 && linha;
 
-  // grade: { [tipoId]: { qtd, linha, lote, unidade, fotos } }
-  const [grade, setGrade] = useState(() =>
-    Object.fromEntries(TIPOS_AVARIA.map(t=>[t.id, linhaVazia()]))
-  );
-  const [teveAvaria, setTeveAvaria] = useState(null); // null=não perguntado
-  const [passo, setPasso]           = useState(1);    // 1=pergunta, 2=grade, 3=resumo
-  const [salvando, setSalvando]     = useState(false);
-  const [salvo, setSalvo]           = useState(false);
-  const [fotoProc, setFotoProc]     = useState(null);
-  const [barcodeAtivo, setBarcodeAtivo] = useState(null); // tipoId com leitor aberto
-  const inputRefs = useRef({});
-
-  const setcampo = (tipoId, campo, val) =>
-    setGrade(prev=>({...prev,[tipoId]:{...prev[tipoId],[campo]:val}}));
-
-  const setQtd = (tipoId, val) => {
-    const n = Math.max(0, Math.min(99, parseInt(val)||0));
-    setGrade(prev=>({...prev,[tipoId]:{...prev[tipoId],qtd:n, linha:n===0?null:prev[tipoId].linha}}));
-  };
-
-  const onFotoChange = useCallback(async (tipoId, e) => {
+  const onFotoChange = useCallback(async (e) => {
     const files = Array.from(e.target.files||[]);
     if(!files.length) return;
-    setFotoProc(tipoId);
+    setFotoProc(true);
     const novas = [];
     for(const file of files){
       if(!file.type.startsWith("image/")) continue;
       try { novas.push(await comprimirImagem(file)); } catch {}
     }
-    setGrade(prev=>({...prev,[tipoId]:{...prev[tipoId],fotos:[...(prev[tipoId].fotos||[]),...novas]}}));
-    setFotoProc(null);
+    setFotos(prev=>[...prev,...novas]);
+    setFotoProc(false);
     e.target.value="";
-  }, []);
+  },[]);
 
-  const totalAvarias = Object.values(grade).reduce((s,r)=>s+r.qtd,0);
-  const ativos = TIPOS_AVARIA.filter(t=>grade[t.id].qtd>0);
+  return (
+    <div style={{
+      background:tipo.cor+"0F",
+      border:`2px solid ${tipo.cor+"55"}`,
+      borderRadius:12, padding:"12px 14px", marginBottom:10
+    }}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+        <div style={{width:8,height:8,borderRadius:"50%",background:tipo.cor,boxShadow:`0 0 6px ${tipo.cor}`}}/>
+        <span style={{color:C.text,fontWeight:800,fontSize:14}}>{tipo.label}</span>
+      </div>
+
+      {/* Qtd */}
+      <div style={{marginBottom:12}}>
+        <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6}}>Quantidade</div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <button onClick={()=>setQtd(q=>Math.max(0,q-1))}
+            style={{width:36,height:36,borderRadius:9,border:`1px solid ${C.border}`,
+              background:C.tagBg,color:C.textMuted,cursor:"pointer",fontSize:20,fontWeight:900,opacity:qtd===0?0.3:1}}>−</button>
+          <input type="number" value={qtd} min={0} max={99}
+            onChange={e=>setQtd(Math.max(0,Math.min(99,parseInt(e.target.value)||0)))}
+            style={{width:56,textAlign:"center",background:"transparent",border:"none",
+              color:qtd>0?tipo.cor:C.textMuted,fontFamily:"monospace",fontWeight:900,fontSize:24,outline:"none"}}/>
+          <button onClick={()=>setQtd(q=>Math.min(99,q+1))}
+            style={{width:36,height:36,borderRadius:9,border:`1px solid ${C.border}`,
+              background:C.tagBg,color:C.textMuted,cursor:"pointer",fontSize:20,fontWeight:900}}>+</button>
+        </div>
+      </div>
+
+      {/* Linha */}
+      <div style={{marginBottom:12}}>
+        <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6}}>Linha</div>
+        <div style={{display:"flex",gap:6}}>
+          {LINHAS.map(l=>{
+            const sel=linha===l; const cor=COR_LINHA[l];
+            return (
+              <button key={l} onClick={()=>setLinha(sel?null:l)}
+                style={{flex:1,padding:"8px 2px",borderRadius:9,cursor:"pointer",
+                  border:`2px solid ${sel?cor+"99":C.border}`,
+                  background:sel?cor+"1A":C.tagBg,
+                  color:sel?cor:C.textDim,fontWeight:sel?800:500,fontSize:13,
+                  boxShadow:sel?`0 0 8px ${cor}44`:"none",transition:"all .12s"}}>
+                {l}
+                <div style={{fontSize:7,opacity:.7,marginTop:1}}>{maqDaLinha(l)}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Lote + Unidade + Foto */}
+      <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:fotos.length>0?8:0}}>
+        <input value={lote} onChange={e=>setLote(e.target.value)} placeholder="Lote"
+          style={{flex:1,padding:"8px 10px",borderRadius:8,background:"rgba(0,0,0,0.3)",
+            border:`1px solid ${lote?tipo.cor+"55":C.border}`,color:C.text,
+            fontFamily:"monospace",fontSize:12,outline:"none",minWidth:0}}/>
+        <input value={unidade} onChange={e=>setUnidade(e.target.value)} placeholder="Unidade"
+          style={{flex:1,padding:"8px 10px",borderRadius:8,background:"rgba(0,0,0,0.3)",
+            border:`1px solid ${unidade?tipo.cor+"55":C.border}`,color:C.text,
+            fontFamily:"monospace",fontSize:12,outline:"none",minWidth:0}}/>
+        <input ref={inputRef} type="file" accept="image/*" multiple onChange={onFotoChange} style={{display:"none"}}/>
+        <button onClick={()=>inputRef.current?.click()} disabled={fotoProc}
+          style={{flexShrink:0,width:36,height:36,borderRadius:8,cursor:"pointer",
+            border:`1px solid ${fotos.length>0?tipo.cor+"55":C.border}`,
+            background:fotos.length>0?tipo.cor+"1A":C.tagBg,
+            color:fotos.length>0?tipo.cor:C.textDim,fontSize:15}}>
+          {fotoProc?"…":"📷"}
+        </button>
+      </div>
+
+      {fotos.length>0&&(
+        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10}}>
+          {fotos.map((f,fi)=>(
+            <div key={fi} style={{position:"relative",width:52,height:38}}>
+              <img src={f.base64} style={{width:52,height:38,objectFit:"cover",borderRadius:5,border:`1px solid ${C.border}`}}/>
+              <button onClick={()=>setFotos(prev=>prev.filter((_,i)=>i!==fi))}
+                style={{position:"absolute",top:-4,right:-4,width:16,height:16,borderRadius:"50%",
+                  background:C.dangerLight,border:"none",color:"#fff",fontSize:9,cursor:"pointer",fontWeight:900,padding:0}}>x</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Ações */}
+      <div style={{display:"flex",gap:8,marginTop:4}}>
+        <button onClick={onCancelar}
+          style={{flex:1,padding:"10px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,
+            background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted}}>
+          Cancelar
+        </button>
+        <button onClick={()=>pronto&&onOk({qtd,linha,lote:lote.trim(),unidade:unidade.trim(),fotos})}
+          disabled={!pronto}
+          style={{flex:2,padding:"10px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:14,
+            background:pronto?`linear-gradient(135deg,${tipo.cor}cc,${tipo.cor})`:"transparent",
+            border:`1px solid ${pronto?tipo.cor:C.border}`,
+            color:pronto?"#000":C.textDim,opacity:pronto?1:0.45,transition:"all .15s"}}>
+          OK — registrar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── AvariasTela ───────────────────────────────────────────────────────────────
+export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, data }) {
+  const letra = calcularLetra();
+  const [passo, setPasso]       = useState(1); // 1=pergunta 2=grade 3=revisão
+  const [fila, setFila]         = useState([]); // entradas confirmadas [{uid,tipoId,tipoLabel,tipoColor,qtd,linha,...}]
+  const [aberto, setAberto]     = useState(null); // tipoId com form aberto
+  const [editando, setEditando] = useState(null); // {uid, tipoId} sendo editado (no passo 3)
+  const [salvando, setSalvando] = useState(false);
+  const [salvo, setSalvo]       = useState(false);
+
+  const totalAvarias = fila.reduce((s,r)=>s+r.qtd,0);
+
+  // confirma entrada nova (grade)
+  const onOkTipo = (tipoId, dados) => {
+    const tipo = TIPOS_AVARIA.find(t=>t.id===tipoId);
+    setFila(prev=>[...prev,{
+      uid: Date.now()+Math.random(),
+      tipoId, tipoLabel:tipo.label, tipoColor:tipo.cor,
+      ...dados
+    }]);
+    setAberto(null);
+  };
+
+  // salva edição (revisão)
+  const onOkEditar = (dados) => {
+    setFila(prev=>prev.map(r=>r.uid===editando.uid?{...r,...dados}:r));
+    setEditando(null);
+  };
+
+  const remover = (uid) => setFila(prev=>prev.filter(r=>r.uid!==uid));
 
   const salvar = async (houve) => {
     setSalvando(true);
     const hora = horaAtual();
     const opConfig = storageGet("op_config")||{};
-    const itens = TIPOS_AVARIA.map(t=>({
-      id:t.id, label:t.label,
-      quantidade: grade[t.id].qtd,
-      linha: grade[t.id].linha,
-      maquina: grade[t.id].linha?maqDaLinha(grade[t.id].linha):null,
-      lote: grade[t.id].lote,
-      unidade: grade[t.id].unidade,
-      fotos: (grade[t.id].fotos||[]).map(f=>({base64:f.base64,kb:f.kb})),
-    })).filter(i=>i.quantidade>0);
-
+    const itens = fila.map(r=>({
+      id:r.tipoId, label:r.tipoLabel,
+      quantidade:r.qtd, linha:r.linha,
+      maquina:maqDaLinha(r.linha),
+      lote:r.lote, unidade:r.unidade,
+      fotos:(r.fotos||[]).map(f=>({base64:f.base64,kb:f.kb})),
+    }));
     const registro = {
-      id: Date.now(),
-      tipoId:"avaria_enf", tipoLabel:"Inspeção de Avarias",
-      turno: turno||(storageGet("turno_ativo")||""),
-      letra: letraProp||letra, hora,
-      data: data||hoje(),
-      matricula: opConfig.matricula||"",
-      opPU: opPU||"", opPainel: opPainel||"",
-      teveAvaria: houve,
-      totalAvarias: houve?totalAvarias:0,
-      itens: houve?itens:[],
+      id:Date.now(), tipoId:"avaria_enf", tipoLabel:"Inspeção de Avarias",
+      turno:turno||(storageGet("turno_ativo")||""),
+      letra:letraProp||letra, hora, data:data||hoje(),
+      matricula:opConfig.matricula||"",
+      opPU:opPU||"", opPainel:opPainel||"",
+      teveAvaria:houve, totalAvarias:houve?totalAvarias:0,
+      itens:houve?itens:[],
     };
     try {
       const hist = storageGet("historico_h2")||[];
@@ -142,8 +251,7 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
       avHist.push({
         id:registro.id, data:registro.data, turno:registro.turno,
         letra:registro.letra, hora:registro.hora,
-        teveAvaria:houve, total:registro.totalAvarias,
-        itens:registro.itens,
+        teveAvaria:houve, total:registro.totalAvarias, itens:registro.itens,
       });
       storageSet("avarias_h2",avHist);
       await setDoc(doc(COL,"avarias_h2"),{val:avHist,ts:Date.now()});
@@ -189,195 +297,179 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
   // ── Passo 2 — grade de lançamento ─────────────────────────────────────────
   if(passo===2) return (
     <div>
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.dangerLight}`,borderRadius:12,padding:14,marginBottom:12}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={{color:C.text,fontWeight:800,fontSize:14}}>Lançamento de avarias</div>
-          {totalAvarias>0&&(
-            <div style={{background:C.dangerLight+"22",border:`1px solid ${C.dangerLight}44`,borderRadius:20,padding:"3px 12px"}}>
-              <span style={{fontFamily:"monospace",fontWeight:900,fontSize:14,color:C.dangerLight}}>{totalAvarias}</span>
-              <span style={{fontSize:10,color:C.textDim,marginLeft:4}}>total</span>
-            </div>
-          )}
-        </div>
-
-        {TIPOS_AVARIA.map(tipo=>{
-          const r = grade[tipo.id];
-          const ativo = r.qtd > 0;
-          return (
-            <div key={tipo.id} style={{
-              background: ativo?tipo.cor+"0F":C.tagBg,
-              border:`1px solid ${ativo?tipo.cor+"44":C.border}`,
-              borderLeft:`3px solid ${ativo?tipo.cor:C.textDim+"44"}`,
-              borderRadius:10, padding:"10px 12px", marginBottom:8,
-              transition:"all .15s"}}>
-
-              {/* Linha principal: label + qtd + linha */}
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                {/* Label */}
-                <div style={{flex:1,fontSize:13,fontWeight:ativo?700:500,
-                  color:ativo?C.text:C.textMuted,minWidth:0,
-                  whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                  {tipo.label}
-                </div>
-
-                {/* Contador */}
-                <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
-                  <button onClick={()=>setQtd(tipo.id, r.qtd-1)}
-                    style={{width:28,height:28,borderRadius:7,border:`1px solid ${C.border}`,
-                      background:C.tagBg,color:C.textMuted,cursor:"pointer",fontSize:16,fontWeight:900,
-                      opacity:r.qtd===0?0.3:1}}>−</button>
-                  <input type="number" value={r.qtd} min={0} max={99}
-                    onChange={e=>setQtd(tipo.id,e.target.value)}
-                    style={{width:36,textAlign:"center",background:"transparent",border:"none",
-                      color:ativo?tipo.cor:C.textMuted,fontFamily:"monospace",fontWeight:900,
-                      fontSize:18,outline:"none"}}/>
-                  <button onClick={()=>setQtd(tipo.id, r.qtd+1)}
-                    style={{width:28,height:28,borderRadius:7,border:`1px solid ${C.border}`,
-                      background:C.tagBg,color:C.textMuted,cursor:"pointer",fontSize:16,fontWeight:900}}>+</button>
-                </div>
-              </div>
-
-              {/* Expansão quando ativo */}
-              {ativo&&(
-                <div style={{marginTop:10}}>
-                  {/* Seletor de linha */}
-                  <div style={{display:"flex",gap:5,marginBottom:8}}>
-                    {LINHAS.map(l=>{
-                      const sel=r.linha===l;
-                      const cor=COR_LINHA[l];
-                      return (
-                        <button key={l} onClick={()=>setcampo_linha(tipo.id,l,r,setGrade)}
-                          style={{flex:1,padding:"6px 2px",borderRadius:8,cursor:"pointer",
-                            border:`2px solid ${sel?cor+"99":C.border}`,
-                            background:sel?cor+"1A":C.tagBg,
-                            color:sel?cor:C.textDim,fontWeight:sel?800:500,fontSize:12,
-                            boxShadow:sel?`0 0 8px ${cor}44`:"none",transition:"all .12s"}}>
-                          {l}
-                          <div style={{fontSize:7,opacity:.7,marginTop:1}}>{maqDaLinha(l)}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Lote + Unidade + Foto */}
-                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    <input value={r.lote} onChange={e=>setcampo(tipo.id,"lote",e.target.value,setGrade)}
-                      placeholder="Lote"
-                      style={{flex:1,padding:"7px 10px",borderRadius:8,background:"rgba(0,0,0,0.3)",
-                        border:`1px solid ${r.lote?tipo.cor+"55":C.border}`,color:C.text,
-                        fontFamily:"monospace",fontSize:12,outline:"none",minWidth:0}}/>
-                    <input value={r.unidade} onChange={e=>setcampo(tipo.id,"unidade",e.target.value,setGrade)}
-                      placeholder="Unidade"
-                      style={{flex:1,padding:"7px 10px",borderRadius:8,background:"rgba(0,0,0,0.3)",
-                        border:`1px solid ${r.unidade?tipo.cor+"55":C.border}`,color:C.text,
-                        fontFamily:"monospace",fontSize:12,outline:"none",minWidth:0}}/>
-                    <input ref={el=>inputRefs.current[tipo.id]=el} type="file"
-                      accept="image/*" multiple onChange={e=>onFotoChange(tipo.id,e)} style={{display:"none"}}/>
-                    <button onClick={()=>inputRefs.current[tipo.id]?.click()}
-                      disabled={fotoProc===tipo.id}
-                      style={{flexShrink:0,width:34,height:34,borderRadius:8,cursor:"pointer",
-                        border:`1px solid ${(r.fotos?.length>0)?tipo.cor+"55":C.border}`,
-                        background:(r.fotos?.length>0)?tipo.cor+"1A":C.tagBg,
-                        color:(r.fotos?.length>0)?tipo.cor:C.textDim,fontSize:14}}>
-                      {fotoProc===tipo.id?"…":"📷"}
-                    </button>
-                  </div>
-                  {r.fotos?.length>0&&(
-                    <div style={{display:"flex",gap:5,marginTop:6,flexWrap:"wrap"}}>
-                      {r.fotos.map((f,fi)=>(
-                        <div key={fi} style={{position:"relative",width:52,height:38}}>
-                          <img src={f.base64} style={{width:52,height:38,objectFit:"cover",borderRadius:5,border:`1px solid ${C.border}`}}/>
-                          <button onClick={()=>setGrade(prev=>({...prev,[tipo.id]:{...prev[tipo.id],fotos:prev[tipo.id].fotos.filter((_,i)=>i!==fi)}}))}
-                            style={{position:"absolute",top:-4,right:-4,width:16,height:16,borderRadius:"50%",
-                              background:C.dangerLight,border:"none",color:"#fff",fontSize:9,cursor:"pointer",fontWeight:900,padding:0}}>x</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
+      {/* Cabeçalho */}
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.dangerLight}`,
+        borderRadius:12,padding:"12px 14px",marginBottom:12,
+        display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{color:C.text,fontWeight:800,fontSize:14}}>Lançamento</div>
+        {fila.length>0&&(
+          <div style={{background:C.dangerLight+"22",border:`1px solid ${C.dangerLight}44`,borderRadius:20,padding:"3px 12px",
+            display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontFamily:"monospace",fontWeight:900,fontSize:14,color:C.dangerLight}}>{totalAvarias}</span>
+            <span style={{fontSize:10,color:C.textDim}}>em {fila.length} entrada{fila.length>1?"s":""}</span>
+          </div>
+        )}
       </div>
 
-      <div style={{display:"flex",gap:8}}>
-        <button onClick={()=>setPasso(1)}
-          style={{flex:1,padding:13,borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,
-            background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted}}>
-          Voltar
-        </button>
-        <button onClick={()=>setPasso(3)} disabled={totalAvarias===0}
-          style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
-            background:totalAvarias>0?"linear-gradient(135deg,#c0272d,#FF5252)":C.tagBg,
-            border:`1px solid ${totalAvarias>0?C.dangerLight:C.border}`,
-            color:totalAvarias>0?"#fff":C.textDim,opacity:totalAvarias===0?0.5:1}}>
-          Revisar ({totalAvarias} avaria{totalAvarias!==1?"s":""})
-        </button>
-      </div>
-    </div>
-  );
-
-  // ── Passo 3 — resumo ───────────────────────────────────────────────────────
-  return (
-    <div>
-      <div style={{background:C.card,border:`1px solid ${C.dangerLight}44`,borderTop:`3px solid ${C.dangerLight}`,borderRadius:12,padding:16,marginBottom:12}}>
-        <div style={{color:C.text,fontWeight:800,fontSize:15,marginBottom:4}}>Resumo da Inspeção</div>
-        <div style={{color:C.textMuted,fontSize:12,marginBottom:14}}>Turno {letraProp||letra}</div>
-        <div style={{textAlign:"center",padding:"14px 0",borderBottom:`1px solid ${C.border}`,marginBottom:14}}>
-          <div style={{fontFamily:"monospace",fontSize:52,fontWeight:900,color:C.dangerLight,lineHeight:1,
-            textShadow:`0 0 20px ${C.dangerLight}66`}}>{totalAvarias}</div>
-          <div style={{fontSize:12,color:C.textMuted,marginTop:4}}>avaria{totalAvarias!==1?"s":""} registrada{totalAvarias!==1?"s":""}</div>
-        </div>
-        {ativos.map(tipo=>{
-          const r=grade[tipo.id];
-          return(
-            <div key={tipo.id} style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:12}}>
-              <div style={{width:4,minHeight:32,borderRadius:2,background:tipo.cor,flexShrink:0,marginTop:2}}/>
-              <div style={{flex:1}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{color:C.text,fontSize:13,fontWeight:700}}>{tipo.label}</span>
-                  <span style={{fontFamily:"monospace",fontWeight:900,fontSize:18,color:tipo.cor}}>{r.qtd}</span>
+      {/* Entradas já na fila */}
+      {fila.length>0&&(
+        <div style={{marginBottom:12}}>
+          {fila.map(r=>(
+            <div key={r.uid} style={{
+              background:r.tipoColor+"0A",border:`1px solid ${r.tipoColor+"33"}`,
+              borderLeft:`3px solid ${r.tipoColor}`,borderRadius:10,
+              padding:"9px 12px",marginBottom:6,
+              display:"flex",alignItems:"center",gap:10}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <span style={{color:C.text,fontWeight:700,fontSize:13}}>{r.tipoLabel}</span>
+                  <span style={{fontFamily:"monospace",fontWeight:900,fontSize:14,color:r.tipoColor}}>{r.qtd}</span>
                 </div>
-                <div style={{display:"flex",gap:8,marginTop:3,flexWrap:"wrap"}}>
-                  {r.linha&&<span style={{fontSize:11,color:COR_LINHA[r.linha],fontWeight:700,fontFamily:"monospace"}}>{r.linha} · {maqDaLinha(r.linha)}</span>}
+                <div style={{display:"flex",gap:6,marginTop:2,flexWrap:"wrap"}}>
+                  <span style={{fontSize:11,color:COR_LINHA[r.linha],fontWeight:700,fontFamily:"monospace"}}>{r.linha} · {maqDaLinha(r.linha)}</span>
                   {r.lote&&<span style={{fontSize:11,color:C.textDim,fontFamily:"monospace"}}>Lote {r.lote}</span>}
                   {r.unidade&&<span style={{fontSize:11,color:C.textDim,fontFamily:"monospace"}}>Un {r.unidade}</span>}
                 </div>
-                {r.fotos?.length>0&&(
-                  <div style={{display:"flex",gap:4,marginTop:5}}>
-                    {r.fotos.map((f,fi)=>(
-                      <img key={fi} src={f.base64} style={{width:38,height:28,objectFit:"cover",borderRadius:4,border:`1px solid ${C.border}`}}/>
-                    ))}
-                  </div>
-                )}
               </div>
+              <button onClick={()=>remover(r.uid)}
+                style={{width:26,height:26,borderRadius:7,border:`1px solid ${C.border}`,
+                  background:C.tagBg,color:C.textDim,cursor:"pointer",fontSize:14,fontWeight:900,flexShrink:0}}>×</button>
             </div>
-          );
-        })}
-      </div>
-      <div style={{display:"flex",gap:8}}>
-        <button onClick={()=>setPasso(2)}
-          style={{flex:1,padding:13,borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,
-            background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted}}>
-          Corrigir
-        </button>
-        <button onClick={()=>salvar(true)} disabled={salvando}
-          style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
-            background:"linear-gradient(135deg,#c0272d,#FF5252)",border:"none",color:"#fff",opacity:salvando?0.6:1}}>
-          {salvando?"Salvando...":"Confirmar e Salvar"}
-        </button>
-      </div>
+          ))}
+        </div>
+      )}
+
+      {/* Form do tipo aberto */}
+      {aberto?(
+        <FormTipo
+          tipo={TIPOS_AVARIA.find(t=>t.id===aberto)}
+          inicial={null}
+          onOk={(dados)=>onOkTipo(aberto,dados)}
+          onCancelar={()=>setAberto(null)}/>
+      ):(
+        /* Grid de tipos */
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:14,marginBottom:12}}>
+          <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Selecione o tipo de avaria</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {TIPOS_AVARIA.map(tipo=>(
+              <button key={tipo.id} onClick={()=>setAberto(tipo.id)}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:10,
+                  cursor:"pointer",textAlign:"left",
+                  border:`1px solid ${C.border}`,background:C.tagBg,transition:"all .12s"}}>
+                <div style={{width:10,height:10,borderRadius:"50%",background:tipo.cor,flexShrink:0,
+                  boxShadow:`0 0 6px ${tipo.cor}88`}}/>
+                <span style={{color:C.textMuted,fontSize:13,fontWeight:500,flex:1}}>{tipo.label}</span>
+                {fila.filter(r=>r.tipoId===tipo.id).length>0&&(
+                  <span style={{fontSize:10,color:tipo.cor,fontFamily:"monospace",fontWeight:700}}>
+                    ×{fila.filter(r=>r.tipoId===tipo.id).length}
+                  </span>
+                )}
+                <span style={{color:C.textDim,fontSize:16}}>›</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Navegação */}
+      {!aberto&&(
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setPasso(1)}
+            style={{flex:1,padding:13,borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,
+              background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted}}>
+            Voltar
+          </button>
+          <button onClick={()=>setPasso(3)} disabled={fila.length===0}
+            style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
+              background:fila.length>0?"linear-gradient(135deg,#c0272d,#FF5252)":C.tagBg,
+              border:`1px solid ${fila.length>0?C.dangerLight:C.border}`,
+              color:fila.length>0?"#fff":C.textDim,opacity:fila.length===0?0.5:1}}>
+            Revisar ({totalAvarias} avaria{totalAvarias!==1?"s":""})
+          </button>
+        </div>
+      )}
     </div>
   );
-}
 
-// helpers fora do componente pra evitar recriação
-function setcampo_linha(tipoId, l, r, setGrade) {
-  setGrade(prev=>({...prev,[tipoId]:{...prev[tipoId],linha:r.linha===l?null:l}}));
-}
-function setcampo(tipoId, campo, val, setGrade) {
-  setGrade(prev=>({...prev,[tipoId]:{...prev[tipoId],[campo]:val}}));
+  // ── Passo 3 — revisão ─────────────────────────────────────────────────────
+  return (
+    <div>
+      <div style={{background:C.card,border:`1px solid ${C.dangerLight}44`,borderTop:`3px solid ${C.dangerLight}`,
+        borderRadius:12,padding:16,marginBottom:12}}>
+        <div style={{color:C.text,fontWeight:800,fontSize:15,marginBottom:4}}>Revisão</div>
+        <div style={{color:C.textMuted,fontSize:12,marginBottom:14}}>Turno {letraProp||letra}</div>
+        <div style={{textAlign:"center",padding:"12px 0",borderBottom:`1px solid ${C.border}`,marginBottom:14}}>
+          <div style={{fontFamily:"monospace",fontSize:48,fontWeight:900,color:C.dangerLight,lineHeight:1,
+            textShadow:`0 0 20px ${C.dangerLight}66`}}>{totalAvarias}</div>
+          <div style={{fontSize:12,color:C.textMuted,marginTop:4}}>avaria{totalAvarias!==1?"s":""} registrada{totalAvarias!==1?"s":""}</div>
+        </div>
+
+        {fila.map(r=>(
+          <div key={r.uid}>
+            {/* Modo edição inline */}
+            {editando?.uid===r.uid?(
+              <FormTipo
+                tipo={TIPOS_AVARIA.find(t=>t.id===r.tipoId)}
+                inicial={r}
+                onOk={onOkEditar}
+                onCancelar={()=>setEditando(null)}/>
+            ):(
+              <div style={{
+                background:r.tipoColor+"0A",border:`1px solid ${r.tipoColor+"33"}`,
+                borderLeft:`3px solid ${r.tipoColor}`,borderRadius:10,
+                padding:"10px 12px",marginBottom:10,
+                display:"flex",alignItems:"flex-start",gap:10}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span style={{color:C.text,fontSize:13,fontWeight:700}}>{r.tipoLabel}</span>
+                    <span style={{fontFamily:"monospace",fontWeight:900,fontSize:18,color:r.tipoColor}}>{r.qtd}</span>
+                  </div>
+                  <div style={{display:"flex",gap:8,marginTop:3,flexWrap:"wrap"}}>
+                    <span style={{fontSize:11,color:COR_LINHA[r.linha],fontWeight:700,fontFamily:"monospace"}}>{r.linha} · {maqDaLinha(r.linha)}</span>
+                    {r.lote&&<span style={{fontSize:11,color:C.textDim,fontFamily:"monospace"}}>Lote {r.lote}</span>}
+                    {r.unidade&&<span style={{fontSize:11,color:C.textDim,fontFamily:"monospace"}}>Un {r.unidade}</span>}
+                    {r.fotos?.length>0&&<span style={{fontSize:11,color:C.textDim}}>{r.fotos.length} foto{r.fotos.length>1?"s":""}</span>}
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <button onClick={()=>setEditando({uid:r.uid,tipoId:r.tipoId})}
+                    style={{width:30,height:30,borderRadius:8,border:`1px solid ${C.border}`,
+                      background:C.tagBg,color:C.textMuted,cursor:"pointer",fontSize:14}}>✏️</button>
+                  <button onClick={()=>remover(r.uid)}
+                    style={{width:30,height:30,borderRadius:8,border:`1px solid ${C.border}`,
+                      background:C.tagBg,color:C.textDim,cursor:"pointer",fontSize:15,fontWeight:900}}>×</button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Adicionar mais */}
+        {!editando&&(
+          <button onClick={()=>setPasso(2)}
+            style={{width:"100%",padding:"10px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13,
+              background:"transparent",border:`1px dashed ${C.border}`,color:C.textDim,marginTop:4}}>
+            + Adicionar outra avaria
+          </button>
+        )}
+      </div>
+
+      {!editando&&(
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setPasso(2)}
+            style={{flex:1,padding:13,borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,
+              background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted}}>
+            Voltar
+          </button>
+          <button onClick={()=>salvar(true)} disabled={salvando||fila.length===0}
+            style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
+              background:"linear-gradient(135deg,#c0272d,#FF5252)",border:"none",color:"#fff",opacity:salvando?0.6:1}}>
+            {salvando?"Salvando...":"Confirmar e Salvar"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── AvariasAnalytics ──────────────────────────────────────────────────────────
@@ -387,15 +479,13 @@ export function AvariasAnalytics({ avariasData, perfil }) {
   const [filtroLetra, setFiltroLetra] = useState("TODAS");
   const [filtroLinha, setFiltroLinha] = useState("TODAS");
   const [aba, setAba]                 = useState("tipos");
-
   const LETRAS = ["TODAS","A","B","C"];
 
   const filtrados = dados.filter(r=>{
     if(filtroLetra!=="TODAS"&&r.letra!==filtroLetra) return false;
     if(filtroLinha!=="TODAS"){
       const temLinha = r.itens?.some(i=>i.linha===filtroLinha);
-      const legado   = r.linha===filtroLinha;
-      if(!temLinha&&!legado) return false;
+      if(!temLinha&&r.linha!==filtroLinha) return false;
     }
     return true;
   });
@@ -404,7 +494,6 @@ export function AvariasAnalytics({ avariasData, perfil }) {
   const totalMes  = dados.filter(r=>r.data?.slice(0,7)===mesAtual()&&r.teveAvaria)
     .reduce((s,r)=>s+(r.totalAvarias||r.total||0),0);
 
-  // ranking por tipo
   const contTipos = {};
   TIPOS_AVARIA.forEach(t=>{contTipos[t.id]=0;});
   comAvaria.forEach(r=>{
@@ -413,7 +502,6 @@ export function AvariasAnalytics({ avariasData, perfil }) {
   const rankTipos = TIPOS_AVARIA.map(t=>({...t,total:contTipos[t.id]})).sort((a,b)=>b.total-a.total);
   const maxTipo   = Math.max(1,...rankTipos.map(t=>t.total));
 
-  // ranking por linha
   const contLinhas = {};
   LINHAS.forEach(l=>{contLinhas[l]=0;});
   comAvaria.forEach(r=>{
@@ -423,16 +511,15 @@ export function AvariasAnalytics({ avariasData, perfil }) {
   const rankLinhas = LINHAS.map(l=>({linha:l,cor:COR_LINHA[l],total:contLinhas[l]})).sort((a,b)=>b.total-a.total);
   const maxLinha   = Math.max(1,...rankLinhas.map(l=>l.total));
 
-  // gráfico tendência
   const ultimos = [...filtrados].sort((a,b)=>b.id-a.id).slice(0,20).reverse();
   const W=280,H=70,PAD=8;
-  const vals    = ultimos.map(r=>r.teveAvaria?(r.totalAvarias||r.total||0):0);
-  const maxV    = Math.max(1,...vals);
-  const xOf     = (i)=>PAD+(i/(Math.max(1,ultimos.length-1)))*(W-PAD*2);
-  const yOf     = (v)=>H-PAD-((v/maxV)*(H-PAD*2));
-  const pts     = vals.map((v,i)=>`${xOf(i)},${yOf(v)}`);
-  const lp      = bPath(pts);
-  const area    = lp?lp+` L${xOf(vals.length-1)},${H-PAD} L${xOf(0)},${H-PAD} Z`:"";
+  const vals  = ultimos.map(r=>r.teveAvaria?(r.totalAvarias||r.total||0):0);
+  const maxV  = Math.max(1,...vals);
+  const xOf   = (i)=>PAD+(i/(Math.max(1,ultimos.length-1)))*(W-PAD*2);
+  const yOf   = (v)=>H-PAD-((v/maxV)*(H-PAD*2));
+  const pts   = vals.map((v,i)=>`${xOf(i)},${yOf(v)}`);
+  const lp    = bPath(pts);
+  const area  = lp?lp+` L${xOf(vals.length-1)},${H-PAD} L${xOf(0)},${H-PAD} Z`:"";
 
   return (
     <div>
@@ -457,8 +544,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
         <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Linha</div>
         <div style={{display:"flex",gap:6}}>
           {["TODAS",...LINHAS].map(l=>{
-            const at=filtroLinha===l;
-            const cor=l==="TODAS"?C.accentLight:COR_LINHA[l];
+            const at=filtroLinha===l; const cor=l==="TODAS"?C.accentLight:COR_LINHA[l];
             return <button key={l} onClick={()=>setFiltroLinha(l)}
               style={{flex:1,padding:"7px 2px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:700,
                 border:`2px solid ${at?cor+"99":C.border}`,
@@ -469,7 +555,6 @@ export function AvariasAnalytics({ avariasData, perfil }) {
         </div>
       </div>
 
-      {/* Tendência */}
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.dangerLight}`,borderRadius:12,padding:14,marginBottom:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
           <span style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.08em"}}>Tendência</span>
@@ -498,13 +583,11 @@ export function AvariasAnalytics({ avariasData, perfil }) {
         )}
       </div>
 
-      {/* Abas */}
       <div style={{display:"flex",gap:0,marginBottom:12,borderRadius:10,overflow:"hidden",border:`1px solid ${C.border}`}}>
         {[["tipos","Por motivo"],["linhas","Por linha"]].map(([key,label])=>(
           <button key={key} onClick={()=>setAba(key)}
             style={{flex:1,padding:"10px",cursor:"pointer",fontWeight:700,fontSize:12,border:"none",
-              background:aba===key?C.blue:C.tagBg,
-              color:aba===key?C.text:C.textMuted,
+              background:aba===key?C.blue:C.tagBg,color:aba===key?C.text:C.textMuted,
               borderRight:key==="tipos"?`1px solid ${C.border}`:"none"}}>
             {label}
           </button>
@@ -609,18 +692,15 @@ export function PainelAvariasTV({ avariasData, setTela }) {
       borderTop:`3px solid ${corTopo}`,borderRadius:14,padding:"14px 18px 12px",
       cursor:"pointer",display:"flex",flexDirection:"column",gap:10,overflow:"hidden",
       boxShadow:`0 2px 16px rgba(0,0,0,.5)`,height:"100%",boxSizing:"border-box"}}>
-
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <span style={{fontSize:11,fontWeight:800,color:C.textMuted,letterSpacing:"0.09em",textTransform:"uppercase"}}>Avarias por Turno</span>
         <span style={{fontSize:12,color:C.textDim,opacity:.6}}>›</span>
       </div>
-
       <div style={{display:"flex",alignItems:"flex-end",gap:8}}>
         <span style={{fontFamily:"monospace",fontSize:42,fontWeight:900,color:corTopo,lineHeight:1,
           textShadow:`0 0 20px ${corTopo}66`}}>{totalMes}</span>
         <span style={{fontSize:11,color:C.textMuted,marginBottom:6}}>no mês</span>
       </div>
-
       <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{display:"block"}}>
         <defs>
           <linearGradient id="avTVFill" x1="0" y1="0" x2="0" y2="1">
@@ -637,7 +717,6 @@ export function PainelAvariasTV({ avariasData, setTela }) {
             style={{filter:`drop-shadow(0 0 3px ${corTopo})`}}/>
         ):null)}
       </svg>
-
       <div style={{display:"flex",flexDirection:"column",gap:5}}>
         {topLinhas.map((l,i)=>(
           <div key={l.linha}>
