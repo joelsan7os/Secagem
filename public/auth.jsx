@@ -64,49 +64,51 @@ function LogoVertice({ animated }) {
   return (
     <svg viewBox="0 0 240 216" style={{width:"min(220px,58vw)",height:"auto",overflow:"visible"}} aria-label="Vértice">
       <defs>
-        <linearGradient id="gA" gradientUnits="userSpaceOnUse" x1="120" y1="24" x2="28" y2="188">
-          <stop offset="0" stopColor="#00E676"/><stop offset="1" stopColor="#00F0FF"/>
-        </linearGradient>
-        <linearGradient id="gB" gradientUnits="userSpaceOnUse" x1="28" y1="188" x2="212" y2="188">
-          <stop offset="0" stopColor="#00F0FF"/><stop offset="1" stopColor="#5090FF"/>
-        </linearGradient>
-        <linearGradient id="gC" gradientUnits="userSpaceOnUse" x1="212" y1="188" x2="120" y2="24">
-          <stop offset="0" stopColor="#5090FF"/><stop offset="1" stopColor="#00E676"/>
-        </linearGradient>
-        <radialGradient id="gFill" cx="120" cy="133" r="90" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"  stopColor="#00E676" stopOpacity=".13"/>
-          <stop offset="45%" stopColor="#00F0FF" stopOpacity=".05"/>
-          <stop offset="100%" stopColor="#5090FF" stopOpacity="0"/>
-        </radialGradient>
+        <linearGradient id="gA" gradientUnits="userSpaceOnUse" x1="120" y1="24" x2="28" y2="188"><stop offset="0" stopColor="#00E676"/><stop offset="1" stopColor="#00F0FF"/></linearGradient>
+        <linearGradient id="gB" gradientUnits="userSpaceOnUse" x1="28" y1="188" x2="212" y2="188"><stop offset="0" stopColor="#00F0FF"/><stop offset="1" stopColor="#5090FF"/></linearGradient>
+        <linearGradient id="gC" gradientUnits="userSpaceOnUse" x1="212" y1="188" x2="120" y2="24"><stop offset="0" stopColor="#5090FF"/><stop offset="1" stopColor="#00E676"/></linearGradient>
+        <linearGradient id="fTop" gradientUnits="userSpaceOnUse" x1="120" y1="24" x2="120" y2="133"><stop offset="0" stopColor="#00E676" stopOpacity=".34"/><stop offset="1" stopColor="#00E676" stopOpacity=".04"/></linearGradient>
+        <linearGradient id="fLeft" gradientUnits="userSpaceOnUse" x1="28" y1="188" x2="120" y2="110"><stop offset="0" stopColor="#00F0FF" stopOpacity=".30"/><stop offset="1" stopColor="#00F0FF" stopOpacity=".03"/></linearGradient>
+        <linearGradient id="fRight" gradientUnits="userSpaceOnUse" x1="212" y1="188" x2="120" y2="110"><stop offset="0" stopColor="#5090FF" stopOpacity=".32"/><stop offset="1" stopColor="#5090FF" stopOpacity=".03"/></linearGradient>
+        <radialGradient id="rGlow" cx="120" cy="133" r="70" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#00F0FF" stopOpacity=".22"/><stop offset="100%" stopColor="#5090FF" stopOpacity="0"/></radialGradient>
+        <path id="vxP1" d="M120,24 L120,133"/><path id="vxP2" d="M28,188 L120,133"/><path id="vxP3" d="M212,188 L120,133"/>
       </defs>
 
       <style>{`
         .vx-edge,.vx-inl{fill:none;stroke-linecap:round;pathLength:1;stroke-dasharray:1;stroke-dashoffset:1}
-        .vx-edge{stroke-width:2.4}
-        .vx-inl{stroke-width:1.4;opacity:.9}
+        .vx-edge{stroke-width:3.4}
+        .vx-inl{stroke-width:1.4;opacity:.75}
+        .vx-fill,.vx-ring,.vx-bevel{opacity:0}
         .vx-dot{opacity:0;transform-box:fill-box;transform-origin:center}
-        .vx-core{opacity:0;transform-box:fill-box;transform-origin:center;filter:drop-shadow(0 0 6px #fff) drop-shadow(0 0 12px #00E676)}
-        .vx-fill{opacity:0;transition:opacity .6s}
+        .vx-core{opacity:0;transform-box:fill-box;transform-origin:center;filter:drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px #00E676)}
         @keyframes vxDraw{to{stroke-dashoffset:0}}
         @keyframes vxPop{0%{opacity:0;transform:scale(.2)}60%{opacity:1;transform:scale(1.45)}100%{opacity:1;transform:scale(1)}}
         @keyframes vxFadeIn{to{opacity:1}}
         @keyframes vxCorePulse{0%,100%{opacity:.65;transform:scale(1)}50%{opacity:1;transform:scale(1.55)}}
+        .vx-go .vx-fill{animation:vxFadeIn .8s ease .15s forwards}
         .vx-go .vx-e1{animation:vxDraw .55s ease .15s forwards}
         .vx-go .vx-e2{animation:vxDraw .55s ease .35s forwards}
         .vx-go .vx-e3{animation:vxDraw .55s ease .55s forwards}
+        .vx-go .vx-bevel{animation:vxFadeIn .6s ease .8s forwards}
         .vx-go .vx-n1{animation:vxDraw .5s ease .95s forwards}
         .vx-go .vx-n2{animation:vxDraw .5s ease 1.1s forwards}
         .vx-go .vx-n3{animation:vxDraw .5s ease 1.25s forwards}
+        .vx-go .vx-ring{animation:vxFadeIn .5s ease 1.0s forwards}
         .vx-go .vx-va{animation:vxPop .5s ease 1.0s forwards}
         .vx-go .vx-vp{animation:vxPop .5s ease 1.2s forwards}
         .vx-go .vx-vg{animation:vxPop .5s ease 1.4s forwards}
         .vx-go .vx-core{animation:vxFadeIn .3s ease 1.55s forwards,vxCorePulse 2.4s ease 1.85s infinite}
-        .vx-go .vx-fill{animation:vxFadeIn .8s ease 1.6s forwards}
       `}</style>
 
       <g className={animated ? "vx-go" : ""}>
-        <polygon points="120,24 28,188 212,188" fill="url(#gFill)" className="vx-fill"/>
-        {/* pulsos viajantes */}
+        <circle cx="120" cy="133" r="70" fill="url(#rGlow)" className="vx-fill"/>
+
+        {/* faces facetadas */}
+        <polygon points="120,24 28,188 120,133" fill="url(#fLeft)" className="vx-fill"/>
+        <polygon points="120,24 212,188 120,133" fill="url(#fTop)" className="vx-fill"/>
+        <polygon points="28,188 212,188 120,133" fill="url(#fRight)" className="vx-fill"/>
+
+        {/* pulsos viajantes no contorno */}
         <circle r="4.5" fill="#00E676" style={{filter:"drop-shadow(0 0 5px #00E676)"}}>
           <animateMotion dur="1.8s" begin="2.1s" repeatCount="indefinite"><mpath href="#vxP1"/></animateMotion>
           <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="1.8s" begin="2.1s" repeatCount="indefinite"/>
@@ -119,25 +121,39 @@ function LogoVertice({ animated }) {
           <animateMotion dur="1.8s" begin="3.3s" repeatCount="indefinite"><mpath href="#vxP3"/></animateMotion>
           <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="1.8s" begin="3.3s" repeatCount="indefinite"/>
         </circle>
-        <defs>
-          <path id="vxP1" d="M120,24 L120,133"/>
-          <path id="vxP2" d="M28,188 L120,133"/>
-          <path id="vxP3" d="M212,188 L120,133"/>
-        </defs>
+
         {/* arestas */}
         <line className="vx-edge vx-e1" x1="120" y1="24" x2="28" y2="188" stroke="url(#gA)"/>
         <line className="vx-edge vx-e2" x1="28" y1="188" x2="212" y2="188" stroke="url(#gB)"/>
         <line className="vx-edge vx-e3" x1="212" y1="188" x2="120" y2="24" stroke="url(#gC)"/>
-        {/* linhas internas */}
+
+        {/* aresta biselada interna */}
+        <polygon className="vx-bevel" points="120,33 39,182 201,182" fill="none" stroke="#fff" strokeOpacity=".22" strokeWidth="1"/>
+
+        {/* nervuras internas */}
         <line className="vx-inl vx-n1" x1="120" y1="24"  x2="120" y2="133" stroke="#00E676"/>
         <line className="vx-inl vx-n2" x1="28"  y1="188" x2="120" y2="133" stroke="#00F0FF"/>
         <line className="vx-inl vx-n3" x1="212" y1="188" x2="120" y2="133" stroke="#5090FF"/>
-        {/* núcleo */}
-        <circle className="vx-core" cx="120" cy="133" r="4" fill="#fff"/>
-        {/* vértices */}
-        <circle className="vx-dot vx-va" cx="120" cy="24"  r="5.5" fill="#00E676"/>
-        <circle className="vx-dot vx-vp" cx="28"  cy="188" r="5.5" fill="#00F0FF"/>
-        <circle className="vx-dot vx-vg" cx="212" cy="188" r="5.5" fill="#5090FF"/>
+
+        {/* núcleo reator + halos */}
+        <circle cx="120" cy="133" fill="none" stroke="#00F0FF" strokeWidth="1.5" opacity="0">
+          <animate attributeName="r" values="6;34" dur="2.6s" begin="2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".5;0" dur="2.6s" begin="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="120" cy="133" fill="none" stroke="#00E676" strokeWidth="1.5" opacity="0">
+          <animate attributeName="r" values="6;34" dur="2.6s" begin="3.3s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".5;0" dur="2.6s" begin="3.3s" repeatCount="indefinite"/>
+        </circle>
+        <circle className="vx-ring" cx="120" cy="133" r="8" fill="none" stroke="#fff" strokeOpacity=".35" strokeWidth="1"/>
+        <circle className="vx-core" cx="120" cy="133" r="4.5" fill="#fff"/>
+
+        {/* vértices como nós (anel + ponto) */}
+        <circle className="vx-ring" cx="120" cy="24"  r="9" fill="none" stroke="#00E676" strokeWidth="1.4" opacity=".55"/>
+        <circle className="vx-ring" cx="28"  cy="188" r="9" fill="none" stroke="#00F0FF" strokeWidth="1.4" opacity=".55"/>
+        <circle className="vx-ring" cx="212" cy="188" r="9" fill="none" stroke="#5090FF" strokeWidth="1.4" opacity=".55"/>
+        <circle className="vx-dot vx-va" cx="120" cy="24"  r="5.5" fill="#00E676" style={{filter:"drop-shadow(0 0 5px #00E676)"}}/>
+        <circle className="vx-dot vx-vp" cx="28"  cy="188" r="5.5" fill="#00F0FF" style={{filter:"drop-shadow(0 0 5px #00F0FF)"}}/>
+        <circle className="vx-dot vx-vg" cx="212" cy="188" r="5.5" fill="#5090FF" style={{filter:"drop-shadow(0 0 5px #5090FF)"}}/>
       </g>
     </svg>
   );
