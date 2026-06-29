@@ -62,7 +62,7 @@ export function usePerfilAtivo() {
 // ─── Logo SVG Vértice ─────────────────────────────────────────────────────────
 function LogoVertice({ animated }) {
   return (
-    <svg viewBox="0 0 240 216" style={{width:"min(220px,58vw)",height:"auto",overflow:"visible"}} aria-label="Vértice">
+    <svg viewBox="0 0 240 230" style={{width:"min(220px,58vw)",height:"auto",overflow:"visible"}} aria-label="Vértice">
       <defs>
         <linearGradient id="gA" gradientUnits="userSpaceOnUse" x1="120" y1="24" x2="28" y2="188"><stop offset="0" stopColor="#00E676"/><stop offset="1" stopColor="#00F0FF"/></linearGradient>
         <linearGradient id="gB" gradientUnits="userSpaceOnUse" x1="28" y1="188" x2="212" y2="188"><stop offset="0" stopColor="#00F0FF"/><stop offset="1" stopColor="#5090FF"/></linearGradient>
@@ -71,6 +71,7 @@ function LogoVertice({ animated }) {
         <linearGradient id="fLeft" gradientUnits="userSpaceOnUse" x1="28" y1="188" x2="120" y2="110"><stop offset="0" stopColor="#00F0FF" stopOpacity=".30"/><stop offset="1" stopColor="#00F0FF" stopOpacity=".03"/></linearGradient>
         <linearGradient id="fRight" gradientUnits="userSpaceOnUse" x1="212" y1="188" x2="120" y2="110"><stop offset="0" stopColor="#5090FF" stopOpacity=".32"/><stop offset="1" stopColor="#5090FF" stopOpacity=".03"/></linearGradient>
         <radialGradient id="rGlow" cx="120" cy="133" r="70" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#00F0FF" stopOpacity=".22"/><stop offset="100%" stopColor="#5090FF" stopOpacity="0"/></radialGradient>
+        <radialGradient id="sweepG"><stop offset="0%" stopColor="#00F0FF" stopOpacity=".16"/><stop offset="100%" stopColor="#00F0FF" stopOpacity="0"/></radialGradient>
         <path id="vxP1" d="M120,24 L120,133"/><path id="vxP2" d="M28,188 L120,133"/><path id="vxP3" d="M212,188 L120,133"/>
       </defs>
 
@@ -101,6 +102,12 @@ function LogoVertice({ animated }) {
       `}</style>
 
       <g className={animated ? "vx-go" : ""}>
+        {/* sweep de radar */}
+        <g>
+          <path d="M120,133 L120,29 A104,104 0 0 1 196,65 Z" fill="url(#sweepG)" opacity=".5"/>
+          <animateTransform attributeName="transform" type="rotate" from="0 120 133" to="360 120 133" dur="10s" repeatCount="indefinite"/>
+        </g>
+
         <circle cx="120" cy="133" r="70" fill="url(#rGlow)" className="vx-fill"/>
 
         {/* faces facetadas */}
@@ -108,18 +115,110 @@ function LogoVertice({ animated }) {
         <polygon points="120,24 212,188 120,133" fill="url(#fTop)" className="vx-fill"/>
         <polygon points="28,188 212,188 120,133" fill="url(#fRight)" className="vx-fill"/>
 
-        {/* pulsos viajantes no contorno */}
+        {/* sinais captados: ponto espalhado -> vértice mais próximo */}
+        <g>
+          <circle r="2.3" fill="#00E676" opacity="0" style={{filter:"drop-shadow(0 0 4px #00E676)"}}>
+            <animateMotion dur="9s" begin="2.0s" repeatCount="indefinite" calcMode="spline" path="M120,-16 L120,24" keyPoints="0;0;1;1" keyTimes="0;0.6;0.85;1" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1"/>
+            <animate attributeName="opacity" dur="9s" begin="2.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.80;0.85;1" values="0;0;0.9;0.9;0;0"/>
+          </circle>
+          <circle cx="120" cy="-16" r="1" fill="none" stroke="#00E676" strokeWidth="1" opacity="0">
+            <animate attributeName="r" dur="9s" begin="2.0s" repeatCount="indefinite" keyTimes="0;0.57;0.66;1" values="1;1;8;8"/>
+            <animate attributeName="opacity" dur="9s" begin="2.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.70;1" values="0;0;0.7;0;0"/>
+          </circle>
+        </g>
+        <g>
+          <circle r="2.3" fill="#00E676" opacity="0" style={{filter:"drop-shadow(0 0 4px #00E676)"}}>
+            <animateMotion dur="9s" begin="3.0s" repeatCount="indefinite" calcMode="spline" path="M54,46 L120,24" keyPoints="0;0;1;1" keyTimes="0;0.6;0.85;1" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1"/>
+            <animate attributeName="opacity" dur="9s" begin="3.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.80;0.85;1" values="0;0;0.9;0.9;0;0"/>
+          </circle>
+          <circle cx="54" cy="46" r="1" fill="none" stroke="#00E676" strokeWidth="1" opacity="0">
+            <animate attributeName="r" dur="9s" begin="3.0s" repeatCount="indefinite" keyTimes="0;0.57;0.66;1" values="1;1;8;8"/>
+            <animate attributeName="opacity" dur="9s" begin="3.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.70;1" values="0;0;0.7;0;0"/>
+          </circle>
+        </g>
+        <g>
+          <circle r="2.3" fill="#00E676" opacity="0" style={{filter:"drop-shadow(0 0 4px #00E676)"}}>
+            <animateMotion dur="9s" begin="4.0s" repeatCount="indefinite" calcMode="spline" path="M188,52 L120,24" keyPoints="0;0;1;1" keyTimes="0;0.6;0.85;1" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1"/>
+            <animate attributeName="opacity" dur="9s" begin="4.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.80;0.85;1" values="0;0;0.9;0.9;0;0"/>
+          </circle>
+          <circle cx="188" cy="52" r="1" fill="none" stroke="#00E676" strokeWidth="1" opacity="0">
+            <animate attributeName="r" dur="9s" begin="4.0s" repeatCount="indefinite" keyTimes="0;0.57;0.66;1" values="1;1;8;8"/>
+            <animate attributeName="opacity" dur="9s" begin="4.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.70;1" values="0;0;0.7;0;0"/>
+          </circle>
+        </g>
+        <g>
+          <circle r="2.3" fill="#00F0FF" opacity="0" style={{filter:"drop-shadow(0 0 4px #00F0FF)"}}>
+            <animateMotion dur="9s" begin="5.0s" repeatCount="indefinite" calcMode="spline" path="M-14,150 L28,188" keyPoints="0;0;1;1" keyTimes="0;0.6;0.85;1" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1"/>
+            <animate attributeName="opacity" dur="9s" begin="5.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.80;0.85;1" values="0;0;0.9;0.9;0;0"/>
+          </circle>
+          <circle cx="-14" cy="150" r="1" fill="none" stroke="#00F0FF" strokeWidth="1" opacity="0">
+            <animate attributeName="r" dur="9s" begin="5.0s" repeatCount="indefinite" keyTimes="0;0.57;0.66;1" values="1;1;8;8"/>
+            <animate attributeName="opacity" dur="9s" begin="5.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.70;1" values="0;0;0.7;0;0"/>
+          </circle>
+        </g>
+        <g>
+          <circle r="2.3" fill="#00F0FF" opacity="0" style={{filter:"drop-shadow(0 0 4px #00F0FF)"}}>
+            <animateMotion dur="9s" begin="6.0s" repeatCount="indefinite" calcMode="spline" path="M44,228 L28,188" keyPoints="0;0;1;1" keyTimes="0;0.6;0.85;1" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1"/>
+            <animate attributeName="opacity" dur="9s" begin="6.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.80;0.85;1" values="0;0;0.9;0.9;0;0"/>
+          </circle>
+          <circle cx="44" cy="228" r="1" fill="none" stroke="#00F0FF" strokeWidth="1" opacity="0">
+            <animate attributeName="r" dur="9s" begin="6.0s" repeatCount="indefinite" keyTimes="0;0.57;0.66;1" values="1;1;8;8"/>
+            <animate attributeName="opacity" dur="9s" begin="6.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.70;1" values="0;0;0.7;0;0"/>
+          </circle>
+        </g>
+        <g>
+          <circle r="2.3" fill="#00F0FF" opacity="0" style={{filter:"drop-shadow(0 0 4px #00F0FF)"}}>
+            <animateMotion dur="9s" begin="7.0s" repeatCount="indefinite" calcMode="spline" path="M8,108 L28,188" keyPoints="0;0;1;1" keyTimes="0;0.6;0.85;1" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1"/>
+            <animate attributeName="opacity" dur="9s" begin="7.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.80;0.85;1" values="0;0;0.9;0.9;0;0"/>
+          </circle>
+          <circle cx="8" cy="108" r="1" fill="none" stroke="#00F0FF" strokeWidth="1" opacity="0">
+            <animate attributeName="r" dur="9s" begin="7.0s" repeatCount="indefinite" keyTimes="0;0.57;0.66;1" values="1;1;8;8"/>
+            <animate attributeName="opacity" dur="9s" begin="7.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.70;1" values="0;0;0.7;0;0"/>
+          </circle>
+        </g>
+        <g>
+          <circle r="2.3" fill="#5090FF" opacity="0" style={{filter:"drop-shadow(0 0 4px #5090FF)"}}>
+            <animateMotion dur="9s" begin="8.0s" repeatCount="indefinite" calcMode="spline" path="M254,150 L212,188" keyPoints="0;0;1;1" keyTimes="0;0.6;0.85;1" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1"/>
+            <animate attributeName="opacity" dur="9s" begin="8.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.80;0.85;1" values="0;0;0.9;0.9;0;0"/>
+          </circle>
+          <circle cx="254" cy="150" r="1" fill="none" stroke="#5090FF" strokeWidth="1" opacity="0">
+            <animate attributeName="r" dur="9s" begin="8.0s" repeatCount="indefinite" keyTimes="0;0.57;0.66;1" values="1;1;8;8"/>
+            <animate attributeName="opacity" dur="9s" begin="8.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.70;1" values="0;0;0.7;0;0"/>
+          </circle>
+        </g>
+        <g>
+          <circle r="2.3" fill="#5090FF" opacity="0" style={{filter:"drop-shadow(0 0 4px #5090FF)"}}>
+            <animateMotion dur="9s" begin="9.0s" repeatCount="indefinite" calcMode="spline" path="M192,230 L212,188" keyPoints="0;0;1;1" keyTimes="0;0.6;0.85;1" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1"/>
+            <animate attributeName="opacity" dur="9s" begin="9.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.80;0.85;1" values="0;0;0.9;0.9;0;0"/>
+          </circle>
+          <circle cx="192" cy="230" r="1" fill="none" stroke="#5090FF" strokeWidth="1" opacity="0">
+            <animate attributeName="r" dur="9s" begin="9.0s" repeatCount="indefinite" keyTimes="0;0.57;0.66;1" values="1;1;8;8"/>
+            <animate attributeName="opacity" dur="9s" begin="9.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.70;1" values="0;0;0.7;0;0"/>
+          </circle>
+        </g>
+        <g>
+          <circle r="2.3" fill="#5090FF" opacity="0" style={{filter:"drop-shadow(0 0 4px #5090FF)"}}>
+            <animateMotion dur="9s" begin="10.0s" repeatCount="indefinite" calcMode="spline" path="M236,106 L212,188" keyPoints="0;0;1;1" keyTimes="0;0.6;0.85;1" keySplines="0 0 1 1;0.4 0 0.6 1;0 0 1 1"/>
+            <animate attributeName="opacity" dur="9s" begin="10.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.80;0.85;1" values="0;0;0.9;0.9;0;0"/>
+          </circle>
+          <circle cx="236" cy="106" r="1" fill="none" stroke="#5090FF" strokeWidth="1" opacity="0">
+            <animate attributeName="r" dur="9s" begin="10.0s" repeatCount="indefinite" keyTimes="0;0.57;0.66;1" values="1;1;8;8"/>
+            <animate attributeName="opacity" dur="9s" begin="10.0s" repeatCount="indefinite" keyTimes="0;0.57;0.62;0.70;1" values="0;0;0.7;0;0"/>
+          </circle>
+        </g>
+
+        {/* pulsos viajantes vértice -> centro */}
         <circle r="4.5" fill="#00E676" style={{filter:"drop-shadow(0 0 5px #00E676)"}}>
-          <animateMotion dur="1.8s" begin="2.1s" repeatCount="indefinite"><mpath href="#vxP1"/></animateMotion>
-          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="1.8s" begin="2.1s" repeatCount="indefinite"/>
+          <animateMotion dur="3s" begin="2s" repeatCount="indefinite"><mpath href="#vxP1"/></animateMotion>
+          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="3s" begin="2s" repeatCount="indefinite"/>
         </circle>
         <circle r="4.5" fill="#00F0FF" style={{filter:"drop-shadow(0 0 5px #00F0FF)"}}>
-          <animateMotion dur="1.8s" begin="2.7s" repeatCount="indefinite"><mpath href="#vxP2"/></animateMotion>
-          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="1.8s" begin="2.7s" repeatCount="indefinite"/>
+          <animateMotion dur="3s" begin="3s" repeatCount="indefinite"><mpath href="#vxP2"/></animateMotion>
+          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="3s" begin="3s" repeatCount="indefinite"/>
         </circle>
         <circle r="4.5" fill="#5090FF" style={{filter:"drop-shadow(0 0 5px #5090FF)"}}>
-          <animateMotion dur="1.8s" begin="3.3s" repeatCount="indefinite"><mpath href="#vxP3"/></animateMotion>
-          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="1.8s" begin="3.3s" repeatCount="indefinite"/>
+          <animateMotion dur="3s" begin="4s" repeatCount="indefinite"><mpath href="#vxP3"/></animateMotion>
+          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="3s" begin="4s" repeatCount="indefinite"/>
         </circle>
 
         {/* arestas */}
@@ -135,14 +234,14 @@ function LogoVertice({ animated }) {
         <line className="vx-inl vx-n2" x1="28"  y1="188" x2="120" y2="133" stroke="#00F0FF"/>
         <line className="vx-inl vx-n3" x1="212" y1="188" x2="120" y2="133" stroke="#5090FF"/>
 
-        {/* núcleo reator + halos */}
-        <circle cx="120" cy="133" fill="none" stroke="#00F0FF" strokeWidth="1.5" opacity="0">
-          <animate attributeName="r" values="6;34" dur="2.6s" begin="2s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values=".5;0" dur="2.6s" begin="2s" repeatCount="indefinite"/>
+        {/* núcleo reator + ripple de radar */}
+        <circle cx="120" cy="133" fill="none" stroke="#fff" strokeWidth="1.2">
+          <animate attributeName="r" values="5;26" keyTimes="0;1" dur="3s" begin="2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".5;0" keyTimes="0;1" dur="3s" begin="2s" repeatCount="indefinite"/>
         </circle>
-        <circle cx="120" cy="133" fill="none" stroke="#00E676" strokeWidth="1.5" opacity="0">
-          <animate attributeName="r" values="6;34" dur="2.6s" begin="3.3s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values=".5;0" dur="2.6s" begin="3.3s" repeatCount="indefinite"/>
+        <circle cx="120" cy="133" fill="none" stroke="#00F0FF" strokeWidth="1">
+          <animate attributeName="r" values="5;34" keyTimes="0;1" dur="3s" begin="3.5s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".32;0" keyTimes="0;1" dur="3s" begin="3.5s" repeatCount="indefinite"/>
         </circle>
         <circle className="vx-ring" cx="120" cy="133" r="8" fill="none" stroke="#fff" strokeOpacity=".35" strokeWidth="1"/>
         <circle className="vx-core" cx="120" cy="133" r="4.5" fill="#fff"/>
