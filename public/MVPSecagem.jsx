@@ -3407,7 +3407,7 @@ export default function App() {
       <div style={{position:"sticky",top:0,zIndex:100}}>
         <div style={{position:"relative",overflow:"hidden",background:"linear-gradient(180deg,rgba(8,28,45,0.96),rgba(4,17,29,0.90))",borderBottom:"1px solid rgba(0,230,118,0.28)",boxShadow:"0 6px 22px rgba(0,0,0,0.5),0 1px 0 rgba(0,230,118,0.12)",padding:"11px 16px",minHeight:69,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
           <div style={{display:"flex",alignItems:"center",gap:9,position:"relative",zIndex:1}}>
-            <svg viewBox="0 0 32 28" style={{width:28,height:25,flexShrink:0,overflow:"visible"}}>
+            <svg viewBox="0 0 32 28" style={{width:32,height:28,flexShrink:0,overflow:"visible"}}>
               <defs>
                 <linearGradient id="vtxA" gradientUnits="userSpaceOnUse" x1="16" y1="3" x2="3" y2="25"><stop offset="0" stopColor="#00E676"/><stop offset="1" stopColor="#00F0FF"/></linearGradient>
                 <linearGradient id="vtxB" gradientUnits="userSpaceOnUse" x1="3" y1="25" x2="29" y2="25"><stop offset="0" stopColor="#00F0FF"/><stop offset="1" stopColor="#5090FF"/></linearGradient>
@@ -3438,7 +3438,74 @@ export default function App() {
               <div style={{fontFamily:"ui-monospace,Menlo,Consolas,monospace",fontSize:8,color:"#5E7A99",letterSpacing:"0.22em",marginTop:3,whiteSpace:"nowrap"}}>DECIDA MELHOR · POR QUEM OPERA</div>
             </div>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:7}}>
+          {/* Camada de radar: sinais cruzam o header e convergem no núcleo do logo */}
+          <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:2,overflow:"visible"}}>
+            <g>
+              <circle r="1.8" fill="#00E676" opacity="0" style={{filter:"drop-shadow(0 0 3px #00E676)"}}>
+                <animateMotion dur="7s" begin="0.0s" repeatCount="indefinite" calcMode="spline" path="M360,12 L32,37" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"/>
+                <animate attributeName="opacity" dur="7s" begin="0.0s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.88;0.92;1" values="0;0;0.85;0.85;0;0"/>
+              </circle>
+              <circle cx="360" cy="12" r="1" fill="none" stroke="#00E676" strokeWidth="0.8" opacity="0">
+                <animate attributeName="r" dur="7s" begin="0.0s" repeatCount="indefinite" keyTimes="0;0.47;0.56;1" values="1;1;6;6"/>
+                <animate attributeName="opacity" dur="7s" begin="0.0s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.6;1" values="0;0;0.7;0;0"/>
+              </circle>
+            </g>
+            <g>
+              <circle r="1.8" fill="#00F0FF" opacity="0" style={{filter:"drop-shadow(0 0 3px #00F0FF)"}}>
+                <animateMotion dur="7s" begin="1.167s" repeatCount="indefinite" calcMode="spline" path="M300,31 L32,37" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"/>
+                <animate attributeName="opacity" dur="7s" begin="1.167s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.88;0.92;1" values="0;0;0.85;0.85;0;0"/>
+              </circle>
+              <circle cx="300" cy="31" r="1" fill="none" stroke="#00F0FF" strokeWidth="0.8" opacity="0">
+                <animate attributeName="r" dur="7s" begin="1.167s" repeatCount="indefinite" keyTimes="0;0.47;0.56;1" values="1;1;6;6"/>
+                <animate attributeName="opacity" dur="7s" begin="1.167s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.6;1" values="0;0;0.7;0;0"/>
+              </circle>
+            </g>
+            <g>
+              <circle r="1.8" fill="#5090FF" opacity="0" style={{filter:"drop-shadow(0 0 3px #5090FF)"}}>
+                <animateMotion dur="7s" begin="2.333s" repeatCount="indefinite" calcMode="spline" path="M250,17 L32,37" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"/>
+                <animate attributeName="opacity" dur="7s" begin="2.333s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.88;0.92;1" values="0;0;0.85;0.85;0;0"/>
+              </circle>
+              <circle cx="250" cy="17" r="1" fill="none" stroke="#5090FF" strokeWidth="0.8" opacity="0">
+                <animate attributeName="r" dur="7s" begin="2.333s" repeatCount="indefinite" keyTimes="0;0.47;0.56;1" values="1;1;6;6"/>
+                <animate attributeName="opacity" dur="7s" begin="2.333s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.6;1" values="0;0;0.7;0;0"/>
+              </circle>
+            </g>
+            <g>
+              <circle r="1.8" fill="#00E676" opacity="0" style={{filter:"drop-shadow(0 0 3px #00E676)"}}>
+                <animateMotion dur="7s" begin="3.5s" repeatCount="indefinite" calcMode="spline" path="M330,41 L32,37" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"/>
+                <animate attributeName="opacity" dur="7s" begin="3.5s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.88;0.92;1" values="0;0;0.85;0.85;0;0"/>
+              </circle>
+              <circle cx="330" cy="41" r="1" fill="none" stroke="#00E676" strokeWidth="0.8" opacity="0">
+                <animate attributeName="r" dur="7s" begin="3.5s" repeatCount="indefinite" keyTimes="0;0.47;0.56;1" values="1;1;6;6"/>
+                <animate attributeName="opacity" dur="7s" begin="3.5s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.6;1" values="0;0;0.7;0;0"/>
+              </circle>
+            </g>
+            <g>
+              <circle r="1.8" fill="#00F0FF" opacity="0" style={{filter:"drop-shadow(0 0 3px #00F0FF)"}}>
+                <animateMotion dur="7s" begin="4.667s" repeatCount="indefinite" calcMode="spline" path="M205,24 L32,37" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"/>
+                <animate attributeName="opacity" dur="7s" begin="4.667s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.88;0.92;1" values="0;0;0.85;0.85;0;0"/>
+              </circle>
+              <circle cx="205" cy="24" r="1" fill="none" stroke="#00F0FF" strokeWidth="0.8" opacity="0">
+                <animate attributeName="r" dur="7s" begin="4.667s" repeatCount="indefinite" keyTimes="0;0.47;0.56;1" values="1;1;6;6"/>
+                <animate attributeName="opacity" dur="7s" begin="4.667s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.6;1" values="0;0;0.7;0;0"/>
+              </circle>
+            </g>
+            <g>
+              <circle r="1.8" fill="#5090FF" opacity="0" style={{filter:"drop-shadow(0 0 3px #5090FF)"}}>
+                <animateMotion dur="7s" begin="5.833s" repeatCount="indefinite" calcMode="spline" path="M372,34 L32,37" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"/>
+                <animate attributeName="opacity" dur="7s" begin="5.833s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.88;0.92;1" values="0;0;0.85;0.85;0;0"/>
+              </circle>
+              <circle cx="372" cy="34" r="1" fill="none" stroke="#5090FF" strokeWidth="0.8" opacity="0">
+                <animate attributeName="r" dur="7s" begin="5.833s" repeatCount="indefinite" keyTimes="0;0.47;0.56;1" values="1;1;6;6"/>
+                <animate attributeName="opacity" dur="7s" begin="5.833s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.6;1" values="0;0;0.7;0;0"/>
+              </circle>
+            </g>
+            <circle cx="32" cy="37" fill="none" stroke="#fff" strokeWidth="1">
+              <animate attributeName="r" values="3;13" dur="3s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.45;0" dur="3s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+          <div style={{display:"flex",alignItems:"center",gap:7,position:"relative",zIndex:3}}>
             {notasComum>0&&<button onClick={()=>setTela("equipamentos")} style={{background:"rgba(240,165,0,0.18)",border:`1px solid ${C.warningLight}`,color:C.warningLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>⚡{notasComum}</button>}
             {totalNotas>0&&<button onClick={()=>setTela("equipamentos")} style={{background:"rgba(232,51,58,0.18)",border:`1px solid ${C.dangerLight}`,color:C.dangerLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🗒{totalNotas}</button>}
             <button onClick={()=>setModoVisao("dashboard")} style={{background:"rgba(80,144,255,0.12)",border:`1px solid ${C.blueLight}55`,color:C.blueLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🖥️</button>
