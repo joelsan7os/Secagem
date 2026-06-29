@@ -1,7 +1,4 @@
 // ─── avarias.jsx — Inspeção de Avarias + Analytics · Enfardamento · Secagem H2
-// AvariasTela: wizard por avaria individual (motivo → linha → lote/unit → foto)
-// AvariasAnalytics: ranking por linha + por motivo + filtros
-// PainelAvariasTV: card do Dashboard TV
 import { useState, useRef, useCallback } from "react";
 import { COL, doc, setDoc } from "./firebase";
 
@@ -28,16 +25,15 @@ const COR_LINHA = { L4:"#5090FF", L5:"#00E676", L6:"#FFC107", L7:"#FF8C00", L8:"
 const MAX_W = 1280, MAX_H = 720, QUALITY = 0.80;
 
 export const TIPOS_AVARIA = [
-  { id:"alt_linha",    label:"Diferença de altura",     cor:"#5090FF" },
-  { id:"capa_rasgada", label:"Capa rasgada",            cor:"#FF5252" },
-  { id:"sem_capa",     label:"Faltando capa",           cor:"#FF8C00" },
-  { id:"arame_esp",    label:"Arame espaçado",          cor:"#FFC107" },
-  { id:"arame_cod",    label:"Arame sobre o código",    cor:"#C77DFF" },
-  { id:"sem_imp",      label:"Falta de impressão",      cor:"#00F0FF" },
-  { id:"sem_logo",     label:"Unit sem logo",           cor:"#00E676" },
+  { id:"alt_linha",    label:"Dif. de altura",      cor:"#5090FF" },
+  { id:"capa_rasgada", label:"Capa rasgada",         cor:"#FF5252" },
+  { id:"sem_capa",     label:"Faltando capa",        cor:"#FF8C00" },
+  { id:"arame_esp",    label:"Arame espaçado",       cor:"#FFC107" },
+  { id:"arame_cod",    label:"Arame s/ código",      cor:"#C77DFF" },
+  { id:"sem_imp",      label:"Falta impressão",      cor:"#00F0FF" },
+  { id:"sem_logo",     label:"Unit sem logo",        cor:"#00E676" },
 ];
 
-// ── Compressão ───────────────────────────────────────────────────────────────
 function comprimirImagem(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -51,14 +47,13 @@ function comprimirImagem(file) {
       canvas.getContext("2d").drawImage(img,0,0,w,h);
       const base64 = canvas.toDataURL("image/jpeg", QUALITY);
       URL.revokeObjectURL(url);
-      resolve({ base64, kb: Math.round((base64.length*3)/4/1024), w, h });
+      resolve({ base64, kb: Math.round((base64.length*3)/4/1024) });
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Falha")); };
     img.src = url;
   });
 }
 
-// bezier path
 function bPath(pts) {
   if(pts.length<2) return "";
   const p=pts.map(s=>{const[x,y]=s.split(",").map(Number);return{x,y};});
@@ -67,194 +62,75 @@ function bPath(pts) {
   return d;
 }
 
-// ── FormAvaria — formulário de uma avaria individual ─────────────────────────
-function FormAvaria({ index, onSalvar, onCancelar }) {
-  const [tipoId, setTipoId]   = useState(null);
-  const [linha, setLinha]     = useState(null);
-  const [lote, setLote]       = useState("");
-  const [unidade, setUnidade] = useState("");
-  const [fotos, setFotos]     = useState([]);
-  const [fotoProc, setFotoProc] = useState(false);
-  const inputRef = useRef(null);
+// Estado inicial de uma linha da grade
+const linhaVazia = () => ({ qtd:0, linha:null, lote:"", unidade:"", fotos:[] });
 
-  const tipo = TIPOS_AVARIA.find(t=>t.id===tipoId);
-  const pronto = tipoId && linha && (lote || unidade);
+// ── AvariasTela ───────────────────────────────────────────────────────────────
+export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, data }) {
+  const letra = calcularLetra();
 
-  const onFotoChange = useCallback(async (e) => {
+  // grade: { [tipoId]: { qtd, linha, lote, unidade, fotos } }
+  const [grade, setGrade] = useState(() =>
+    Object.fromEntries(TIPOS_AVARIA.map(t=>[t.id, linhaVazia()]))
+  );
+  const [teveAvaria, setTeveAvaria] = useState(null); // null=não perguntado
+  const [passo, setPasso]           = useState(1);    // 1=pergunta, 2=grade, 3=resumo
+  const [salvando, setSalvando]     = useState(false);
+  const [salvo, setSalvo]           = useState(false);
+  const [fotoProc, setFotoProc]     = useState(null);
+  const [barcodeAtivo, setBarcodeAtivo] = useState(null); // tipoId com leitor aberto
+  const inputRefs = useRef({});
+
+  const setcampo = (tipoId, campo, val) =>
+    setGrade(prev=>({...prev,[tipoId]:{...prev[tipoId],[campo]:val}}));
+
+  const setQtd = (tipoId, val) => {
+    const n = Math.max(0, Math.min(99, parseInt(val)||0));
+    setGrade(prev=>({...prev,[tipoId]:{...prev[tipoId],qtd:n, linha:n===0?null:prev[tipoId].linha}}));
+  };
+
+  const onFotoChange = useCallback(async (tipoId, e) => {
     const files = Array.from(e.target.files||[]);
     if(!files.length) return;
-    setFotoProc(true);
+    setFotoProc(tipoId);
     const novas = [];
-    for(const file of files) {
+    for(const file of files){
       if(!file.type.startsWith("image/")) continue;
       try { novas.push(await comprimirImagem(file)); } catch {}
     }
-    setFotos(prev=>[...prev,...novas]);
-    setFotoProc(false);
-    e.target.value = "";
+    setGrade(prev=>({...prev,[tipoId]:{...prev[tipoId],fotos:[...(prev[tipoId].fotos||[]),...novas]}}));
+    setFotoProc(null);
+    e.target.value="";
   }, []);
 
-  const confirmar = () => {
-    if(!pronto) return;
-    onSalvar({
-      tipoId, tipoLabel: tipo.label, tipoColor: tipo.cor,
-      linha, maquina: maqDaLinha(linha),
-      lote: lote.trim(), unidade: unidade.trim(),
-      fotos: fotos.map(f=>({base64:f.base64,kb:f.kb})),
-    });
-  };
+  const totalAvarias = Object.values(grade).reduce((s,r)=>s+r.qtd,0);
+  const ativos = TIPOS_AVARIA.filter(t=>grade[t.id].qtd>0);
 
-  return (
-    <div style={{background:C.card,border:`1px solid ${C.dangerLight}33`,borderTop:`3px solid ${C.dangerLight}`,borderRadius:12,padding:16,marginBottom:12}}>
-      <div style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:12}}>
-        Avaria #{index+1}
-      </div>
-
-      {/* Motivo */}
-      <div style={{marginBottom:14}}>
-        <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>Motivo</div>
-        <div style={{display:"flex",flexDirection:"column",gap:6}}>
-          {TIPOS_AVARIA.map(t=>{
-            const ativo = tipoId===t.id;
-            return (
-              <button key={t.id} onClick={()=>setTipoId(t.id)}
-                style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,cursor:"pointer",textAlign:"left",
-                  border:`2px solid ${ativo?t.cor+"99":C.border}`,
-                  background:ativo?t.cor+"18":C.tagBg,
-                  boxShadow:ativo?`0 0 10px ${t.cor}44`:"none",transition:"all .15s"}}>
-                <div style={{width:10,height:10,borderRadius:"50%",background:ativo?t.cor:C.textDim,flexShrink:0,
-                  boxShadow:ativo?`0 0 6px ${t.cor}`:"none"}}/>
-                <span style={{color:ativo?C.text:C.textMuted,fontWeight:ativo?700:500,fontSize:13}}>{t.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Linha */}
-      {tipoId && (
-        <div style={{marginBottom:14}}>
-          <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>Linha</div>
-          <div style={{display:"flex",gap:8}}>
-            {LINHAS.map(l=>{
-              const ativo=linha===l;
-              const cor=COR_LINHA[l];
-              return (
-                <button key={l} onClick={()=>setLinha(l)}
-                  style={{flex:1,padding:"10px 4px",borderRadius:10,cursor:"pointer",
-                    border:`2px solid ${ativo?cor+"99":C.border}`,
-                    background:ativo?cor+"18":C.tagBg,
-                    color:ativo?cor:C.textMuted,fontWeight:ativo?800:500,fontSize:13,
-                    boxShadow:ativo?`0 0 10px ${cor}44`:"none",transition:"all .15s"}}>
-                  {l}
-                  <div style={{fontSize:8,opacity:.7,marginTop:2}}>{maqDaLinha(l)}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Lote / Unidade */}
-      {linha && (
-        <div style={{marginBottom:14}}>
-          <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>Lote / Unidade</div>
-          <div style={{display:"flex",gap:8}}>
-            <input
-              value={lote} onChange={e=>setLote(e.target.value)}
-              placeholder="Lote"
-              style={{flex:1,padding:"10px 12px",borderRadius:10,background:C.tagBg,
-                border:`1px solid ${lote?C.accentLight+"55":C.border}`,color:C.text,
-                fontFamily:"monospace",fontSize:14,outline:"none"}}/>
-            <input
-              value={unidade} onChange={e=>setUnidade(e.target.value)}
-              placeholder="Unidade"
-              style={{flex:1,padding:"10px 12px",borderRadius:10,background:C.tagBg,
-                border:`1px solid ${unidade?C.accentLight+"55":C.border}`,color:C.text,
-                fontFamily:"monospace",fontSize:14,outline:"none"}}/>
-          </div>
-        </div>
-      )}
-
-      {/* Foto */}
-      {linha && (
-        <div style={{marginBottom:14}}>
-          <input ref={inputRef} type="file" accept="image/*" multiple onChange={onFotoChange} style={{display:"none"}}/>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-            {fotos.map((f,fi)=>(
-              <div key={fi} style={{position:"relative",width:60,height:44}}>
-                <img src={f.base64} style={{width:60,height:44,objectFit:"cover",borderRadius:6,border:`1px solid ${C.border}`}}/>
-                <button onClick={()=>setFotos(prev=>prev.filter((_,i)=>i!==fi))}
-                  style={{position:"absolute",top:-4,right:-4,width:18,height:18,borderRadius:"50%",
-                    background:C.dangerLight,border:"none",color:"#fff",fontSize:10,cursor:"pointer",fontWeight:900,padding:0}}>x</button>
-              </div>
-            ))}
-            <button onClick={()=>inputRef.current?.click()} disabled={fotoProc}
-              style={{height:44,padding:"0 12px",borderRadius:8,cursor:"pointer",
-                border:`1px dashed ${C.border}`,background:"transparent",
-                color:fotoProc?C.textDim:C.textMuted,fontSize:11,fontWeight:600}}>
-              {fotoProc?"Processando...":"+ Foto"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Ações */}
-      <div style={{display:"flex",gap:8}}>
-        <button onClick={onCancelar}
-          style={{flex:1,padding:"11px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,
-            background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted}}>
-          Cancelar
-        </button>
-        <button onClick={confirmar} disabled={!pronto}
-          style={{flex:2,padding:"11px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
-            background:pronto?"linear-gradient(135deg,#c0272d,#FF5252)":C.tagBg,
-            border:`1px solid ${pronto?C.dangerLight:C.border}`,
-            color:pronto?"#fff":C.textDim,opacity:pronto?1:0.5}}>
-          Confirmar avaria
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── AvariasTela (wizard principal) ───────────────────────────────────────────
-export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, data }) {
-  const letra = calcularLetra();
-  const [passo, setPasso]         = useState(1); // 1=pergunta, 2=lista avarias, 3=resumo
-  const [avarias, setAvarias]     = useState([]); // avarias confirmadas
-  const [adicionando, setAdicionando] = useState(false);
-  const [salvando, setSalvando]   = useState(false);
-  const [salvo, setSalvo]         = useState(false);
-
-  const onNovaAvaria = (av) => {
-    setAvarias(prev=>[...prev,av]);
-    setAdicionando(false);
-  };
-
-  const removerAvaria = (idx) => setAvarias(prev=>prev.filter((_,i)=>i!==idx));
-
-  const salvar = async (teveAvaria) => {
+  const salvar = async (houve) => {
     setSalvando(true);
     const hora = horaAtual();
     const opConfig = storageGet("op_config")||{};
+    const itens = TIPOS_AVARIA.map(t=>({
+      id:t.id, label:t.label,
+      quantidade: grade[t.id].qtd,
+      linha: grade[t.id].linha,
+      maquina: grade[t.id].linha?maqDaLinha(grade[t.id].linha):null,
+      lote: grade[t.id].lote,
+      unidade: grade[t.id].unidade,
+      fotos: (grade[t.id].fotos||[]).map(f=>({base64:f.base64,kb:f.kb})),
+    })).filter(i=>i.quantidade>0);
+
     const registro = {
       id: Date.now(),
-      tipoId: "avaria_enf",
-      tipoLabel: "Inspeção de Avarias",
+      tipoId:"avaria_enf", tipoLabel:"Inspeção de Avarias",
       turno: turno||(storageGet("turno_ativo")||""),
       letra: letraProp||letra, hora,
       data: data||hoje(),
       matricula: opConfig.matricula||"",
       opPU: opPU||"", opPainel: opPainel||"",
-      teveAvaria,
-      totalAvarias: teveAvaria?avarias.length:0,
-      avarias: teveAvaria?avarias:[],
-      // compatibilidade retroativa — itens aggregados por tipo
-      itens: teveAvaria?TIPOS_AVARIA.map(t=>({
-        id:t.id, label:t.label,
-        quantidade: avarias.filter(a=>a.tipoId===t.id).length,
-      })).filter(i=>i.quantidade>0):[],
+      teveAvaria: houve,
+      totalAvarias: houve?totalAvarias:0,
+      itens: houve?itens:[],
     };
     try {
       const hist = storageGet("historico_h2")||[];
@@ -266,8 +142,7 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
       avHist.push({
         id:registro.id, data:registro.data, turno:registro.turno,
         letra:registro.letra, hora:registro.hora,
-        teveAvaria, total:registro.totalAvarias,
-        avarias:registro.avarias,
+        teveAvaria:houve, total:registro.totalAvarias,
         itens:registro.itens,
       });
       storageSet("avarias_h2",avHist);
@@ -275,22 +150,23 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
 
       setSalvo(true);
       if(onSalvar) onSalvar(registro);
-    } catch(e) { alert("Erro ao salvar: "+e.message); }
+    } catch(e){ alert("Erro ao salvar: "+e.message); }
     setSalvando(false);
   };
 
-  // ── Salvo ─────────────────────────────────────────────────────────────────
+  // ── Salvo ──────────────────────────────────────────────────────────────────
   if(salvo) return (
     <div style={{background:C.card,border:`1px solid ${C.accentLight}44`,borderTop:`3px solid ${C.accentLight}`,borderRadius:12,padding:24,textAlign:"center"}}>
       <div style={{color:C.accentLight,fontWeight:800,fontSize:18,marginBottom:6}}>Inspeção salva</div>
       <div style={{color:C.textMuted,fontSize:13,marginBottom:4}}>Turno {letraProp||letra}</div>
-      <div style={{fontFamily:"monospace",fontSize:28,fontWeight:900,color:avarias.length>0?C.dangerLight:C.accentLight,marginTop:12}}>
-        {avarias.length>0?`${avarias.length} avaria${avarias.length>1?"s":""}`:"Sem avarias"}
+      <div style={{fontFamily:"monospace",fontSize:28,fontWeight:900,
+        color:totalAvarias>0?C.dangerLight:C.accentLight,marginTop:12}}>
+        {totalAvarias>0?`${totalAvarias} avaria${totalAvarias>1?"s":""}`:"Sem avarias"}
       </div>
     </div>
   );
 
-  // ── Passo 1 — pergunta inicial ─────────────────────────────────────────────
+  // ── Passo 1 — pergunta ─────────────────────────────────────────────────────
   if(passo===1) return (
     <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.warningLight}`,borderRadius:12,padding:20,textAlign:"center"}}>
       <div style={{color:C.text,fontWeight:800,fontSize:16,marginBottom:6}}>Inspeção de Avarias</div>
@@ -310,57 +186,135 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
     </div>
   );
 
-  // ── Passo 2 — lista de avarias ─────────────────────────────────────────────
+  // ── Passo 2 — grade de lançamento ─────────────────────────────────────────
   if(passo===2) return (
     <div>
-      {/* Avarias confirmadas */}
-      {avarias.map((av,idx)=>(
-        <div key={idx} style={{background:C.card,border:`1px solid ${av.tipoColor}33`,borderLeft:`4px solid ${av.tipoColor}`,
-          borderRadius:12,padding:"12px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
-          <div style={{flex:1}}>
-            <div style={{color:C.text,fontWeight:700,fontSize:13}}>{av.tipoLabel}</div>
-            <div style={{display:"flex",gap:8,marginTop:4,flexWrap:"wrap"}}>
-              <span style={{fontSize:11,color:COR_LINHA[av.linha]||C.textMuted,fontWeight:700,fontFamily:"monospace"}}>{av.linha}</span>
-              <span style={{fontSize:11,color:C.textDim}}>{av.maquina}</span>
-              {av.lote&&<span style={{fontSize:11,color:C.textDim,fontFamily:"monospace"}}>Lote {av.lote}</span>}
-              {av.unidade&&<span style={{fontSize:11,color:C.textDim,fontFamily:"monospace"}}>Un {av.unidade}</span>}
-              {av.fotos?.length>0&&<span style={{fontSize:11,color:C.textDim}}>{av.fotos.length} foto{av.fotos.length>1?"s":""}</span>}
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.dangerLight}`,borderRadius:12,padding:14,marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{color:C.text,fontWeight:800,fontSize:14}}>Lançamento de avarias</div>
+          {totalAvarias>0&&(
+            <div style={{background:C.dangerLight+"22",border:`1px solid ${C.dangerLight}44`,borderRadius:20,padding:"3px 12px"}}>
+              <span style={{fontFamily:"monospace",fontWeight:900,fontSize:14,color:C.dangerLight}}>{totalAvarias}</span>
+              <span style={{fontSize:10,color:C.textDim,marginLeft:4}}>total</span>
             </div>
-          </div>
-          <button onClick={()=>removerAvaria(idx)}
-            style={{width:28,height:28,borderRadius:8,border:`1px solid ${C.border}`,background:C.tagBg,
-              color:C.textDim,cursor:"pointer",fontSize:14,fontWeight:900}}>×</button>
+          )}
         </div>
-      ))}
 
-      {/* Formulário de nova avaria */}
-      {adicionando?(
-        <FormAvaria index={avarias.length} onSalvar={onNovaAvaria} onCancelar={()=>setAdicionando(false)}/>
-      ):(
-        <button onClick={()=>setAdicionando(true)}
-          style={{width:"100%",padding:"13px",borderRadius:12,cursor:"pointer",fontWeight:700,fontSize:14,
-            background:"transparent",border:`2px dashed ${C.dangerLight}55`,color:C.dangerLight,marginBottom:12}}>
-          + Registrar avaria
+        {TIPOS_AVARIA.map(tipo=>{
+          const r = grade[tipo.id];
+          const ativo = r.qtd > 0;
+          return (
+            <div key={tipo.id} style={{
+              background: ativo?tipo.cor+"0F":C.tagBg,
+              border:`1px solid ${ativo?tipo.cor+"44":C.border}`,
+              borderLeft:`3px solid ${ativo?tipo.cor:C.textDim+"44"}`,
+              borderRadius:10, padding:"10px 12px", marginBottom:8,
+              transition:"all .15s"}}>
+
+              {/* Linha principal: label + qtd + linha */}
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                {/* Label */}
+                <div style={{flex:1,fontSize:13,fontWeight:ativo?700:500,
+                  color:ativo?C.text:C.textMuted,minWidth:0,
+                  whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                  {tipo.label}
+                </div>
+
+                {/* Contador */}
+                <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
+                  <button onClick={()=>setQtd(tipo.id, r.qtd-1)}
+                    style={{width:28,height:28,borderRadius:7,border:`1px solid ${C.border}`,
+                      background:C.tagBg,color:C.textMuted,cursor:"pointer",fontSize:16,fontWeight:900,
+                      opacity:r.qtd===0?0.3:1}}>−</button>
+                  <input type="number" value={r.qtd} min={0} max={99}
+                    onChange={e=>setQtd(tipo.id,e.target.value)}
+                    style={{width:36,textAlign:"center",background:"transparent",border:"none",
+                      color:ativo?tipo.cor:C.textMuted,fontFamily:"monospace",fontWeight:900,
+                      fontSize:18,outline:"none"}}/>
+                  <button onClick={()=>setQtd(tipo.id, r.qtd+1)}
+                    style={{width:28,height:28,borderRadius:7,border:`1px solid ${C.border}`,
+                      background:C.tagBg,color:C.textMuted,cursor:"pointer",fontSize:16,fontWeight:900}}>+</button>
+                </div>
+              </div>
+
+              {/* Expansão quando ativo */}
+              {ativo&&(
+                <div style={{marginTop:10}}>
+                  {/* Seletor de linha */}
+                  <div style={{display:"flex",gap:5,marginBottom:8}}>
+                    {LINHAS.map(l=>{
+                      const sel=r.linha===l;
+                      const cor=COR_LINHA[l];
+                      return (
+                        <button key={l} onClick={()=>setcampo_linha(tipo.id,l,r,setGrade)}
+                          style={{flex:1,padding:"6px 2px",borderRadius:8,cursor:"pointer",
+                            border:`2px solid ${sel?cor+"99":C.border}`,
+                            background:sel?cor+"1A":C.tagBg,
+                            color:sel?cor:C.textDim,fontWeight:sel?800:500,fontSize:12,
+                            boxShadow:sel?`0 0 8px ${cor}44`:"none",transition:"all .12s"}}>
+                          {l}
+                          <div style={{fontSize:7,opacity:.7,marginTop:1}}>{maqDaLinha(l)}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Lote + Unidade + Foto */}
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <input value={r.lote} onChange={e=>setcampo(tipo.id,"lote",e.target.value,setGrade)}
+                      placeholder="Lote"
+                      style={{flex:1,padding:"7px 10px",borderRadius:8,background:"rgba(0,0,0,0.3)",
+                        border:`1px solid ${r.lote?tipo.cor+"55":C.border}`,color:C.text,
+                        fontFamily:"monospace",fontSize:12,outline:"none",minWidth:0}}/>
+                    <input value={r.unidade} onChange={e=>setcampo(tipo.id,"unidade",e.target.value,setGrade)}
+                      placeholder="Unidade"
+                      style={{flex:1,padding:"7px 10px",borderRadius:8,background:"rgba(0,0,0,0.3)",
+                        border:`1px solid ${r.unidade?tipo.cor+"55":C.border}`,color:C.text,
+                        fontFamily:"monospace",fontSize:12,outline:"none",minWidth:0}}/>
+                    <input ref={el=>inputRefs.current[tipo.id]=el} type="file"
+                      accept="image/*" multiple onChange={e=>onFotoChange(tipo.id,e)} style={{display:"none"}}/>
+                    <button onClick={()=>inputRefs.current[tipo.id]?.click()}
+                      disabled={fotoProc===tipo.id}
+                      style={{flexShrink:0,width:34,height:34,borderRadius:8,cursor:"pointer",
+                        border:`1px solid ${(r.fotos?.length>0)?tipo.cor+"55":C.border}`,
+                        background:(r.fotos?.length>0)?tipo.cor+"1A":C.tagBg,
+                        color:(r.fotos?.length>0)?tipo.cor:C.textDim,fontSize:14}}>
+                      {fotoProc===tipo.id?"…":"📷"}
+                    </button>
+                  </div>
+                  {r.fotos?.length>0&&(
+                    <div style={{display:"flex",gap:5,marginTop:6,flexWrap:"wrap"}}>
+                      {r.fotos.map((f,fi)=>(
+                        <div key={fi} style={{position:"relative",width:52,height:38}}>
+                          <img src={f.base64} style={{width:52,height:38,objectFit:"cover",borderRadius:5,border:`1px solid ${C.border}`}}/>
+                          <button onClick={()=>setGrade(prev=>({...prev,[tipo.id]:{...prev[tipo.id],fotos:prev[tipo.id].fotos.filter((_,i)=>i!==fi)}}))}
+                            style={{position:"absolute",top:-4,right:-4,width:16,height:16,borderRadius:"50%",
+                              background:C.dangerLight,border:"none",color:"#fff",fontSize:9,cursor:"pointer",fontWeight:900,padding:0}}>x</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={()=>setPasso(1)}
+          style={{flex:1,padding:13,borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,
+            background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted}}>
+          Voltar
         </button>
-      )}
-
-      {/* Navegação */}
-      {!adicionando&&(
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>setPasso(1)}
-            style={{flex:1,padding:"12px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,
-              background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted}}>
-            Voltar
-          </button>
-          <button onClick={()=>setPasso(3)} disabled={avarias.length===0}
-            style={{flex:2,padding:"12px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
-              background:avarias.length>0?"linear-gradient(135deg,#c0272d,#FF5252)":C.tagBg,
-              border:`1px solid ${avarias.length>0?C.dangerLight:C.border}`,
-              color:avarias.length>0?"#fff":C.textDim,opacity:avarias.length===0?0.5:1}}>
-            Revisar ({avarias.length} avaria{avarias.length!==1?"s":""})
-          </button>
-        </div>
-      )}
+        <button onClick={()=>setPasso(3)} disabled={totalAvarias===0}
+          style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
+            background:totalAvarias>0?"linear-gradient(135deg,#c0272d,#FF5252)":C.tagBg,
+            border:`1px solid ${totalAvarias>0?C.dangerLight:C.border}`,
+            color:totalAvarias>0?"#fff":C.textDim,opacity:totalAvarias===0?0.5:1}}>
+          Revisar ({totalAvarias} avaria{totalAvarias!==1?"s":""})
+        </button>
+      </div>
     </div>
   );
 
@@ -372,29 +326,35 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
         <div style={{color:C.textMuted,fontSize:12,marginBottom:14}}>Turno {letraProp||letra}</div>
         <div style={{textAlign:"center",padding:"14px 0",borderBottom:`1px solid ${C.border}`,marginBottom:14}}>
           <div style={{fontFamily:"monospace",fontSize:52,fontWeight:900,color:C.dangerLight,lineHeight:1,
-            textShadow:`0 0 20px ${C.dangerLight}66`}}>{avarias.length}</div>
-          <div style={{fontSize:12,color:C.textMuted,marginTop:4}}>avaria{avarias.length!==1?"s":""} registrada{avarias.length!==1?"s":""}</div>
+            textShadow:`0 0 20px ${C.dangerLight}66`}}>{totalAvarias}</div>
+          <div style={{fontSize:12,color:C.textMuted,marginTop:4}}>avaria{totalAvarias!==1?"s":""} registrada{totalAvarias!==1?"s":""}</div>
         </div>
-        {avarias.map((av,idx)=>(
-          <div key={idx} style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:12}}>
-            <div style={{width:4,minHeight:32,borderRadius:2,background:av.tipoColor||C.dangerLight,flexShrink:0,marginTop:2}}/>
-            <div style={{flex:1}}>
-              <div style={{color:C.text,fontSize:13,fontWeight:700}}>{av.tipoLabel}</div>
-              <div style={{display:"flex",gap:8,marginTop:3,flexWrap:"wrap"}}>
-                <span style={{fontSize:11,color:COR_LINHA[av.linha]||C.textMuted,fontWeight:700,fontFamily:"monospace"}}>{av.linha} · {av.maquina}</span>
-                {av.lote&&<span style={{fontSize:11,color:C.textDim,fontFamily:"monospace"}}>Lote {av.lote}</span>}
-                {av.unidade&&<span style={{fontSize:11,color:C.textDim,fontFamily:"monospace"}}>Un {av.unidade}</span>}
-              </div>
-              {av.fotos?.length>0&&(
-                <div style={{display:"flex",gap:4,marginTop:6}}>
-                  {av.fotos.map((f,fi)=>(
-                    <img key={fi} src={f.base64} style={{width:40,height:30,objectFit:"cover",borderRadius:4,border:`1px solid ${C.border}`}}/>
-                  ))}
+        {ativos.map(tipo=>{
+          const r=grade[tipo.id];
+          return(
+            <div key={tipo.id} style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:12}}>
+              <div style={{width:4,minHeight:32,borderRadius:2,background:tipo.cor,flexShrink:0,marginTop:2}}/>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{color:C.text,fontSize:13,fontWeight:700}}>{tipo.label}</span>
+                  <span style={{fontFamily:"monospace",fontWeight:900,fontSize:18,color:tipo.cor}}>{r.qtd}</span>
                 </div>
-              )}
+                <div style={{display:"flex",gap:8,marginTop:3,flexWrap:"wrap"}}>
+                  {r.linha&&<span style={{fontSize:11,color:COR_LINHA[r.linha],fontWeight:700,fontFamily:"monospace"}}>{r.linha} · {maqDaLinha(r.linha)}</span>}
+                  {r.lote&&<span style={{fontSize:11,color:C.textDim,fontFamily:"monospace"}}>Lote {r.lote}</span>}
+                  {r.unidade&&<span style={{fontSize:11,color:C.textDim,fontFamily:"monospace"}}>Un {r.unidade}</span>}
+                </div>
+                {r.fotos?.length>0&&(
+                  <div style={{display:"flex",gap:4,marginTop:5}}>
+                    {r.fotos.map((f,fi)=>(
+                      <img key={fi} src={f.base64} style={{width:38,height:28,objectFit:"cover",borderRadius:4,border:`1px solid ${C.border}`}}/>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <div style={{display:"flex",gap:8}}>
         <button onClick={()=>setPasso(2)}
@@ -412,89 +372,82 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
   );
 }
 
+// helpers fora do componente pra evitar recriação
+function setcampo_linha(tipoId, l, r, setGrade) {
+  setGrade(prev=>({...prev,[tipoId]:{...prev[tipoId],linha:r.linha===l?null:l}}));
+}
+function setcampo(tipoId, campo, val, setGrade) {
+  setGrade(prev=>({...prev,[tipoId]:{...prev[tipoId],[campo]:val}}));
+}
+
 // ── AvariasAnalytics ──────────────────────────────────────────────────────────
 export function AvariasAnalytics({ avariasData, perfil }) {
   const dados = Array.isArray(avariasData)?avariasData:[];
   const podeVerLetra = perfil?.funcao==="operador_painel"||perfil?.funcao==="supervisor"||perfil?.funcao==="dev";
   const [filtroLetra, setFiltroLetra] = useState("TODAS");
   const [filtroLinha, setFiltroLinha] = useState("TODAS");
-  const [abaMes, setAbaMes]           = useState("tipos"); // "tipos" | "linhas"
+  const [aba, setAba]                 = useState("tipos");
 
   const LETRAS = ["TODAS","A","B","C"];
 
   const filtrados = dados.filter(r=>{
     if(filtroLetra!=="TODAS"&&r.letra!==filtroLetra) return false;
     if(filtroLinha!=="TODAS"){
-      // verificar nas avarias individuais
-      const temLinha = r.avarias?.some(a=>a.linha===filtroLinha);
-      const temLinhaLeg = r.linha===filtroLinha; // compatibilidade legado
-      if(!temLinha&&!temLinhaLeg) return false;
+      const temLinha = r.itens?.some(i=>i.linha===filtroLinha);
+      const legado   = r.linha===filtroLinha;
+      if(!temLinha&&!legado) return false;
     }
     return true;
   });
 
   const comAvaria = filtrados.filter(r=>r.teveAvaria);
-  const totalMes = dados.filter(r=>r.data?.slice(0,7)===mesAtual()&&r.teveAvaria)
-    .reduce((s,r)=>s+(r.total||0),0);
+  const totalMes  = dados.filter(r=>r.data?.slice(0,7)===mesAtual()&&r.teveAvaria)
+    .reduce((s,r)=>s+(r.totalAvarias||r.total||0),0);
 
-  // ── Ranking por tipo (todos os tipos, não só top3) ────────────────────────
+  // ranking por tipo
   const contTipos = {};
-  TIPOS_AVARIA.forEach(t=>{ contTipos[t.id]=0; });
+  TIPOS_AVARIA.forEach(t=>{contTipos[t.id]=0;});
   comAvaria.forEach(r=>{
-    // novo formato — avarias individuais
-    if(r.avarias?.length) {
-      r.avarias.forEach(av=>{ if(contTipos[av.tipoId]!==undefined) contTipos[av.tipoId]++; });
-    } else {
-      // legado — itens com quantidade
-      r.itens?.forEach(it=>{ if(contTipos[it.id]!==undefined) contTipos[it.id]+=it.quantidade; });
-    }
+    r.itens?.forEach(it=>{ if(contTipos[it.id]!==undefined) contTipos[it.id]+=(it.quantidade||1); });
   });
-  const rankTipos = TIPOS_AVARIA.map(t=>({...t,total:contTipos[t.id]}))
-    .sort((a,b)=>b.total-a.total);
-  const maxTipo = Math.max(1,...rankTipos.map(t=>t.total));
+  const rankTipos = TIPOS_AVARIA.map(t=>({...t,total:contTipos[t.id]})).sort((a,b)=>b.total-a.total);
+  const maxTipo   = Math.max(1,...rankTipos.map(t=>t.total));
 
-  // ── Ranking por linha ─────────────────────────────────────────────────────
+  // ranking por linha
   const contLinhas = {};
-  LINHAS.forEach(l=>{ contLinhas[l]=0; });
+  LINHAS.forEach(l=>{contLinhas[l]=0;});
   comAvaria.forEach(r=>{
-    if(r.avarias?.length) {
-      r.avarias.forEach(av=>{ if(contLinhas[av.linha]!==undefined) contLinhas[av.linha]++; });
-    } else if(r.linha&&contLinhas[r.linha]!==undefined) {
-      contLinhas[r.linha]+=(r.total||1);
-    }
+    r.itens?.forEach(it=>{ if(it.linha&&contLinhas[it.linha]!==undefined) contLinhas[it.linha]+=(it.quantidade||1); });
+    if(!r.itens?.length&&r.linha&&contLinhas[r.linha]!==undefined) contLinhas[r.linha]+=(r.total||1);
   });
-  const rankLinhas = LINHAS.map(l=>({linha:l,cor:COR_LINHA[l],total:contLinhas[l]}))
-    .sort((a,b)=>b.total-a.total);
-  const maxLinha = Math.max(1,...rankLinhas.map(l=>l.total));
+  const rankLinhas = LINHAS.map(l=>({linha:l,cor:COR_LINHA[l],total:contLinhas[l]})).sort((a,b)=>b.total-a.total);
+  const maxLinha   = Math.max(1,...rankLinhas.map(l=>l.total));
 
-  // ── Gráfico de linha — últimos 20 registros ───────────────────────────────
+  // gráfico tendência
   const ultimos = [...filtrados].sort((a,b)=>b.id-a.id).slice(0,20).reverse();
   const W=280,H=70,PAD=8;
-  const vals = ultimos.map(r=>r.teveAvaria?(r.avarias?.length||r.total||0):0);
-  const maxV = Math.max(1,...vals);
-  const xOf = (i)=>PAD+(i/(Math.max(1,ultimos.length-1)))*(W-PAD*2);
-  const yOf = (v)=>H-PAD-((v/maxV)*(H-PAD*2));
-  const pts = vals.map((v,i)=>`${xOf(i)},${yOf(v)}`);
-  const linhaPath = bPath(pts);
-  const area = linhaPath?linhaPath+` L${xOf(vals.length-1)},${H-PAD} L${xOf(0)},${H-PAD} Z`:"";
+  const vals    = ultimos.map(r=>r.teveAvaria?(r.totalAvarias||r.total||0):0);
+  const maxV    = Math.max(1,...vals);
+  const xOf     = (i)=>PAD+(i/(Math.max(1,ultimos.length-1)))*(W-PAD*2);
+  const yOf     = (v)=>H-PAD-((v/maxV)*(H-PAD*2));
+  const pts     = vals.map((v,i)=>`${xOf(i)},${yOf(v)}`);
+  const lp      = bPath(pts);
+  const area    = lp?lp+` L${xOf(vals.length-1)},${H-PAD} L${xOf(0)},${H-PAD} Z`:"";
 
   return (
     <div>
-      {/* Filtros */}
       {podeVerLetra&&(
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginBottom:10}}>
           <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Turno</div>
           <div style={{display:"flex",gap:6}}>
             {LETRAS.map(l=>{
-              const ativo=filtroLetra===l;
-              return(
-                <button key={l} onClick={()=>setFiltroLetra(l)}
-                  style={{flex:1,padding:"8px 4px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700,
-                    border:`2px solid ${ativo?C.accentLight:C.border}`,
-                    background:ativo?C.accentDark:C.tagBg,color:ativo?C.accentLight:C.textMuted}}>
-                  {l==="TODAS"?"Todas":l}
-                </button>
-              );
+              const at=filtroLetra===l;
+              return <button key={l} onClick={()=>setFiltroLetra(l)}
+                style={{flex:1,padding:"8px 4px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700,
+                  border:`2px solid ${at?C.accentLight:C.border}`,
+                  background:at?C.accentDark:C.tagBg,color:at?C.accentLight:C.textMuted}}>
+                {l==="TODAS"?"Todas":l}
+              </button>;
             })}
           </div>
         </div>
@@ -504,22 +457,19 @@ export function AvariasAnalytics({ avariasData, perfil }) {
         <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Linha</div>
         <div style={{display:"flex",gap:6}}>
           {["TODAS",...LINHAS].map(l=>{
-            const ativo=filtroLinha===l;
+            const at=filtroLinha===l;
             const cor=l==="TODAS"?C.accentLight:COR_LINHA[l];
-            return(
-              <button key={l} onClick={()=>setFiltroLinha(l)}
-                style={{flex:1,padding:"7px 2px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:700,
-                  border:`2px solid ${ativo?cor+"99":C.border}`,
-                  background:ativo?cor+"18":C.tagBg,
-                  color:ativo?cor:C.textMuted}}>
-                {l==="TODAS"?"Todas":l}
-              </button>
-            );
+            return <button key={l} onClick={()=>setFiltroLinha(l)}
+              style={{flex:1,padding:"7px 2px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:700,
+                border:`2px solid ${at?cor+"99":C.border}`,
+                background:at?cor+"18":C.tagBg,color:at?cor:C.textMuted}}>
+              {l==="TODAS"?"Todas":l}
+            </button>;
           })}
         </div>
       </div>
 
-      {/* Gráfico tendência */}
+      {/* Tendência */}
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.dangerLight}`,borderRadius:12,padding:14,marginBottom:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
           <span style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.08em"}}>Tendência</span>
@@ -528,13 +478,13 @@ export function AvariasAnalytics({ avariasData, perfil }) {
         {ultimos.length>0?(
           <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{display:"block"}}>
             <defs>
-              <linearGradient id="avFill" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="avFill2" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={C.dangerLight} stopOpacity="0.25"/>
                 <stop offset="100%" stopColor={C.dangerLight} stopOpacity="0.02"/>
               </linearGradient>
             </defs>
-            {area&&<path d={area} fill="url(#avFill)"/>}
-            {linhaPath&&<path d={linhaPath} fill="none" stroke={C.dangerLight} strokeWidth="2"
+            {area&&<path d={area} fill="url(#avFill2)"/>}
+            {lp&&<path d={lp} fill="none" stroke={C.dangerLight} strokeWidth="2"
               strokeLinejoin="round" strokeLinecap="round"
               style={{filter:`drop-shadow(0 0 4px ${C.dangerLight}aa)`}}/>}
             {vals.map((v,i)=>(
@@ -548,21 +498,20 @@ export function AvariasAnalytics({ avariasData, perfil }) {
         )}
       </div>
 
-      {/* Abas ranking */}
+      {/* Abas */}
       <div style={{display:"flex",gap:0,marginBottom:12,borderRadius:10,overflow:"hidden",border:`1px solid ${C.border}`}}>
         {[["tipos","Por motivo"],["linhas","Por linha"]].map(([key,label])=>(
-          <button key={key} onClick={()=>setAbaMes(key)}
+          <button key={key} onClick={()=>setAba(key)}
             style={{flex:1,padding:"10px",cursor:"pointer",fontWeight:700,fontSize:12,border:"none",
-              background:abaMes===key?C.blue:C.tagBg,
-              color:abaMes===key?C.text:C.textMuted,
+              background:aba===key?C.blue:C.tagBg,
+              color:aba===key?C.text:C.textMuted,
               borderRight:key==="tipos"?`1px solid ${C.border}`:"none"}}>
             {label}
           </button>
         ))}
       </div>
 
-      {/* Ranking por motivo */}
-      {abaMes==="tipos"&&(
+      {aba==="tipos"&&(
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.warningLight}`,borderRadius:12,padding:14,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:14}}>Avarias por motivo</div>
           {rankTipos.map((t,i)=>(
@@ -584,8 +533,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
         </div>
       )}
 
-      {/* Ranking por linha */}
-      {abaMes==="linhas"&&(
+      {aba==="linhas"&&(
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.blueLight}`,borderRadius:12,padding:14,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:14}}>Avarias por linha</div>
           {rankLinhas.map((l,i)=>(
@@ -593,7 +541,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <span style={{fontFamily:"monospace",fontSize:11,color:C.textDim,fontWeight:700,minWidth:16}}>#{i+1}</span>
-                  <span style={{fontSize:14,color:l.total>0?l.cor:C.textDim,fontWeight:l.total>0?800:400,fontFamily:"monospace"}}>{l.linha}</span>
+                  <span style={{fontSize:14,color:l.total>0?l.cor:C.textDim,fontWeight:800,fontFamily:"monospace"}}>{l.linha}</span>
                   <span style={{fontSize:11,color:C.textDim}}>{maqDaLinha(l.linha)}</span>
                 </div>
                 <span style={{fontFamily:"monospace",fontSize:18,fontWeight:900,color:l.total>0?l.cor:C.textDim,
@@ -609,7 +557,6 @@ export function AvariasAnalytics({ avariasData, perfil }) {
         </div>
       )}
 
-      {/* Acumulado mês */}
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{color:C.textMuted,fontSize:12}}>Acumulado do mês</div>
         <div style={{fontFamily:"monospace",fontSize:28,fontWeight:900,color:totalMes>0?C.dangerLight:C.accentLight,
@@ -619,25 +566,23 @@ export function AvariasAnalytics({ avariasData, perfil }) {
   );
 }
 
-// ── PainelAvariasTV (card do Dashboard) ──────────────────────────────────────
+// ── PainelAvariasTV ───────────────────────────────────────────────────────────
 export function PainelAvariasTV({ avariasData, setTela }) {
   const dados = Array.isArray(avariasData)?avariasData:[];
-  const mes = mesAtual();
+  const mes   = mesAtual();
 
   const totalMes = dados.filter(r=>r.data?.slice(0,7)===mes&&r.teveAvaria)
-    .reduce((s,r)=>s+(r.avarias?.length||r.total||0),0);
+    .reduce((s,r)=>s+(r.totalAvarias||r.total||0),0);
 
   const shiftBounds=[];
   for(let day=0;day<10;day++){
     const d=new Date(); d.setDate(d.getDate()-9+day);
     const ds=d.toISOString().slice(0,10);
-    for(const lt of["A","B","C"]){
-      shiftBounds.push({data:ds,letra:lt});
-    }
+    for(const lt of["A","B","C"]) shiftBounds.push({data:ds,letra:lt});
   }
   const vals=shiftBounds.map(s=>{
     const recs=dados.filter(r=>r.data===s.data&&r.letra===s.letra&&r.teveAvaria);
-    return recs.reduce((a,r)=>a+(r.avarias?.length||r.total||0),0);
+    return recs.reduce((a,r)=>a+(r.totalAvarias||r.total||0),0);
   });
 
   const W=260,H=60,PAD=6;
@@ -645,19 +590,17 @@ export function PainelAvariasTV({ avariasData, setTela }) {
   const xOf=(i)=>PAD+(i/(Math.max(1,shiftBounds.length-1)))*(W-PAD*2);
   const yOf=(v)=>H-PAD-((v/maxV)*(H-PAD*2));
   const pts=vals.map((v,i)=>`${xOf(i)},${yOf(v)}`);
-  const linhaPath=bPath(pts);
-  const area=linhaPath?linhaPath+` L${xOf(vals.length-1)},${H-PAD} L${xOf(0)},${H-PAD} Z`:"";
+  const lp=bPath(pts);
+  const area=lp?lp+` L${xOf(vals.length-1)},${H-PAD} L${xOf(0)},${H-PAD} Z`:"";
 
-  // Ranking linhas (mês)
   const contLinhas={};
   LINHAS.forEach(l=>{contLinhas[l]=0;});
   dados.filter(r=>r.data?.slice(0,7)===mes&&r.teveAvaria).forEach(r=>{
-    if(r.avarias?.length){r.avarias.forEach(av=>{if(contLinhas[av.linha]!==undefined)contLinhas[av.linha]++;});}
-    else if(r.linha&&contLinhas[r.linha]!==undefined){contLinhas[r.linha]+=(r.total||1);}
+    r.itens?.forEach(it=>{ if(it.linha&&contLinhas[it.linha]!==undefined) contLinhas[it.linha]+=(it.quantidade||1); });
+    if(!r.itens?.length&&r.linha&&contLinhas[r.linha]!==undefined) contLinhas[r.linha]+=(r.total||1);
   });
   const topLinhas=LINHAS.map(l=>({linha:l,cor:COR_LINHA[l],total:contLinhas[l]})).sort((a,b)=>b.total-a.total).slice(0,3);
   const maxL=Math.max(1,...topLinhas.map(t=>t.total));
-
   const corTopo=totalMes===0?C.accentLight:totalMes<=10?C.warningLight:C.dangerLight;
 
   return(
@@ -666,6 +609,7 @@ export function PainelAvariasTV({ avariasData, setTela }) {
       borderTop:`3px solid ${corTopo}`,borderRadius:14,padding:"14px 18px 12px",
       cursor:"pointer",display:"flex",flexDirection:"column",gap:10,overflow:"hidden",
       boxShadow:`0 2px 16px rgba(0,0,0,.5)`,height:"100%",boxSizing:"border-box"}}>
+
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <span style={{fontSize:11,fontWeight:800,color:C.textMuted,letterSpacing:"0.09em",textTransform:"uppercase"}}>Avarias por Turno</span>
         <span style={{fontSize:12,color:C.textDim,opacity:.6}}>›</span>
@@ -685,7 +629,7 @@ export function PainelAvariasTV({ avariasData, setTela }) {
           </linearGradient>
         </defs>
         {area&&<path d={area} fill="url(#avTVFill)"/>}
-        {linhaPath&&<path d={linhaPath} fill="none" stroke={corTopo} strokeWidth="1.5"
+        {lp&&<path d={lp} fill="none" stroke={corTopo} strokeWidth="1.5"
           strokeLinejoin="round" strokeLinecap="round"
           style={{filter:`drop-shadow(0 0 3px ${corTopo}aa)`}}/>}
         {vals.map((v,i)=>v>0?(
@@ -694,7 +638,6 @@ export function PainelAvariasTV({ avariasData, setTela }) {
         ):null)}
       </svg>
 
-      {/* Top linhas */}
       <div style={{display:"flex",flexDirection:"column",gap:5}}>
         {topLinhas.map((l,i)=>(
           <div key={l.linha}>
