@@ -923,10 +923,77 @@ export default function DashboardTV({ setTela, setModoVisao }) {
       <div style={{position:"absolute",left:0,right:0,height:100,background:"linear-gradient(180deg,transparent,rgba(0,230,118,0.045),transparent)",animation:"cmd-scan 12s linear infinite",pointerEvents:"none",zIndex:1}}/>
 
       {/* ═══ HEADER ═══ */}
-      <div style={{position:"relative",zIndex:10,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 22px",borderBottom:`1px solid ${C.lineHi}`,background:"linear-gradient(180deg,rgba(8,28,45,0.82),rgba(4,17,29,0.5))",backdropFilter:"blur(16px)",boxShadow:`0 6px 22px rgba(0,0,0,0.45),0 1px 0 ${C.green}18`,flexShrink:0}}>
+      <div style={{position:"relative",zIndex:10,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 22px",borderBottom:`1px solid ${C.lineHi}`,background:"linear-gradient(180deg,rgba(8,28,45,0.82),rgba(4,17,29,0.5))",backdropFilter:"blur(16px)",boxShadow:`0 6px 22px rgba(0,0,0,0.45),0 1px 0 ${C.green}18`,flexShrink:0}}>
+        {/* Camada de radar: sinais convergem no núcleo do logo */}
+        <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:1,overflow:"visible"}}>
+          <g>
+            <circle r="1.9" fill="#00E676" opacity="0" style={{filter:"drop-shadow(0 0 3px #00E676)"}}>
+              <animateMotion dur="7s" begin="0.0s" repeatCount="indefinite" calcMode="spline" path="M340,14 L40,31" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"/>
+              <animate attributeName="opacity" dur="7s" begin="0.0s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.88;0.92;1" values="0;0;0.85;0.85;0;0"/>
+            </circle>
+            <circle cx="340" cy="14" r="1" fill="none" stroke="#00E676" strokeWidth="0.8" opacity="0">
+              <animate attributeName="r" dur="7s" begin="0.0s" repeatCount="indefinite" keyTimes="0;0.47;0.56;1" values="1;1;6;6"/>
+              <animate attributeName="opacity" dur="7s" begin="0.0s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.6;1" values="0;0;0.7;0;0"/>
+            </circle>
+          </g>
+          <g>
+            <circle r="1.9" fill="#00F0FF" opacity="0" style={{filter:"drop-shadow(0 0 3px #00F0FF)"}}>
+              <animateMotion dur="7s" begin="1.167s" repeatCount="indefinite" calcMode="spline" path="M280,34 L40,31" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"/>
+              <animate attributeName="opacity" dur="7s" begin="1.167s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.88;0.92;1" values="0;0;0.85;0.85;0;0"/>
+            </circle>
+            <circle cx="280" cy="34" r="1" fill="none" stroke="#00F0FF" strokeWidth="0.8" opacity="0">
+              <animate attributeName="r" dur="7s" begin="1.167s" repeatCount="indefinite" keyTimes="0;0.47;0.56;1" values="1;1;6;6"/>
+              <animate attributeName="opacity" dur="7s" begin="1.167s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.6;1" values="0;0;0.7;0;0"/>
+            </circle>
+          </g>
+          <g>
+            <circle r="1.9" fill="#5090FF" opacity="0" style={{filter:"drop-shadow(0 0 3px #5090FF)"}}>
+              <animateMotion dur="7s" begin="2.333s" repeatCount="indefinite" calcMode="spline" path="M220,18 L40,31" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"/>
+              <animate attributeName="opacity" dur="7s" begin="2.333s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.88;0.92;1" values="0;0;0.85;0.85;0;0"/>
+            </circle>
+            <circle cx="220" cy="18" r="1" fill="none" stroke="#5090FF" strokeWidth="0.8" opacity="0">
+              <animate attributeName="r" dur="7s" begin="2.333s" repeatCount="indefinite" keyTimes="0;0.47;0.56;1" values="1;1;6;6"/>
+              <animate attributeName="opacity" dur="7s" begin="2.333s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.6;1" values="0;0;0.7;0;0"/>
+            </circle>
+          </g>
+          <g>
+            <circle r="1.9" fill="#00E676" opacity="0" style={{filter:"drop-shadow(0 0 3px #00E676)"}}>
+              <animateMotion dur="7s" begin="3.5s" repeatCount="indefinite" calcMode="spline" path="M310,42 L40,31" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"/>
+              <animate attributeName="opacity" dur="7s" begin="3.5s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.88;0.92;1" values="0;0;0.85;0.85;0;0"/>
+            </circle>
+            <circle cx="310" cy="42" r="1" fill="none" stroke="#00E676" strokeWidth="0.8" opacity="0">
+              <animate attributeName="r" dur="7s" begin="3.5s" repeatCount="indefinite" keyTimes="0;0.47;0.56;1" values="1;1;6;6"/>
+              <animate attributeName="opacity" dur="7s" begin="3.5s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.6;1" values="0;0;0.7;0;0"/>
+            </circle>
+          </g>
+          <g>
+            <circle r="1.9" fill="#00F0FF" opacity="0" style={{filter:"drop-shadow(0 0 3px #00F0FF)"}}>
+              <animateMotion dur="7s" begin="4.667s" repeatCount="indefinite" calcMode="spline" path="M180,26 L40,31" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"/>
+              <animate attributeName="opacity" dur="7s" begin="4.667s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.88;0.92;1" values="0;0;0.85;0.85;0;0"/>
+            </circle>
+            <circle cx="180" cy="26" r="1" fill="none" stroke="#00F0FF" strokeWidth="0.8" opacity="0">
+              <animate attributeName="r" dur="7s" begin="4.667s" repeatCount="indefinite" keyTimes="0;0.47;0.56;1" values="1;1;6;6"/>
+              <animate attributeName="opacity" dur="7s" begin="4.667s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.6;1" values="0;0;0.7;0;0"/>
+            </circle>
+          </g>
+          <g>
+            <circle r="1.9" fill="#5090FF" opacity="0" style={{filter:"drop-shadow(0 0 3px #5090FF)"}}>
+              <animateMotion dur="7s" begin="5.833s" repeatCount="indefinite" calcMode="spline" path="M352,36 L40,31" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"/>
+              <animate attributeName="opacity" dur="7s" begin="5.833s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.88;0.92;1" values="0;0;0.85;0.85;0;0"/>
+            </circle>
+            <circle cx="352" cy="36" r="1" fill="none" stroke="#5090FF" strokeWidth="0.8" opacity="0">
+              <animate attributeName="r" dur="7s" begin="5.833s" repeatCount="indefinite" keyTimes="0;0.47;0.56;1" values="1;1;6;6"/>
+              <animate attributeName="opacity" dur="7s" begin="5.833s" repeatCount="indefinite" keyTimes="0;0.47;0.52;0.6;1" values="0;0;0.7;0;0"/>
+            </circle>
+          </g>
+          <circle cx="40" cy="31" fill="none" stroke="#fff" strokeWidth="1">
+            <animate attributeName="r" values="3;14" dur="3s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.45;0" dur="3s" repeatCount="indefinite"/>
+          </circle>
+        </svg>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
           <div style={{display:"flex",alignItems:"center",gap:9}}>
-            <svg viewBox="0 0 32 28" style={{width:32,height:28,flexShrink:0,overflow:"visible"}}>
+            <svg viewBox="0 0 32 28" style={{width:36,height:32,flexShrink:0,overflow:"visible"}}>
               <defs>
                 <linearGradient id="dvtxA" gradientUnits="userSpaceOnUse" x1="16" y1="3" x2="3" y2="25"><stop offset="0" stopColor="#00E676"/><stop offset="1" stopColor="#00F0FF"/></linearGradient>
                 <linearGradient id="dvtxB" gradientUnits="userSpaceOnUse" x1="3" y1="25" x2="29" y2="25"><stop offset="0" stopColor="#00F0FF"/><stop offset="1" stopColor="#5090FF"/></linearGradient>
