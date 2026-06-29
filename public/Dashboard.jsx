@@ -53,7 +53,6 @@ const GlobalFX = () => (
     @keyframes cmd-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
     .cmd-card{position:relative;background:linear-gradient(180deg,rgba(18,52,78,.88),rgba(5,17,28,.96));backdrop-filter:blur(16px);border-radius:16px;overflow:hidden;border:1px solid rgba(0,230,118,.3);box-shadow:0 0 24px rgba(0,230,118,.06),0 14px 34px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.09) inset,0 0 0 1px rgba(0,230,118,.05) inset}
     .cmd-card::after{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(140deg,rgba(0,230,118,.9),rgba(0,240,255,.22) 40%,transparent 70%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
-    .cmd-card::before{content:'';position:absolute;top:0;bottom:0;width:60px;background:linear-gradient(90deg,transparent,rgba(0,230,118,0.055),transparent);animation:hud-scan-h 7s linear infinite;pointer-events:none;z-index:1}
     .cmd-corner{position:absolute;width:9px;height:9px;pointer-events:none;z-index:2}
     .cmd-grid{background-color:rgba(0,0,0,.24);background-image:linear-gradient(rgba(0,230,118,.085) 1px,transparent 1px),linear-gradient(90deg,rgba(0,230,118,.085) 1px,transparent 1px);background-size:16px 16px;box-shadow:inset 0 0 18px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,230,118,.07);border-radius:8px}
   `}</style>
