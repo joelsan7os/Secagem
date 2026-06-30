@@ -3459,10 +3459,25 @@ export default function App() {
   const todos=[...eqState.comum,...eqState.m2,...eqState.m3,...eqState.cs_m2,...eqState.cs_m3,...eqState.enf_m2,...eqState.enf_m3];
   const totalNotas=todos.reduce((a,e)=>a+e.notas.length,0);
   const notasComum=eqState.comum.reduce((a,e)=>a+e.notas.length,0);
-  const salvarChecklist=async(registro)=>{const novo=[...historico,registro];setHistorico(novo);try{localStorage.setItem("historico_h2",JSON.stringify(novo));}catch{}try{await setDoc(doc(COL,"historico_h2"),{val:novo,ts:Date.now()});}catch(e){console.error("Firestore erro historico:",e);}};
+  const salvouNaSessao=useRef(false);
+  const salvarChecklist=async(registro)=>{salvouNaSessao.current=true;const novo=[...historico,registro];setHistorico(novo);try{localStorage.setItem("historico_h2",JSON.stringify(novo));}catch{}try{await setDoc(doc(COL,"historico_h2"),{val:novo,ts:Date.now()});}catch(e){console.error("Firestore erro historico:",e);}};
   const eqCarregado=useRef(false);
   React.useEffect(()=>{
-    cloudGet("historico_h2").then(data=>{if(data&&Array.isArray(data)&&data.length>0){setHistorico(prev=>data.length>=prev.length?data:prev);}});
+    cloudGet("historico_h2").then(data=>{
+      if(!salvouNaSessao.current&&data&&Array.isArray(data)){
+        setHistorico(prev=>{
+          if(!data.length) return prev;
+          if(!prev.length) return data;
+          const ids=new Set(prev.map(r=>r.id));
+          const extras=data.filter(r=>!ids.has(r.id));
+          if(extras.length===0) return prev.length>=data.length?prev:data;
+          const merged=[...prev,...extras].sort((a,b)=>a.id-b.id);
+          localStorage.setItem("historico_h2",JSON.stringify(merged));
+          setDoc(doc(COL,"historico_h2"),{val:merged,ts:Date.now()}).catch(()=>{});
+          return merged;
+        });
+      }
+    });
     cloudGet("eqstate_h2").then(data=>{if(data&&data.comum)setEqState(data);eqCarregado.current=true;});
   },[]);
   React.useEffect(()=>{
