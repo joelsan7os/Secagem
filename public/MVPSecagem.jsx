@@ -632,7 +632,7 @@ function ModalObservacao({ eq, onClose, onSave }) {
   const removeFoto=(i)=>setFotos(p=>p.filter((_,j)=>j!==i));
   return (
     <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"#000000dd",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={fotoAmpliada} alt="amp" style={{maxWidth:"95vw",maxHeight:"90vh",borderRadius:12}}/></div>}
+      {fotoAmpliada&&<div style={{position:"fixed",inset:0,background:"#000000dd",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setFotoAmpliada(null)}><img src={fotoAmpliada} alt="amp" style={{maxWidth:"95vw",maxHeight:"90vh",borderRadius:12}} onClick={e=>e.stopPropagation()}/><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,width:40,height:40,borderRadius:"50%",background:"rgba(0,0,0,0.8)",border:"2px solid rgba(255,255,255,0.4)",color:"#fff",fontSize:22,cursor:"pointer",fontWeight:900,lineHeight:1,zIndex:301}}>×</button></div>}
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"90vh",overflowY:"auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
           <div>
@@ -1275,7 +1275,7 @@ function BarcodeSeletorTela() {
 }
 
 // ─── UnitBarcodeInput — lote/unidade com leitor inline ───────────────────────
-function UnitBarcodeInput({ lote, setLote, unidade, setUnidade, unitFoto, setUnitFoto, setSalvo }) {
+function UnitBarcodeInput({ lote, setLote, unidade, setUnidade, unitFoto, setUnitFoto, setSalvo, onParsed }) {
   const [lendo, setLendo]     = useState(false);
   const [erro, setErro]       = useState("");
   const [lido, setLido]       = useState("");
@@ -1283,12 +1283,18 @@ function UnitBarcodeInput({ lote, setLote, unidade, setUnidade, unitFoto, setUni
   const readerRef             = useRef(null);
 
   const parseCodigo = (codigo) => {
-    // Formato: YYMMDDRLUUUOO (12 chars)
-    // pos 0: ano(letra) | 1-2: mês | 3-4: dia | 5: máquina | 6: linha | 7-8: lote(2) | 9-11: unidade(3)
+    // 0:ano 1-2:mes 3-4:dia 5:maq 6:linha 7-8:lote 9-11:unidade
     if(!codigo || codigo.length < 12) return null;
-    const lt = codigo.slice(7, 9);   // lote 2 dígitos
-    const un = codigo.slice(9, 12);  // unidade 3 dígitos
-    return { lote: lt, unidade: un };
+    return {
+      ano: codigo.slice(0,1),
+      mes: codigo.slice(1,3),
+      dia: codigo.slice(3,5),
+      maquinaLetra: codigo.slice(5,6),
+      linhaNum: codigo.slice(6,7),
+      lote: codigo.slice(7,9),
+      unidade: codigo.slice(9,12),
+      codigoCompleto: codigo,
+    };
   };
 
   const iniciarScan = () => {
@@ -1320,6 +1326,7 @@ function UnitBarcodeInput({ lote, setLote, unidade, setUnidade, unitFoto, setUni
               setUnidade(parsed.unidade);
               setSalvo(false);
               setLido(decoded.trim());
+              if(onParsed) onParsed(parsed);
             } else {
               setErro("Código inválido: " + decoded.trim());
             }
@@ -1431,6 +1438,7 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
   const [lote,setLote]=useState("");
   const [unidade,setUnidade]=useState("");
   const [unitFoto,setUnitFoto]=useState([]);
+  const [unitBarcode,setUnitBarcode]=useState(null);
   const [salvo,setSalvo]=useState(false);
   const items=checklistEnfardamento;
   const secoes=items.reduce((acc,i)=>{if(!acc[i.secao])acc[i.secao]=[];acc[i.secao].push(i);return acc;},{});
@@ -1441,10 +1449,10 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
   const alertas=items.filter(i=>i.alertOpcoes?.includes(respostas[i.id])).length;
   const linhaInfo=LINHAS.find(l=>l.id===linha);
   const handleSalvar=()=>{
-    const registro={id:Date.now(),tipoId:"enf_qualidade",tipoLabel:"Check List Qualidade",maquina:linhaInfo?.maquina||"M2",linha,turno,hora,letra,data:hoje,opPU:opArea,matricula:matriculaEnf,opPainel:opPainelLocal,noks:alertas,total:items.length,unit:{lote,unidade,foto:unitFoto},items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:respostas[i.id]||"",fotos:fotos[i.id]||[]})),obs};
+    const registro={id:Date.now(),tipoId:"enf_qualidade",tipoLabel:"Check List Qualidade",maquina:linhaInfo?.maquina||"M2",linha,turno,hora,letra,data:hoje,opPU:opArea,matricula:matriculaEnf,opPainel:opPainelLocal,noks:alertas,total:items.length,unit:{lote,unidade,foto:unitFoto,barcode:unitBarcode},items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:respostas[i.id]||"",fotos:fotos[i.id]||[]})),obs};
     onSalvar(registro);
     setSalvo(true);
-    setLote("");setUnidade("");setUnitFoto([]);setRespostas({});setFotos({});setObs("");
+    setLote("");setUnidade("");setUnitFoto([]);setUnitBarcode(null);setRespostas({});setFotos({});setObs("");
   };
   return (
     <div>
@@ -1527,7 +1535,7 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
               </div>
             ))}
           </div>
-          <UnitBarcodeInput lote={lote} setLote={v=>{setLote(v);setSalvo(false);}} unidade={unidade} setUnidade={v=>{setUnidade(v);setSalvo(false);}} unitFoto={unitFoto} setUnitFoto={setUnitFoto} setSalvo={setSalvo}/>
+          <UnitBarcodeInput lote={lote} setLote={v=>{setLote(v);setSalvo(false);}} unidade={unidade} setUnidade={v=>{setUnidade(v);setSalvo(false);}} unitFoto={unitFoto} setUnitFoto={setUnitFoto} setSalvo={setSalvo} onParsed={p=>setUnitBarcode(p)}/>
         </div>
       {Object.entries(secoes).map(([secao,itensDaSecao])=>(
         <div key={secao} style={{marginBottom:14}}>
@@ -2973,7 +2981,7 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
     const secoes=[...new Set(reg.items?.map(i=>i.secao)||[])];
     return (
       <div>
-        {fotoAmp&&<div onClick={()=>setFotoAmp(null)} style={{position:"fixed",inset:0,background:"#000000ee",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={fotoAmp} alt="amp" style={{maxWidth:"95vw",maxHeight:"90vh",borderRadius:12}}/></div>}
+        {fotoAmp&&<div style={{position:"fixed",inset:0,background:"#000000ee",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setFotoAmp(null)}><img src={fotoAmp} alt="amp" style={{maxWidth:"95vw",maxHeight:"90vh",borderRadius:12}} onClick={e=>e.stopPropagation()}/><button onClick={()=>setFotoAmp(null)} style={{position:"absolute",top:16,right:16,width:40,height:40,borderRadius:"50%",background:"rgba(0,0,0,0.8)",border:"2px solid rgba(255,255,255,0.4)",color:"#fff",fontSize:22,cursor:"pointer",fontWeight:900,lineHeight:1,zIndex:301}}>×</button></div>}
         <button onClick={()=>setSel(null)} style={{...btnSec,marginBottom:14}}>← Voltar</button>
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:12}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
