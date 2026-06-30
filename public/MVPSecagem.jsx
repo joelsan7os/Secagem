@@ -2480,7 +2480,8 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                         const rawV=valores[item.id]||"";
                         const numV=parseFloat(String(rawV).replace(",","."));
                         const refN=parseRefNum(item.ref);
-                        const displayN=isNaN(numV)?refN:numV;
+                        const stepperDefault=item.ref&&String(item.ref).includes("<")?0:refN;
+                        const displayN=isNaN(numV)?stepperDefault:numV;
                         // calcular cor pelas faixas
                         const getCor=()=>{
                           if(!rawV||isNaN(numV)) return null;
@@ -2507,7 +2508,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                               <input autoFocus type="text" inputMode="decimal"
                                 value={rawV||displayN.toFixed(dec)}
                                 onChange={e=>setVal(item.id,e.target.value)}
-                                onFocus={e=>{if(!rawV){setVal(item.id,"");}}}
+                                onFocus={e=>{e.target.select();if(!rawV){setVal(item.id,"");}}}
                                 onBlur={()=>setEditandoValor(null)}
                                 onKeyDown={e=>{if(e.key==="Enter")setEditandoValor(null);}}
                                 style={{...inputStyle,width:64,textAlign:"center",padding:"3px 6px",fontSize:14,fontWeight:800,borderColor:borderCol,color:textCol}}/>
