@@ -1941,7 +1941,9 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
   const [opPainel,setOpPainel]=useState(()=>storageGet("op_config")?.operadorPainel||"");
   const matricula=storageGet("op_config")?.matricula||"";
   const [data,setData]=useState(hoje);
-  const [valores,setValores]=useState(()=>getLastValores(tipoId,maquina));
+  const [valores,setValores]=useState({});
+  const valoresIniciadoRef=React.useRef(false);
+  if(!valoresIniciadoRef.current&&historico.length>0){valoresIniciadoRef.current=true;const v=getLastValores(tipoId,maquina);if(Object.keys(v).length>0)setValores(v);}
   const [fotos,setFotos]=useState({});
   const [obs,setObs]=useState("");
   const [nokAlerta,setNokAlerta]=useState(null);
