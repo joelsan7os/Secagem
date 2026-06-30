@@ -1274,6 +1274,142 @@ function BarcodeSeletorTela() {
   );
 }
 
+// ─── UnitBarcodeInput — lote/unidade com leitor inline ───────────────────────
+function UnitBarcodeInput({ lote, setLote, unidade, setUnidade, unitFoto, setUnitFoto, setSalvo }) {
+  const [lendo, setLendo]     = useState(false);
+  const [erro, setErro]       = useState("");
+  const [lido, setLido]       = useState("");
+  const scanRef               = useRef(null);
+  const readerRef             = useRef(null);
+
+  const parseCodigo = (codigo) => {
+    // Formato: YYMMDDRLUUUOO (12 chars)
+    // pos 0: ano(letra) | 1-2: mês | 3-4: dia | 5: máquina | 6: linha | 7-8: lote(2) | 9-11: unidade(3)
+    if(!codigo || codigo.length < 12) return null;
+    const lt = codigo.slice(7, 9);   // lote 2 dígitos
+    const un = codigo.slice(9, 12);  // unidade 3 dígitos
+    return { lote: lt, unidade: un };
+  };
+
+  const iniciarScan = () => {
+    setErro(""); setLido(""); setLendo(true);
+  };
+
+  React.useEffect(() => {
+    if(!lendo) return;
+    let html5QrCode;
+    const carregarEIniciar = async () => {
+      try {
+        if(!window.Html5Qrcode) {
+          await new Promise((res, rej) => {
+            const s = document.createElement("script");
+            s.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
+            s.onload = res; s.onerror = rej;
+            document.head.appendChild(s);
+          });
+        }
+        html5QrCode = new window.Html5Qrcode("unit-barcode-reader");
+        readerRef.current = html5QrCode;
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 320, height: 140 } },
+          (decoded) => {
+            const parsed = parseCodigo(decoded.trim());
+            if(parsed) {
+              setLote(parsed.lote);
+              setUnidade(parsed.unidade);
+              setSalvo(false);
+              setLido(decoded.trim());
+            } else {
+              setErro("Código inválido: " + decoded.trim());
+            }
+            html5QrCode.stop().catch(()=>{});
+            readerRef.current = null;
+            setLendo(false);
+          },
+          () => {}
+        );
+      } catch(e) {
+        setErro("Erro ao iniciar câmera: " + e.message);
+        setLendo(false);
+      }
+    };
+    carregarEIniciar();
+    return () => {
+      if(readerRef.current) { readerRef.current.stop().catch(()=>{}); readerRef.current = null; }
+    };
+  }, [lendo]);
+
+  const fechar = () => {
+    if(readerRef.current) { readerRef.current.stop().catch(()=>{}); readerRef.current = null; }
+    setLendo(false); setErro("");
+  };
+
+  return (
+    <div>
+      <div style={{display:"flex",gap:8,alignItems:"flex-end",marginBottom:8}}>
+        <div style={{flex:1}}>
+          <label style={{color:C.textDim,fontSize:9,textTransform:"uppercase",display:"block",marginBottom:3,letterSpacing:"0.08em"}}>Lote</label>
+          <input value={lote} onChange={e=>setLote(e.target.value)} placeholder="ex: 20"
+            style={{...inputStyle,fontSize:13,padding:"7px 10px",fontFamily:"monospace"}}/>
+        </div>
+        <div style={{flex:1}}>
+          <label style={{color:C.textDim,fontSize:9,textTransform:"uppercase",display:"block",marginBottom:3,letterSpacing:"0.08em"}}>Unidade</label>
+          <input value={unidade} onChange={e=>setUnidade(e.target.value)} placeholder="ex: 011"
+            style={{...inputStyle,fontSize:13,padding:"7px 10px",fontFamily:"monospace"}}/>
+        </div>
+        {/* Botão barcode */}
+        <button onClick={lendo?fechar:iniciarScan}
+          style={{flexShrink:0,width:42,height:38,borderRadius:8,cursor:"pointer",fontSize:17,
+            border:`1px solid ${lendo?C.accentLight+"99":C.border}`,
+            background:lendo?C.accentDark:C.surface,
+            boxShadow:lendo?`0 0 8px ${C.accentLight}44`:"none"}}>
+          {lendo?"✕":"▦"}
+        </button>
+        {/* Foto */}
+        <label style={{flexShrink:0,width:42,height:38,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:18}}>
+          📷
+          <input type="file" accept="image/*" capture="environment" style={{display:"none"}}
+            onChange={e=>{const f=e.target.files?.[0];if(f){const rd=new FileReader();rd.onload=()=>{setUnitFoto(p=>[...p,rd.result]);setSalvo(false);};rd.readAsDataURL(f);}}}/>
+        </label>
+      </div>
+
+      {/* Viewfinder */}
+      {lendo&&(
+        <div style={{marginBottom:8}}>
+          <div id="unit-barcode-reader" ref={scanRef}
+            style={{width:"100%",borderRadius:10,overflow:"hidden",border:`1px solid ${C.accentLight}44`}}/>
+          <div style={{color:C.textDim,fontSize:10,textAlign:"center",marginTop:4}}>Aponte para o código de barras da unit</div>
+        </div>
+      )}
+
+      {lido&&!lendo&&(
+        <div style={{background:C.accentDark,border:`1px solid ${C.accentLight}44`,borderRadius:8,padding:"6px 10px",marginBottom:6,display:"flex",alignItems:"center",gap:8}}>
+          <span style={{color:C.accentLight,fontSize:11,fontWeight:700}}>✓ Lido:</span>
+          <span style={{color:C.text,fontFamily:"monospace",fontSize:11}}>{lido}</span>
+        </div>
+      )}
+      {erro&&(
+        <div style={{background:"#2a080833",border:`1px solid ${C.dangerLight}44`,borderRadius:8,padding:"6px 10px",marginBottom:6}}>
+          <span style={{color:C.dangerLight,fontSize:11}}>{erro}</span>
+        </div>
+      )}
+
+      {unitFoto.length>0&&(
+        <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
+          {unitFoto.map((src,i)=>(
+            <div key={i} style={{position:"relative"}}>
+              <img src={src} style={{width:48,height:48,objectFit:"cover",borderRadius:6,border:`1px solid ${C.border}`}}/>
+              <button onClick={()=>setUnitFoto(p=>p.filter((_,x)=>x!==i))}
+                style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:C.danger,border:"none",color:"#fff",fontSize:11,cursor:"pointer",lineHeight:1}}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── EnfardamentoTela ────────────────────────────────────────────────────────
 function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, data }) {
   const agora=new Date();
@@ -1306,7 +1442,9 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
   const linhaInfo=LINHAS.find(l=>l.id===linha);
   const handleSalvar=()=>{
     const registro={id:Date.now(),tipoId:"enf_qualidade",tipoLabel:"Check List Qualidade",maquina:linhaInfo?.maquina||"M2",linha,turno,hora,letra,data:hoje,opPU:opArea,matricula:matriculaEnf,opPainel:opPainelLocal,noks:alertas,total:items.length,unit:{lote,unidade,foto:unitFoto},items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:respostas[i.id]||"",fotos:fotos[i.id]||[]})),obs};
-    onSalvar(registro);setSalvo(true);
+    onSalvar(registro);
+    setSalvo(true);
+    setLote("");setUnidade("");setUnitFoto([]);setRespostas({});setFotos({});setObs("");
   };
   return (
     <div>
@@ -1389,31 +1527,7 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
               </div>
             ))}
           </div>
-          {/* lote + unidade manuais + foto */}
-          <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
-            <div style={{flex:1}}>
-              <label style={{color:C.textDim,fontSize:9,textTransform:"uppercase",display:"block",marginBottom:3,letterSpacing:"0.08em"}}>Lote</label>
-              <input value={lote} onChange={e=>{setLote(e.target.value);setSalvo(false);}} placeholder="ex: 25" style={{...inputStyle,fontSize:13,padding:"7px 10px",fontFamily:"monospace"}}/>
-            </div>
-            <div style={{flex:1}}>
-              <label style={{color:C.textDim,fontSize:9,textTransform:"uppercase",display:"block",marginBottom:3,letterSpacing:"0.08em"}}>Unidade</label>
-              <input value={unidade} onChange={e=>{setUnidade(e.target.value);setSalvo(false);}} placeholder="ex: 004" style={{...inputStyle,fontSize:13,padding:"7px 10px",fontFamily:"monospace"}}/>
-            </div>
-            <label style={{flexShrink:0,width:42,height:38,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:18}}>
-              📷
-              <input type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f){const rd=new FileReader();rd.onload=()=>{setUnitFoto(p=>[...p,rd.result]);setSalvo(false);};rd.readAsDataURL(f);}}}/>
-            </label>
-          </div>
-          {unitFoto.length>0&&(
-            <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
-              {unitFoto.map((src,i)=>(
-                <div key={i} style={{position:"relative"}}>
-                  <img src={src} style={{width:48,height:48,objectFit:"cover",borderRadius:6,border:`1px solid ${C.border}`}}/>
-                  <button onClick={()=>setUnitFoto(p=>p.filter((_,x)=>x!==i))} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:C.danger,border:"none",color:"#fff",fontSize:11,cursor:"pointer",lineHeight:1}}>×</button>
-                </div>
-              ))}
-            </div>
-          )}
+          <UnitBarcodeInput lote={lote} setLote={v=>{setLote(v);setSalvo(false);}} unidade={unidade} setUnidade={v=>{setUnidade(v);setSalvo(false);}} unitFoto={unitFoto} setUnitFoto={setUnitFoto} setSalvo={setSalvo}/>
         </div>
       {Object.entries(secoes).map(([secao,itensDaSecao])=>(
         <div key={secao} style={{marginBottom:14}}>
@@ -2916,6 +3030,23 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
             </div>
           );
         })}
+        {reg.tipoId==="enf_qualidade"&&reg.unit&&(
+          <div style={{background:C.card,border:`1px solid ${C.accentLight}33`,borderTop:`2px solid ${C.accentLight}`,borderRadius:10,padding:"12px 14px",marginBottom:10}}>
+            <p style={{color:C.accentLight,fontSize:10,textTransform:"uppercase",fontWeight:800,margin:"0 0 8px",letterSpacing:"0.08em"}}>📦 Unit Inspecionada</p>
+            <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:reg.unit.foto?.length>0?10:0}}>
+              {reg.unit.lote&&<div><span style={{color:C.textDim,fontSize:9,textTransform:"uppercase"}}>Lote </span><span style={{color:C.text,fontFamily:"monospace",fontWeight:700,fontSize:13}}>{reg.unit.lote}</span></div>}
+              {reg.unit.unidade&&<div><span style={{color:C.textDim,fontSize:9,textTransform:"uppercase"}}>Unidade </span><span style={{color:C.text,fontFamily:"monospace",fontWeight:700,fontSize:13}}>{reg.unit.unidade}</span></div>}
+            </div>
+            {reg.unit.foto?.length>0&&(
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {reg.unit.foto.map((src,fi)=>(
+                  <img key={fi} src={src} alt="" onClick={()=>setFotoAmp(src)}
+                    style={{width:64,height:64,objectFit:"cover",borderRadius:8,border:`2px solid ${C.accentLight}44`,cursor:"pointer"}}/>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {reg.obs&&<div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"12px 14px"}}><p style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",margin:"0 0 5px"}}>Observações</p><p style={{color:C.text,fontSize:13,margin:0,lineHeight:1.6}}>{reg.obs}</p></div>}
       </div>
     );
