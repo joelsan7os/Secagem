@@ -569,15 +569,35 @@ const btnSec ={background:C.surface,border:`1px solid ${C.border}`,color:C.textM
 const btnIcon={background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:13};
 
 // ─── BotaoFoto ────────────────────────────────────────────────────────────────
+// ─── comprimirFoto ───────────────────────────────
+function comprimirFoto(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 1280;
+      let w = img.width, h = img.height;
+      const ratio = Math.min(MAX/w, MAX/h, 1);
+      w = Math.round(w*ratio); h = Math.round(h*ratio);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.72));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Falha")); };
+    img.src = url;
+  });
+}
+
 function BotaoFoto({ fotos=[], onAdd, onRemove, compact=false }) {
   const inputRef = React.useRef();
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => onAdd(ev.target.result);
-    reader.readAsDataURL(file);
     e.target.value = "";
+    try { const b64 = await comprimirFoto(file); onAdd(b64); }
+    catch { const rd = new FileReader(); rd.onload = ev => onAdd(ev.target.result); rd.readAsDataURL(file); }
   };
   return (
     <div>
@@ -1377,7 +1397,7 @@ function UnitBarcodeInput({ lote, setLote, unidade, setUnidade, unitFoto, setUni
         <label style={{flexShrink:0,width:42,height:38,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:18}}>
           📷
           <input type="file" accept="image/*" capture="environment" style={{display:"none"}}
-            onChange={e=>{const f=e.target.files?.[0];if(f){const rd=new FileReader();rd.onload=()=>{setUnitFoto(p=>[...p,rd.result]);setSalvo(false);};rd.readAsDataURL(f);}}}/>
+            onChange={e=>{const f=e.target.files?.[0];if(f){comprimirFoto(f).then(b64=>{setUnitFoto(p=>[...p,b64]);setSalvo(false);}).catch(()=>{const rd=new FileReader();rd.onload=()=>{setUnitFoto(p=>[...p,rd.result]);setSalvo(false);};rd.readAsDataURL(f);});}}}/>
         </label>
       </div>
 
