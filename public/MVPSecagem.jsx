@@ -209,23 +209,27 @@ const WFT_VERIFICACOES_SEM_REJEICAO = [
 const checklistCortadeiraM2 = [
   // SECADOR ──────────────────────────────────────────────────────────────────
   { id:"cs2_01", secao:"Secador",    item:"Célula de carga",
-    ref:"310",       unit:"N/m",    tipo:"valor",
-    alertaWarn:280,  descWarn:"Valor de Passagem de Ponta — lembrar de voltar para 310 N/m" },
+    ref:"310", unit:"N/m", tipo:"valor_stepper", step:1,
+    faixas:[{min:300,max:310,cor:"green"},{min:280,max:300,cor:"yellow"},{min:310,max:320,cor:"yellow"}],
+    alertaWarn:280, descWarn:"Valor de Passagem de Ponta — lembrar de voltar para 310 N/m" },
   { id:"cs2_02", secao:"Secador",    item:"Trocador de Calor 1",
-    ref:"< 100", unit:"mbar",  tipo:"valor",
+    ref:"< 100", unit:"mbar", tipo:"valor_stepper", step:1,
+    faixas:[{max:100,cor:"green"},{min:100,cor:"red"}],
     alertaMax:100,descMax:"Trocador Sujo — verificar imediatamente", alertaTrocador:true },
   { id:"cs2_03", secao:"Secador",    item:"Trocador de Calor 2",
-    ref:"< 100", unit:"mbar",  tipo:"valor",
+    ref:"< 100", unit:"mbar", tipo:"valor_stepper", step:1,
+    faixas:[{max:100,cor:"green"},{min:100,cor:"red"}],
     alertaMax:100,descMax:"Trocador Sujo — verificar imediatamente", alertaTrocador:true },
   { id:"cs2_04", secao:"Secador",    item:"Rolo Marginador",
-    ref:"5",         unit:"—",      tipo:"valor" },
+    ref:"5", unit:"—", tipo:"valor_stepper", step:0.1 },
   { id:"cs2_05", secao:"Secador",    item:"Acúmulo de Fibras",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   { id:"cs2_06", secao:"Secador",    item:"Extrator de Folhas (Entrada/Saída)",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   { id:"cs2_07", secao:"Secador",    item:"Água Sucção BBA Pichasso",
-    ref:"≥ 0,35",    unit:"bar",    tipo:"valor",
-    alertaMin:0.35,  descMin:"CRÍTICO — abaixo do mínimo permitido (0,35 bar)" },
+    ref:"≥ 0,35", unit:"bar", tipo:"valor_stepper", step:0.01,
+    faixas:[{min:0.35,cor:"green"},{max:0.35,cor:"red"}],
+    alertaMin:0.35, descMin:"CRÍTICO — abaixo do mínimo permitido (0,35 bar)" },
   // CORTADEIRA ───────────────────────────────────────────────────────────────
   { id:"cs2_08", secao:"Cortadeira", item:"QCS (Gramatura/Teor Seco) Controle LIGADO",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
@@ -234,11 +238,12 @@ const checklistCortadeiraM2 = [
   { id:"cs2_10", secao:"Cortadeira", item:"Peso Layboy",
     ref:"F:2959 / C:2600", unit:"kg", tipo:"duplo_valor" },
   { id:"cs2_11", secao:"Cortadeira", item:"Velocidade",
-    ref:"≥150",       unit:"m/min",  tipo:"valor_direto", velMin:150 },
+    ref:"≥150", unit:"m/min", tipo:"valor_stepper", step:1, velMin:150,
+    faixas:[{min:150,cor:"green"},{max:150,cor:"red"}] },
   { id:"cs2_12", secao:"Cortadeira", item:"Passe Faca Circulares",
     ref:"F:5 / C:5",    unit:"%",      tipo:"duplo_valor" },
   { id:"cs2_13", secao:"Cortadeira", item:"Rolo Medidor",
-    ref:"0,35",      unit:"%",      tipo:"valor",
+    ref:"0,35", unit:"%", tipo:"valor_stepper", step:0.1,
     alertaExato:"0,35", descExato:"Padrão fixo — NOK se diferente de 0,35%" },
   { id:"cs2_14", secao:"Cortadeira", item:"Pinch Roll",
     ref:"F:0,3",     unit:"N/mm",   tipo:"duplo_valor" },
@@ -255,12 +260,12 @@ const checklistCortadeiraM2 = [
   { id:"cs2_19", secao:"Cortadeira", item:"Kickout",
     ref:"F:6 / C:8",      unit:"%",      tipo:"duplo_valor" },
   { id:"cs2_20", secao:"Cortadeira", item:"Nível Reservatório UH",
-    ref:"> 86",      unit:"%",      tipo:"valor",
-    alertaMin:87,    descMin:"ALERTA — nível igual ou abaixo de 86% (mínimo de segurança)" },
+    ref:"> 86", unit:"%", tipo:"valor_stepper", step:1,
+    alertaMin:87, descMin:"ALERTA — nível igual ou abaixo de 86% (mínimo de segurança)" },
   { id:"cs2_21", secao:"Cortadeira", item:"Temperatura Óleo UH",
-    ref:"28",        unit:"°C",     tipo:"valor" },
+    ref:"28", unit:"°C", tipo:"valor_stepper", step:1 },
   { id:"cs2_22", secao:"Cortadeira", item:"Pressão Sistema Hidráulico",
-    ref:"82",        unit:"bar",    tipo:"valor" },
+    ref:"82", unit:"bar", tipo:"valor_stepper", step:1 },
   { id:"cs2_23", secao:"Cortadeira", item:"Vazamentos/Limpeza (Hid./Lubrif./Pneum.)",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   { id:"cs2_24", secao:"Cortadeira", item:"Qualidade Corte (Facão/Faquinhas)",
@@ -271,11 +276,11 @@ const checklistCortadeiraM2 = [
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   // LAYBOY ───────────────────────────────────────────────────────────────────
   { id:"cs2_27", secao:"Layboy",     item:"Pegar Folhas",
-    ref:"395",       unit:"mm",     tipo:"valor" },
+    ref:"395", unit:"mm", tipo:"valor_stepper", step:1 },
   { id:"cs2_28", secao:"Layboy",     item:"Mesa Garfo (Espera)",
-    ref:"495",       unit:"mm",     tipo:"valor" },
+    ref:"495", unit:"mm", tipo:"valor_stepper", step:1 },
   { id:"cs2_29", secao:"Layboy",     item:"Mesa Garfo (Tomada)",
-    ref:"330",       unit:"mm",     tipo:"valor" },
+    ref:"330", unit:"mm", tipo:"valor_stepper", step:1 },
   { id:"cs2_30", secao:"Layboy",     item:"Acúmulo de Folhas",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   // FAQUINHAS — 11 facas ─────────────────────────────────────────────────────
@@ -297,23 +302,27 @@ const checklistCortadeiraM2 = [
 const checklistCortadeiraM3 = [
   // SECADOR ──────────────────────────────────────────────────────────────────
   { id:"cs3_01", secao:"Secador",    item:"Célula de carga",
-    ref:"310",       unit:"N/m",    tipo:"valor",
-    alertaWarn:280,  descWarn:"Valor de Passagem de Ponta — lembrar de voltar para 310 N/m" },
+    ref:"310", unit:"N/m", tipo:"valor_stepper", step:1,
+    faixas:[{min:300,max:310,cor:"green"},{min:280,max:300,cor:"yellow"},{min:310,max:320,cor:"yellow"}],
+    alertaWarn:280, descWarn:"Valor de Passagem de Ponta — lembrar de voltar para 310 N/m" },
   { id:"cs3_02", secao:"Secador",    item:"Trocador de Calor 1",
-    ref:"< 100", unit:"mbar",  tipo:"valor",
+    ref:"< 100", unit:"mbar", tipo:"valor_stepper", step:1,
+    faixas:[{max:100,cor:"green"},{min:100,cor:"red"}],
     alertaMax:100,descMax:"Trocador Sujo — verificar imediatamente", alertaTrocador:true },
   { id:"cs3_03", secao:"Secador",    item:"Trocador de Calor 2",
-    ref:"< 100", unit:"mbar",  tipo:"valor",
+    ref:"< 100", unit:"mbar", tipo:"valor_stepper", step:1,
+    faixas:[{max:100,cor:"green"},{min:100,cor:"red"}],
     alertaMax:100,descMax:"Trocador Sujo — verificar imediatamente", alertaTrocador:true },
   { id:"cs3_04", secao:"Secador",    item:"Rolo Marginador",
-    ref:"-8",        unit:"—",      tipo:"valor" },
+    ref:"-8", unit:"—", tipo:"valor_stepper", step:0.1 },
   { id:"cs3_05", secao:"Secador",    item:"Acúmulo de Fibras",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   { id:"cs3_06", secao:"Secador",    item:"Extrator de Folhas (Entrada/Saída)",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   { id:"cs3_07", secao:"Secador",    item:"Água Sucção BBA Pichasso",
-    ref:"≥ 0,35",    unit:"bar",    tipo:"valor",
-    alertaMin:0.35,  descMin:"CRÍTICO — abaixo do mínimo permitido (0,35 bar)" },
+    ref:"≥ 0,35", unit:"bar", tipo:"valor_stepper", step:0.01,
+    faixas:[{min:0.35,cor:"green"},{max:0.35,cor:"red"}],
+    alertaMin:0.35, descMin:"CRÍTICO — abaixo do mínimo permitido (0,35 bar)" },
   // CORTADEIRA ───────────────────────────────────────────────────────────────
   { id:"cs3_08", secao:"Cortadeira", item:"QCS (Gramatura/Teor Seco) Controle LIGADO",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
@@ -322,11 +331,12 @@ const checklistCortadeiraM3 = [
   { id:"cs3_10", secao:"Cortadeira", item:"Peso Layboy",
     ref:"F:2898 / C:2800", unit:"kg", tipo:"duplo_valor" },
   { id:"cs3_11", secao:"Cortadeira", item:"Velocidade",
-    ref:"≥150",       unit:"m/min",  tipo:"valor_direto", velMin:150 },
+    ref:"≥150", unit:"m/min", tipo:"valor_stepper", step:1, velMin:150,
+    faixas:[{min:150,cor:"green"},{max:150,cor:"red"}] },
   { id:"cs3_12", secao:"Cortadeira", item:"Passe Faca Circulares",
     ref:"F:5 / C:5",    unit:"%",      tipo:"duplo_valor" },
   { id:"cs3_13", secao:"Cortadeira", item:"Rolo Medidor",
-    ref:"0,35",      unit:"%",      tipo:"valor",
+    ref:"0,35", unit:"%", tipo:"valor_stepper", step:0.1,
     alertaExato:"0,35", descExato:"Padrão fixo — NOK se diferente de 0,35%" },
   { id:"cs3_14", secao:"Cortadeira", item:"Pinch Roll",
     ref:"F:0,2 / C:0,00", unit:"kN/m",  tipo:"duplo_valor" },
@@ -343,12 +353,12 @@ const checklistCortadeiraM3 = [
   { id:"cs3_19", secao:"Cortadeira", item:"Kickout",
     ref:"F:8 / C:5",      unit:"%",      tipo:"duplo_valor" },
   { id:"cs3_20", secao:"Cortadeira", item:"Nível Reservatório UH",
-    ref:"> 86",      unit:"%",      tipo:"valor",
-    alertaMin:87,    descMin:"ALERTA — nível igual ou abaixo de 86% (mínimo de segurança)" },
+    ref:"> 86", unit:"%", tipo:"valor_stepper", step:1,
+    alertaMin:87, descMin:"ALERTA — nível igual ou abaixo de 86% (mínimo de segurança)" },
   { id:"cs3_21", secao:"Cortadeira", item:"Temperatura Óleo UH",
-    ref:"28",        unit:"°C",     tipo:"valor" },
+    ref:"28", unit:"°C", tipo:"valor_stepper", step:1 },
   { id:"cs3_22", secao:"Cortadeira", item:"Pressão Sistema Hidráulica",
-    ref:"82",        unit:"bar",    tipo:"valor" },
+    ref:"82", unit:"bar", tipo:"valor_stepper", step:1 },
   { id:"cs3_23", secao:"Cortadeira", item:"Vazamentos/Limpeza (Hid./Lubrif./Pneum.)",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   { id:"cs3_24", secao:"Cortadeira", item:"Qualidade Corte (Facão/Faquinhas)",
@@ -359,11 +369,11 @@ const checklistCortadeiraM3 = [
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   // LAYBOY ───────────────────────────────────────────────────────────────────
   { id:"cs3_27", secao:"Layboy",     item:"Pegar Folhas",
-    ref:"395",       unit:"mm",     tipo:"valor" },
+    ref:"395", unit:"mm", tipo:"valor_stepper", step:1 },
   { id:"cs3_28", secao:"Layboy",     item:"Mesa Garfo (Espera)",
-    ref:"450",       unit:"mm",     tipo:"valor" },
+    ref:"450", unit:"mm", tipo:"valor_stepper", step:1 },
   { id:"cs3_29", secao:"Layboy",     item:"Mesa Garfo (Tomada)",
-    ref:"330",       unit:"mm",     tipo:"valor" },
+    ref:"330", unit:"mm", tipo:"valor_stepper", step:1 },
   { id:"cs3_30", secao:"Layboy",     item:"Acúmulo de Folhas",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   // FAQUINHAS — 11 facas ─────────────────────────────────────────────────────
@@ -1931,7 +1941,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
   const [opPainel,setOpPainel]=useState(()=>storageGet("op_config")?.operadorPainel||"");
   const matricula=storageGet("op_config")?.matricula||"";
   const [data,setData]=useState(hoje);
-  const [valores,setValores]=useState({});
+  const [valores,setValores]=useState(()=>getLastValores(tipoId,maquina));
   const [fotos,setFotos]=useState({});
   const [obs,setObs]=useState("");
   const [nokAlerta,setNokAlerta]=useState(null);
@@ -1997,6 +2007,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
     const v=valores[i.id];
     if(v===undefined||v==="")return false;
     if((i.tipo==="valor_direto"||i.velMin!==undefined)&&v!=="ok"){ const n=parseFloat(String(v).replace(",",".")); return !isNaN(n)&&(i.velMin===undefined||n>=i.velMin); }
+    if(i.tipo==="valor_stepper"){ return !isNaN(parseFloat(String(v).replace(",","."))); }
     return true;
   };
   const preenchidos=items.filter(itemPreenchido).length;
@@ -2241,13 +2252,23 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                 const valStatus=item.tipo==="valor"?getValorStatus(item):null;
                 const isAlert=valStatus==="alert";
                 const isValNok=valStatus==="nok";
-                const nokColor=isCritico?C.dangerLight:isAtencao||isDesvio?C.warningLight:C.dangerLight;
+                // cor para valor_stepper
+                const stepperCor=(()=>{
+                  if(item.tipo!=="valor_stepper"||!item.faixas) return null;
+                  const rawV=valores[item.id]||""; const numV=parseFloat(String(rawV).replace(",","."));
+                  if(!rawV||isNaN(numV)) return null;
+                  for(const f of item.faixas){const okMin=f.min===undefined||numV>=f.min;const okMax=f.max===undefined||numV<f.max;if(okMin&&okMax)return f.cor;}
+                  return "red";
+                })();
+                const stepperNok=stepperCor==="red";
+                const stepperWarn=stepperCor==="yellow";
+                const nokColor=isCritico?C.dangerLight:isAtencao||isDesvio||stepperWarn?C.warningLight:C.dangerLight;
                 const borderColor=isNok||isAlert||isValNok?nokColor+"66":preen?C.accentLight+"33":C.border;
                 const leftColor=isNok||isAlert||isValNok?nokColor:preen?C.accentLight:"transparent";
                 return (
                   <div key={item.id} style={{background:C.card,borderRadius:10,padding:"11px 14px",display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap",border:`1px solid ${borderColor}`,borderLeft:`3px solid ${leftColor}`}}>
-                    <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,background:isNok||isAlert||isValNok?(isCritico?C.danger:isAtencao?C.warning:C.danger):preen?C.success:C.tagBg,border:`2px solid ${isNok||isAlert||isValNok?nokColor:preen?C.accentLight:C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:800,marginTop:2}}>
-                      {isNok||isAlert||isValNok?"⚠":preen?"✓":i+1}
+                    <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,background:isNok||isAlert||isValNok||stepperNok?(isCritico?C.danger:isAtencao?C.warning:C.danger):stepperWarn?C.warning:preen?C.success:C.tagBg,border:`2px solid ${isNok||isAlert||isValNok||stepperNok||stepperWarn?nokColor:preen?C.accentLight:C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:800,marginTop:2}}>
+                      {isNok||isAlert||isValNok||stepperNok||stepperWarn?"⚠":preen?"✓":i+1}
                     </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{color:C.white,fontSize:12,fontWeight:500,lineHeight:1.3,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
@@ -2446,6 +2467,56 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                                 borderColor:okVerde?C.accentLight+"88":v?C.warningLight+"66":C.border,
                                 color:okVerde?C.accentLight:v?C.warningLight:C.text}}/>
                             <span style={{color:C.textDim,fontSize:10}}>{item.unit}</span>
+                          </div>
+                        );
+                      })()}
+                      {item.tipo==="valor_stepper"&&(()=>{
+                        const step=item.step||1;
+                        const dec=step<1?(step<0.05?2:1):0;
+                        const rawV=valores[item.id]||"";
+                        const numV=parseFloat(String(rawV).replace(",","."));
+                        const refN=parseRefNum(item.ref);
+                        const displayN=isNaN(numV)?refN:numV;
+                        // calcular cor pelas faixas
+                        const getCor=()=>{
+                          if(!rawV||isNaN(numV)) return null;
+                          if(!item.faixas) return "green";
+                          for(const f of item.faixas){
+                            const okMin=f.min===undefined||numV>=f.min;
+                            const okMax=f.max===undefined||numV<f.max;
+                            if(okMin&&okMax) return f.cor;
+                          }
+                          return "red";
+                        };
+                        const cor=getCor();
+                        const borderCol=cor==="green"?C.accentLight+"88":cor==="yellow"?C.warningLight+"88":cor==="red"?C.dangerLight+"88":C.border;
+                        const textCol=cor==="green"?C.accentLight:cor==="yellow"?C.warningLight:cor==="red"?C.dangerLight:C.text;
+                        const adj=(d)=>{
+                          const cur=isNaN(numV)?refN:numV;
+                          const next=parseFloat((cur+d).toFixed(dec));
+                          setVal(item.id,String(next).replace(".",","));
+                        };
+                        return(
+                          <div style={{display:"flex",alignItems:"center",gap:4}}>
+                            <button onClick={()=>adj(-step)} style={{width:30,height:30,borderRadius:7,border:`1px solid ${C.border}`,background:C.tagBg,color:C.text,fontSize:18,fontWeight:700,cursor:"pointer",lineHeight:1}}>-</button>
+                            {editandoValor===item.id?(
+                              <input autoFocus type="text" inputMode="decimal"
+                                value={rawV||displayN.toFixed(dec)}
+                                onChange={e=>setVal(item.id,e.target.value)}
+                                onFocus={e=>{if(!rawV){setVal(item.id,"");}}}
+                                onBlur={()=>setEditandoValor(null)}
+                                onKeyDown={e=>{if(e.key==="Enter")setEditandoValor(null);}}
+                                style={{...inputStyle,width:64,textAlign:"center",padding:"3px 6px",fontSize:14,fontWeight:800,borderColor:borderCol,color:textCol}}/>
+                            ):(
+                              <button onClick={()=>{if(!rawV)setVal(item.id,"");setEditandoValor(item.id);}}
+                                style={{background:C.tagBg,border:`2px solid ${borderCol}`,borderRadius:7,padding:"3px 10px",
+                                  minWidth:64,textAlign:"center",cursor:"pointer",
+                                  boxShadow:cor?`0 0 8px ${textCol}44`:"none"}}>
+                                <div style={{color:textCol,fontSize:14,fontWeight:900}}>{rawV||displayN.toFixed(dec)}</div>
+                                <div style={{color:C.textDim,fontSize:8}}>{item.unit}</div>
+                              </button>
+                            )}
+                            <button onClick={()=>adj(+step)} style={{width:30,height:30,borderRadius:7,border:`1px solid ${C.border}`,background:C.tagBg,color:C.text,fontSize:18,fontWeight:700,cursor:"pointer",lineHeight:1}}>+</button>
                           </div>
                         );
                       })()}
