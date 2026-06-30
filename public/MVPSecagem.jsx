@@ -1957,6 +1957,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
   const [valorObsTexto,setValorObsTexto]=useState("");
   const [editandoValor,setEditandoValor]=useState(null);
   const [salvo,setSalvo]=useState(false);
+  const [verificados,setVerificados]=useState(new Set());
   React.useEffect(()=>{
     const v=getLastValores(tipoId,maquina);
     if(Object.keys(v).length>0) setValores(v);
@@ -1994,8 +1995,8 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
     if(item.tipo==="sim_nao"){const ok=item.respostaOk||"sim";return val!==ok;}
     return["nok","atencao","critico","desvio"].includes(val);
   };
-  const trocar=m=>{setMaquina(m);setValores(getLastValores(tipoId,m));setFotos({});setSalvo(false);};
-  const trocarTipo=id=>{setTipoId(id);setValores(getLastValores(id,maquina));setFotos({});setSalvo(false);setSelectorAberto(false);};
+  const trocar=m=>{setMaquina(m);setValores(getLastValores(tipoId,m));setFotos({});setSalvo(false);setVerificados(new Set());};
+  const trocarTipo=id=>{setTipoId(id);setValores(getLastValores(id,maquina));setFotos({});setSalvo(false);setSelectorAberto(false);setVerificados(new Set());};
   const items=tipo?tipo.getItems(maquina):[];
   const secoes=items.reduce((acc,i)=>{if(!acc[i.secao])acc[i.secao]=[];acc[i.secao].push(i);return acc;},{});
   const setVal=(id,v)=>{setValores(p=>({...p,[id]:v}));setSalvo(false);};
@@ -2013,7 +2014,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
     const v=valores[i.id];
     if(v===undefined||v==="")return false;
     if((i.tipo==="valor_direto"||i.velMin!==undefined)&&v!=="ok"){ const n=parseFloat(String(v).replace(",",".")); return !isNaN(n)&&(i.velMin===undefined||n>=i.velMin); }
-    if(i.tipo==="valor_stepper"){ return !isNaN(parseFloat(String(v).replace(",","."))); }
+    if(i.tipo==="valor_stepper"){ return verificados.has(i.id); }
     return true;
   };
   const preenchidos=items.filter(itemPreenchido).length;
@@ -2260,14 +2261,17 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                 const isValNok=valStatus==="nok";
                 // cor para valor_stepper
                 const rawVS=valores[item.id]||"";
+                const isVerif=verificados.has(item.id);
                 const stepperCor=(()=>{
-                  if(item.tipo!=="valor_stepper"||!item.faixas) return null;
+                  if(item.tipo!=="valor_stepper") return null;
+                  if(!isVerif) return null; // nao verificado = sem cor
+                  if(!item.faixas) return "green"; // sem regra = verde
                   const numV=parseFloat(String(rawVS).replace(",","."));
-                  if(!rawVS||isNaN(numV)) return null;
+                  if(isNaN(numV)) return "green"; // verificado sem valor digitado = verde
                   for(const f of item.faixas){const okMin=f.min===undefined||numV>=f.min;const okMax=f.max===undefined||numV<f.max;if(okMin&&okMax)return f.cor;}
                   return "red";
                 })();
-                const stepperExatoNok=item.tipo==="valor_stepper"&&item.alertaExato&&rawVS&&
+                const stepperExatoNok=item.tipo==="valor_stepper"&&item.alertaExato&&isVerif&&rawVS&&
                   parseFloat(String(rawVS).replace(",",".")).toFixed(2)!==parseFloat(String(item.alertaExato).replace(",",".")).toFixed(2);
                 const stepperNok=stepperCor==="red"||!!stepperExatoNok;
                 const stepperWarn=stepperCor==="yellow";
@@ -2277,15 +2281,11 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                 return (
                   <div key={item.id}
                     onClick={item.tipo==="valor_stepper"?()=>{
-                      if(valores[item.id]&&valores[item.id]!==""){
-                        setVal(item.id,"");
-                      } else {
-                        const refStr=String(item.ref||"").replace("<","").replace(">","").replace(",",".").trim();
-                        const refN=parseFloat(refStr)||0;
-                        const step=item.step||1;
-                        const dec=step<1?(step<0.05?2:1):0;
-                        setVal(item.id,refN.toFixed(dec).replace(".",","));
-                      }
+                      setVerificados(prev=>{
+                        const s=new Set(prev);
+                        if(s.has(item.id)) s.delete(item.id); else s.add(item.id);
+                        return s;
+                      });
                     }:undefined}
                     style={{background:C.card,borderRadius:10,padding:"11px 14px",display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap",border:`1px solid ${borderColor}`,borderLeft:`3px solid ${leftColor}`,cursor:item.tipo==="valor_stepper"?"pointer":"default"}}>
                     <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,background:isNok||isAlert||isValNok||stepperNok?(isCritico?C.danger:isAtencao?C.warning:C.danger):stepperWarn?C.warning:preen?C.success:C.tagBg,border:`2px solid ${isNok||isAlert||isValNok||stepperNok||stepperWarn?nokColor:preen?C.accentLight:C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:800,marginTop:2}}>
