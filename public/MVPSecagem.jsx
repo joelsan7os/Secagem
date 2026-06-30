@@ -1942,8 +1942,6 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
   const matricula=storageGet("op_config")?.matricula||"";
   const [data,setData]=useState(hoje);
   const [valores,setValores]=useState({});
-  const valoresIniciadoRef=React.useRef(false);
-  if(!valoresIniciadoRef.current&&historico.length>0){valoresIniciadoRef.current=true;const v=getLastValores(tipoId,maquina);if(Object.keys(v).length>0)setValores(v);}
   const [fotos,setFotos]=useState({});
   const [obs,setObs]=useState("");
   const [nokAlerta,setNokAlerta]=useState(null);
@@ -1957,6 +1955,10 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
   const [valorObsTexto,setValorObsTexto]=useState("");
   const [editandoValor,setEditandoValor]=useState(null);
   const [salvo,setSalvo]=useState(false);
+  React.useEffect(()=>{
+    const v=getLastValores(tipoId,maquina);
+    if(Object.keys(v).length>0) setValores(v);
+  },[tipoId,maquina]);
 
   const getStepRange=(refStr)=>{
     const n=parseFloat((refStr||"0").replace(",",".").match(/[\d.]+/)?.[0]||"1");
