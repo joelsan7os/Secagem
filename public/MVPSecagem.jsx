@@ -2275,7 +2275,19 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                 const borderColor=isNok||isAlert||isValNok?nokColor+"66":preen?C.accentLight+"33":C.border;
                 const leftColor=isNok||isAlert||isValNok?nokColor:preen?C.accentLight:"transparent";
                 return (
-                  <div key={item.id} style={{background:C.card,borderRadius:10,padding:"11px 14px",display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap",border:`1px solid ${borderColor}`,borderLeft:`3px solid ${leftColor}`}}>
+                  <div key={item.id}
+                    onClick={item.tipo==="valor_stepper"?()=>{
+                      if(valores[item.id]&&valores[item.id]!==""){
+                        setVal(item.id,"");
+                      } else {
+                        const refStr=String(item.ref||"").replace("<","").replace(">","").replace(",",".").trim();
+                        const refN=parseFloat(refStr)||0;
+                        const step=item.step||1;
+                        const dec=step<1?(step<0.05?2:1):0;
+                        setVal(item.id,refN.toFixed(dec).replace(".",","));
+                      }
+                    }:undefined}
+                    style={{background:C.card,borderRadius:10,padding:"11px 14px",display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap",border:`1px solid ${borderColor}`,borderLeft:`3px solid ${leftColor}`,cursor:item.tipo==="valor_stepper"?"pointer":"default"}}>
                     <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,background:isNok||isAlert||isValNok||stepperNok?(isCritico?C.danger:isAtencao?C.warning:C.danger):stepperWarn?C.warning:preen?C.success:C.tagBg,border:`2px solid ${isNok||isAlert||isValNok||stepperNok||stepperWarn?nokColor:preen?C.accentLight:C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:800,marginTop:2}}>
                       {isNok||isAlert||isValNok||stepperNok||stepperWarn?"⚠":preen?"✓":i+1}
                     </div>
@@ -2507,7 +2519,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                           setVal(item.id,String(next).replace(".",","));
                         };
                         return(
-                          <div style={{display:"flex",alignItems:"center",gap:4}}>
+                          <div onClick={e=>e.stopPropagation()} style={{display:"flex",alignItems:"center",gap:4}}>
                             <button onClick={()=>adj(-step)} style={{width:30,height:30,borderRadius:7,border:`1px solid ${C.border}`,background:C.tagBg,color:C.text,fontSize:18,fontWeight:700,cursor:"pointer",lineHeight:1}}>-</button>
                             {editandoValor===item.id?(
                               <input autoFocus type="text" inputMode="decimal"
