@@ -210,7 +210,7 @@ const checklistCortadeiraM2 = [
   // SECADOR ──────────────────────────────────────────────────────────────────
   { id:"cs2_01", secao:"Secador",    item:"Célula de carga",
     ref:"310", unit:"N/m", tipo:"valor_stepper", step:1,
-    faixas:[{min:300,max:310,cor:"green"},{min:280,max:300,cor:"yellow"},{min:310,max:320,cor:"yellow"}],
+    faixas:[{min:300,max:315,cor:"green"},{min:280,max:300,cor:"yellow"},{min:315,max:320,cor:"yellow"}],
     alertaWarn:280, descWarn:"Valor de Passagem de Ponta — lembrar de voltar para 310 N/m" },
   { id:"cs2_02", secao:"Secador",    item:"Trocador de Calor 1",
     ref:"< 100", unit:"mbar", tipo:"valor_stepper", step:1,
@@ -303,7 +303,7 @@ const checklistCortadeiraM3 = [
   // SECADOR ──────────────────────────────────────────────────────────────────
   { id:"cs3_01", secao:"Secador",    item:"Célula de carga",
     ref:"310", unit:"N/m", tipo:"valor_stepper", step:1,
-    faixas:[{min:300,max:310,cor:"green"},{min:280,max:300,cor:"yellow"},{min:310,max:320,cor:"yellow"}],
+    faixas:[{min:300,max:315,cor:"green"},{min:280,max:300,cor:"yellow"},{min:315,max:320,cor:"yellow"}],
     alertaWarn:280, descWarn:"Valor de Passagem de Ponta — lembrar de voltar para 310 N/m" },
   { id:"cs3_02", secao:"Secador",    item:"Trocador de Calor 1",
     ref:"< 100", unit:"mbar", tipo:"valor_stepper", step:1,
