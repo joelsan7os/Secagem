@@ -221,7 +221,8 @@ const checklistCortadeiraM2 = [
     faixas:[{max:100,cor:"green"},{min:100,cor:"red"}],
     alertaMax:100,descMax:"Trocador Sujo — verificar imediatamente", alertaTrocador:true },
   { id:"cs2_04", secao:"Secador",    item:"Rolo Marginador",
-    ref:"5", unit:"—", tipo:"valor_stepper", step:0.1 },
+    ref:"0,35", unit:"—", tipo:"valor_stepper", step:0.05,
+    alertaExato:"0,35", descExato:"Padrão fixo — NOK se diferente de 0,35" },
   { id:"cs2_05", secao:"Secador",    item:"Acúmulo de Fibras",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   { id:"cs2_06", secao:"Secador",    item:"Extrator de Folhas (Entrada/Saída)",
@@ -314,7 +315,8 @@ const checklistCortadeiraM3 = [
     faixas:[{max:100,cor:"green"},{min:100,cor:"red"}],
     alertaMax:100,descMax:"Trocador Sujo — verificar imediatamente", alertaTrocador:true },
   { id:"cs3_04", secao:"Secador",    item:"Rolo Marginador",
-    ref:"-8", unit:"—", tipo:"valor_stepper", step:0.1 },
+    ref:"0,35", unit:"—", tipo:"valor_stepper", step:0.05,
+    alertaExato:"0,35", descExato:"Padrão fixo — NOK se diferente de 0,35" },
   { id:"cs3_05", secao:"Secador",    item:"Acúmulo de Fibras",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   { id:"cs3_06", secao:"Secador",    item:"Extrator de Folhas (Entrada/Saída)",
@@ -2257,14 +2259,17 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                 const isAlert=valStatus==="alert";
                 const isValNok=valStatus==="nok";
                 // cor para valor_stepper
+                const rawVS=valores[item.id]||"";
                 const stepperCor=(()=>{
                   if(item.tipo!=="valor_stepper"||!item.faixas) return null;
-                  const rawV=valores[item.id]||""; const numV=parseFloat(String(rawV).replace(",","."));
-                  if(!rawV||isNaN(numV)) return null;
+                  const numV=parseFloat(String(rawVS).replace(",","."));
+                  if(!rawVS||isNaN(numV)) return null;
                   for(const f of item.faixas){const okMin=f.min===undefined||numV>=f.min;const okMax=f.max===undefined||numV<f.max;if(okMin&&okMax)return f.cor;}
                   return "red";
                 })();
-                const stepperNok=stepperCor==="red";
+                const stepperExatoNok=item.tipo==="valor_stepper"&&item.alertaExato&&rawVS&&
+                  parseFloat(String(rawVS).replace(",",".")).toFixed(2)!==parseFloat(String(item.alertaExato).replace(",",".")).toFixed(2);
+                const stepperNok=stepperCor==="red"||!!stepperExatoNok;
                 const stepperWarn=stepperCor==="yellow";
                 const nokColor=isCritico?C.dangerLight:isAtencao||isDesvio||stepperWarn?C.warningLight:C.dangerLight;
                 const borderColor=isNok||isAlert||isValNok?nokColor+"66":preen?C.accentLight+"33":C.border;
