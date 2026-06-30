@@ -479,7 +479,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
   const [filtroLetra, setFiltroLetra] = useState("TODAS");
   const [filtroLinha, setFiltroLinha] = useState("TODAS");
   const [aba, setAba]                 = useState("tipos");
-  const LETRAS = ["TODAS","A","B","C"];
+  const LETRAS = ["TODAS","A","B","C","D","E"];
 
   const filtrados = dados.filter(r=>{
     if(filtroLetra!=="TODAS"&&r.letra!==filtroLetra) return false;
