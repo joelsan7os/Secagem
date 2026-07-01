@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useState, useRef } from "react";
 import { COL, doc, setDoc, getDoc } from "./firebase";
+import { FacasTela } from "./facas";
 
 // ─── Paleta ───────────────────────────────────────────────────────────────────
 const C = {
@@ -1181,6 +1182,15 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
           <Badge color={statusColor(eq.status)}>{eq.status}</Badge>
         </div>
         {eq.sub==="Comum"&&<div style={{background:"#1a0f0055",border:`1px solid ${C.warningLight}44`,borderRadius:8,padding:"10px 12px",marginBottom:16}}><p style={{color:C.warningLight,fontSize:12,margin:0,fontWeight:600}}>⚡ Equipamento de Área Comum — uma falha aqui impacta Máquina 2 e Máquina 3</p></div>}
+        {/* Atalho: Controle de Facas/Facão */}
+        {(eq.nome.includes("Facas circulares")||eq.nome.includes("Facão"))&&(
+          <button onClick={()=>setSubModulo("facas")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",
+            background:`linear-gradient(135deg,${C.blueLight}18,${C.blue}44)`,border:`1.5px solid ${C.blueLight}66`,borderRadius:10,padding:"12px 14px",
+            cursor:"pointer",marginBottom:14,boxShadow:`0 0 12px ${C.blueLight}22`}}>
+            <span style={{color:C.text,fontWeight:800,fontSize:13}}>🗡️ Controle de Facas & Facão</span>
+            <span style={{color:C.blueLight,fontSize:16}}>›</span>
+          </button>
+        )}
         {/* Notas */}
         <div style={{background:C.surface,border:`1px solid ${eq.notas.length>0?C.warningLight+"44":C.border}`,borderTop:`2px solid ${eq.notas.length>0?C.warningLight:C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -1241,6 +1251,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
   const chamadosAbertos=(storageGet("chamados_h2")||[]).filter(c=>c.status==="aberto").length;
   if(subModulo==="chamados") return <ChamadosTela eqState={eqState} setEqState={setEqState} areaAtiva={areaAtiva} onVoltar={()=>setSubModulo("lista")}/>;
   if(subModulo==="cleaners") return <div><button onClick={()=>setSubModulo("lista")} style={{...btnSec,marginBottom:14}}>← Voltar</button><CleanersTela/></div>;
+  if(subModulo==="facas") return <div><button onClick={()=>setSubModulo("lista")} style={{...btnSec,marginBottom:14}}>← Voltar</button><FacasTela maquina={eq?.sub||"M2"}/></div>;
   if(subModulo==="pendencias"){
     const todosA=[...(lista1||[]),...(lista2||[]),...(lista3||[])];
     const chamA=(storageGet("chamados_h2")||[]).filter(c=>c.status==="aberto");
