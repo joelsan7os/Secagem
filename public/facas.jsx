@@ -1,6 +1,6 @@
 // ─── facas.jsx — Controle de Facas & Facão · Cortadeira · Secagem H2 ──────────
-// Rastreabilidade de troca/ajuste das 11 facas (corte longitudinal) e do
-// facão (corte transversal, referenciado por posição de fardo).
+// Integra com o checklist (item cs2_31/cs3_31 = bar das 11 facas) e com o
+// mural de pendências: ao ajustar/trocar, o bar volta a 1,5 e a faca sai do mural.
 import { useState } from "react";
 import * as React from "react";
 import { COL, doc, setDoc, getDoc } from "./firebase";
@@ -24,59 +24,90 @@ const cloudGet=async(k)=>{try{const s=await getDoc(doc(COL,k));if(s.exists()){co
 const hoje=()=>new Date().toISOString().slice(0,10);
 const horaAtual=()=>{const a=new Date();return`${String(a.getHours()).padStart(2,"0")}:${String(a.getMinutes()).padStart(2,"0")}`;};
 const fmtD=d=>{if(!d)return"—";const[y,m,dia]=d.split("-");return`${dia}/${m}/${y.slice(2)}`;};
-const diasDesde=d=>{if(!d)return null;const a=new Date(d+"T00:00:00");const b=new Date(hoje()+"T00:00:00");return Math.round((b-a)/86400000);};
-const corPorDias=(dias)=>{
-  if(dias===null)return C.textDim;
-  if(dias<=7)return C.accentLight;
-  if(dias<=15)return C.warningLight;
-  return C.dangerLight;
-};
 
 const N_FACAS=11;
 const N_FARDOS=12;
+const BAR_REF=1.5; // valor de referência ao ajustar/trocar
 
-// ── Ícone da faca: disco (lâmina) + haste vertical (atuador) ──────────────────
+// regra de cor oficial (mesma do checklist/mural)
+const corPorBar=(bar)=>{
+  if(bar===null||isNaN(bar))return C.textDim;
+  if(bar>=3.5)return C.dangerLight;
+  if(bar>=2.5)return C.warningLight;
+  if(bar>=1.5)return C.accentLight;
+  return C.textDim;
+};
+
+// lê o último checklist de cortadeira de uma máquina
+const ultimoChecklist=(maq)=>{
+  const hist=storageGet("historico_h2")||[];
+  return hist.filter(h=>h&&h.tipoId==="cortadeira"&&h.maquina===maq).sort((a,b)=>(b.id||0)-(a.id||0))[0]||null;
+};
+// bar atual de uma faca (posição 1-based) a partir do último checklist
+const barDaFaca=(maq,pos)=>{
+  const itemId=maq==="M2"?"cs2_31":"cs3_31";
+  const ult=ultimoChecklist(maq);
+  if(!ult)return null;
+  const raw=ult.valores?.[`${itemId}_${pos-1}`];
+  const n=parseFloat(String(raw||"").replace(",","."));
+  return isNaN(n)?null:n;
+};
+
+// ── Ícone da faca: disco (lâmina) + haste (atuador) ───────────────────────────
 function IconeFaca({cor, ativo, size=40}){
   return(
     <svg width={size} height={size*1.15} viewBox="0 0 40 46">
-      {/* haste do atuador */}
-      <line x1="20" y1="2" x2="20" y2="16" stroke={cor} strokeWidth="2.5" strokeLinecap="round" opacity={ativo?1:0.4}/>
-      {/* disco/lamina */}
-      <circle cx="20" cy="28" r="13" fill={`${cor}18`} stroke={cor} strokeWidth="2" opacity={ativo?1:0.4}/>
-      <circle cx="20" cy="28" r="4" fill={cor} opacity={ativo?0.9:0.35}/>
+      <line x1="20" y1="2" x2="20" y2="16" stroke={cor} strokeWidth="2.5" strokeLinecap="round" opacity={ativo?1:0.45}/>
+      <circle cx="20" cy="28" r="13" fill={`${cor}18`} stroke={cor} strokeWidth="2" opacity={ativo?1:0.45}/>
+      <circle cx="20" cy="28" r="4" fill={cor} opacity={ativo?0.9:0.4}/>
       {ativo&&<circle cx="20" cy="28" r="13" fill="none" stroke={cor} strokeWidth="1" opacity="0.3" style={{filter:`drop-shadow(0 0 4px ${cor})`}}/>}
     </svg>
   );
 }
 
-// ── Registro/estrutura de dados ────────────────────────────────────────────────
-// facas_h2: { M2:{ f1..f11:{ultimaTroca,ultimoAjuste,historico:[]} }, M3:{...} }
-// facao_h2: { M2:{ ultimaTroca, historico:[{tipo,data,hora,fardoRef,operador}] }, M3:{...} }
-
 export function FacasTela({ maquina="M2" }){
   const [maq,setMaq]=useState(maquina);
   const [facas,setFacas]=useState(()=>storageGet("facas_h2")||{M2:{},M3:{}});
   const [facao,setFacao]=useState(()=>storageGet("facao_h2")||{M2:{},M3:{}});
+  const [tick,setTick]=useState(0); // força releitura do checklist após ajuste
   React.useEffect(()=>{
     cloudGet("facas_h2").then(d=>{if(d)setFacas(d);});
     cloudGet("facao_h2").then(d=>{if(d)setFacao(d);});
+    cloudGet("historico_h2").then(()=>setTick(t=>t+1));
   },[]);
-  const [modalFaca,setModalFaca]=useState(null); // {pos}
+  const [modalFaca,setModalFaca]=useState(null);
   const [modalFacao,setModalFacao]=useState(false);
-  const [tipoReg,setTipoReg]=useState("ajuste"); // ajuste | troca
+  const [tipoReg,setTipoReg]=useState("ajuste");
   const [fardoRef,setFardoRef]=useState("");
   const [obs,setObs]=useState("");
   const cfg=storageGet("op_config")||{};
-  const operador=cfg.matricula||cfg.nome||"—";
+  const operador=cfg.matricula||cfg.nomeOperador||cfg.nome||"—";
 
-  const dadosFaca=(pos)=>facas[maq]?.["f"+pos]||{ultimaTroca:null,ultimoAjuste:null,historico:[]};
+  const dadosFaca=(pos)=>facas[maq]?.["f"+pos]||{historico:[]};
   const dadosFacao=()=>facao[maq]||{ultimaTroca:null,historico:[]};
+
+  // grava o bar de uma faca de volta no último checklist (e sincroniza mural)
+  const resetarBarNoChecklist=(pos,valor)=>{
+    const itemId=maq==="M2"?"cs2_31":"cs3_31";
+    const hist=storageGet("historico_h2")||[];
+    // acha o índice do último checklist de cortadeira dessa máquina
+    let idx=-1, melhorId=-1;
+    hist.forEach((h,i)=>{ if(h&&h.tipoId==="cortadeira"&&h.maquina===maq&&(h.id||0)>melhorId){melhorId=h.id||0;idx=i;} });
+    if(idx<0)return;
+    const reg={...hist[idx]};
+    reg.valores={...(reg.valores||{})};
+    reg.valores[`${itemId}_${pos-1}`]=String(valor).replace(".",",");
+    hist[idx]=reg;
+    storageSet("historico_h2",hist);
+    setTick(t=>t+1);
+  };
 
   const salvarFaca=()=>{
     const pos=modalFaca.pos;
     const chave="f"+pos;
-    const atual=facas[maq]?.[chave]||{ultimaTroca:null,ultimoAjuste:null,historico:[]};
-    const evento={tipo:tipoReg,data:hoje(),hora:horaAtual(),operador,obs:obs.trim()};
+    const atual=facas[maq]?.[chave]||{historico:[]};
+    const barAntes=barDaFaca(maq,pos);
+    const evento={tipo:tipoReg,data:hoje(),hora:horaAtual(),operador,barAntes,obs:obs.trim()};
     const novo={
       ultimaTroca: tipoReg==="troca"?hoje():atual.ultimaTroca,
       ultimoAjuste: tipoReg==="ajuste"?hoje():atual.ultimoAjuste,
@@ -85,6 +116,8 @@ export function FacasTela({ maquina="M2" }){
     const novoFacas={...facas,[maq]:{...facas[maq],[chave]:novo}};
     setFacas(novoFacas);
     storageSet("facas_h2",novoFacas);
+    // ajuste/troca sempre volta o bar para a referência (1,5) → sai do mural
+    resetarBarNoChecklist(pos,BAR_REF);
     setModalFaca(null); setObs(""); setTipoReg("ajuste");
   };
 
@@ -116,35 +149,33 @@ export function FacasTela({ maquina="M2" }){
       {/* Régua de facas */}
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:14}}>
         <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:800,marginBottom:12}}>
-          Facas — corte longitudinal ({N_FACAS} posições)
+          Facas — corte longitudinal · pressão atual
         </div>
         <div style={{display:"flex",justifyContent:"space-between",overflowX:"auto",gap:2,paddingBottom:4}}>
           {Array.from({length:N_FACAS},(_,i)=>i+1).map(pos=>{
-            const d=dadosFaca(pos);
-            const dias=diasDesde(d.ultimaTroca);
-            const cor=corPorDias(dias);
+            const bar=barDaFaca(maq,pos);
+            const cor=corPorBar(bar);
             return(
               <button key={pos} onClick={()=>setModalFaca({pos})}
-                style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:"transparent",border:"none",cursor:"pointer",flexShrink:0,minWidth:42}}>
-                <IconeFaca cor={cor} ativo={!!d.ultimaTroca}/>
-                <span style={{color:C.textDim,fontSize:9,fontFamily:"monospace",fontWeight:700}}>{pos}</span>
+                style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:"transparent",border:"none",cursor:"pointer",flexShrink:0,minWidth:44}}>
+                <IconeFaca cor={cor} ativo={bar!==null}/>
+                <span style={{color:cor,fontSize:11,fontFamily:"monospace",fontWeight:900}}>{bar!==null?String(bar).replace(".",","):"—"}</span>
+                <span style={{color:C.textDim,fontSize:8,fontFamily:"monospace"}}>#{pos}</span>
               </button>
             );
           })}
         </div>
         <div style={{display:"flex",gap:12,marginTop:10,fontSize:9,color:C.textDim,justifyContent:"center"}}>
-          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:C.accentLight}}/>≤7d</span>
-          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:C.warningLight}}/>8–15d</span>
-          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:C.dangerLight}}/>{">15d"}</span>
+          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:C.accentLight}}/>1,5–2,5</span>
+          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:C.warningLight}}/>2,5–3,5</span>
+          <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:C.dangerLight}}/>{"≥3,5 bar"}</span>
         </div>
       </div>
 
       {/* Facão */}
       <div onClick={()=>setModalFacao(true)} style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.blueLight}`,borderRadius:12,padding:16,cursor:"pointer"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:800}}>
-            Facão — corte transversal
-          </div>
+          <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:800}}>Facão — corte transversal</div>
           <span style={{color:C.textDim,fontSize:16}}>›</span>
         </div>
         {(()=>{
@@ -152,7 +183,6 @@ export function FacasTela({ maquina="M2" }){
           const ultimoAjuste=d.historico?.find(h=>h.tipo==="ajuste");
           return(
             <>
-              {/* régua 1-12 com marcador */}
               <div style={{position:"relative",height:34,marginBottom:10}}>
                 <div style={{position:"absolute",top:14,left:0,right:0,height:3,background:C.blueLight,borderRadius:2,boxShadow:`0 0 6px ${C.blueLight}88`}}/>
                 <div style={{display:"flex",justifyContent:"space-between",position:"relative"}}>
@@ -182,33 +212,37 @@ export function FacasTela({ maquina="M2" }){
       {/* ── Modal Faca ── */}
       {modalFaca&&(()=>{
         const d=dadosFaca(modalFaca.pos);
-        const dias=diasDesde(d.ultimaTroca);
-        const cor=corPorDias(dias);
+        const bar=barDaFaca(maq,modalFaca.pos);
+        const cor=corPorBar(bar);
         return(
           <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>{setModalFaca(null);setObs("");setTipoReg("ajuste");}}>
             <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-                <IconeFaca cor={cor} ativo={!!d.ultimaTroca} size={34}/>
+                <IconeFaca cor={cor} ativo={bar!==null} size={34}/>
                 <div>
                   <div style={{color:C.white,fontWeight:800,fontSize:15}}>Faca {modalFaca.pos}</div>
                   <div style={{color:C.textDim,fontSize:10}}>Máquina {maq.replace("M","")}</div>
                 </div>
               </div>
 
-              {/* status atual */}
-              <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",marginBottom:14,display:"flex",justifyContent:"space-between"}}>
+              {/* bar atual */}
+              <div style={{background:C.card,border:`1px solid ${cor}44`,borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div>
-                  <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase"}}>Última troca</div>
-                  <div style={{color:d.ultimaTroca?cor:C.textDim,fontWeight:800,fontSize:13,fontFamily:"monospace"}}>{d.ultimaTroca?fmtD(d.ultimaTroca):"—"}</div>
-                  {dias!==null&&<div style={{color:cor,fontSize:9,fontWeight:700}}>{dias} dia{dias!==1?"s":""} em uso</div>}
+                  <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase"}}>Pressão atual</div>
+                  <div style={{color:cor,fontWeight:900,fontSize:22,fontFamily:"monospace"}}>{bar!==null?`${String(bar).replace(".",",")} bar`:"sem leitura"}</div>
                 </div>
                 <div style={{textAlign:"right"}}>
-                  <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase"}}>Último ajuste</div>
-                  <div style={{color:d.ultimoAjuste?C.text:C.textDim,fontWeight:800,fontSize:13,fontFamily:"monospace"}}>{d.ultimoAjuste?fmtD(d.ultimoAjuste):"—"}</div>
+                  <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase"}}>Últ. troca / ajuste</div>
+                  <div style={{color:C.text,fontSize:11,fontFamily:"monospace"}}>{d.ultimaTroca?`T ${fmtD(d.ultimaTroca)}`:""}{d.ultimoAjuste?`  A ${fmtD(d.ultimoAjuste)}`:(!d.ultimaTroca?"—":"")}</div>
                 </div>
               </div>
 
-              {/* registrar novo evento */}
+              {bar!==null&&bar>=3.5&&(
+                <div style={{background:"rgba(255,82,82,0.15)",border:`1.5px solid ${C.dangerLight}`,borderRadius:10,padding:"8px 12px",marginBottom:12}}>
+                  <span style={{color:C.dangerLight,fontWeight:900,fontSize:11}}>NO LIMITE — priorizar na PP</span>
+                </div>
+              )}
+
               <div style={{display:"flex",gap:6,marginBottom:12}}>
                 {[{t:"ajuste",l:"Ajuste (inverter lado)",c:C.warningLight},{t:"troca",l:"Troca",c:C.dangerLight}].map(({t,l,c})=>(
                   <button key={t} onClick={()=>setTipoReg(t)} style={{flex:1,padding:"11px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:12,
@@ -216,6 +250,9 @@ export function FacasTela({ maquina="M2" }){
                     {l}
                   </button>
                 ))}
+              </div>
+              <div style={{background:`${C.accentLight}11`,border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 12px",marginBottom:12}}>
+                <span style={{color:C.accentLight,fontSize:11,fontWeight:700}}>Ao confirmar, a pressão volta para 1,5 bar e sai do mural.</span>
               </div>
               <textarea value={obs} onChange={e=>setObs(e.target.value)} rows={2} placeholder="Observação opcional..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit",marginBottom:12}}/>
               <div style={{display:"flex",gap:8,marginBottom:16}}>
@@ -226,7 +263,6 @@ export function FacasTela({ maquina="M2" }){
                 </button>
               </div>
 
-              {/* histórico */}
               <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8,fontWeight:800}}>Histórico</div>
               {(d.historico||[]).length===0?(
                 <div style={{textAlign:"center",color:C.textDim,padding:"20px 0",fontSize:12}}>Nenhum evento registrado.</div>
@@ -237,7 +273,7 @@ export function FacasTela({ maquina="M2" }){
                     <div style={{width:8,height:8,borderRadius:"50%",background:c,marginTop:4,flexShrink:0,boxShadow:`0 0 5px ${c}`}}/>
                     <div style={{flex:1,background:C.card,border:`1px solid ${c}22`,borderLeft:`3px solid ${c}`,borderRadius:8,padding:"7px 10px"}}>
                       <div style={{display:"flex",justifyContent:"space-between"}}>
-                        <span style={{color:c,fontWeight:800,fontSize:11}}>{ev.tipo==="troca"?"Troca":"Ajuste"}</span>
+                        <span style={{color:c,fontWeight:800,fontSize:11}}>{ev.tipo==="troca"?"Troca":"Ajuste"}{ev.barAntes!=null?` · de ${String(ev.barAntes).replace(".",",")} bar`:""}</span>
                         <span style={{color:C.textDim,fontFamily:"monospace",fontSize:9}}>{fmtD(ev.data)} {ev.hora}</span>
                       </div>
                       {ev.obs&&<div style={{color:C.textMuted,fontSize:10,marginTop:2}}>{ev.obs}</div>}
@@ -271,7 +307,7 @@ export function FacasTela({ maquina="M2" }){
 
               {tipoReg==="ajuste"&&(
                 <div style={{marginBottom:12}}>
-                  <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:6}}>Ajuste feito entre qual fardo?</div>
+                  <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:6}}>Ajuste feito em qual fardo?</div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:5}}>
                     {Array.from({length:N_FARDOS},(_,i)=>i+1).map(f=>(
                       <button key={f} onClick={()=>setFardoRef(String(f))} style={{padding:"9px 0",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:12,fontFamily:"monospace",
