@@ -65,6 +65,12 @@ const checklistM2 = [
   { id:"m2c30", secao:"Rolos",    item:"Passe Rolo curvo após 2ª Prensa (32-21-0-10-45)",        ref:"1",             unit:"%",       tipo:"valor"   },
   { id:"m2c31", secao:"Rolos",    item:"Passe PRIME PRESS",                                     ref:"1,6",           unit:"%",       tipo:"valor"   },
   { id:"m2c32", secao:"Rolos",    item:"Passe Rolo curvo após 3ª Prensa (32-21-0-10-78)",        ref:"0,2",           unit:"%",       tipo:"valor"   },
+  { id:"m2c33", secao:"Telas",    item:"Chuveiro leque tela superior entupido?",                ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c34", secao:"Telas",    item:"Chuveiro leque tela inferior entupido?",                ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c35", secao:"Feltros",  item:"Feltro pickup – chuveiro químico entupido?",            ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c36", secao:"Feltros",  item:"Feltro 2ª prensa – chuveiro químico entupido?",         ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c37", secao:"Feltros",  item:"Feltro 3ª prensa Sup – chuveiro químico entupido?",     ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m2c38", secao:"Feltros",  item:"Feltro 3ª prensa Inf – chuveiro químico entupido?",     ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
 ];
 const checklistM3 = [
   { id:"m3c1",  secao:"Pichasso", item:"Nível do tanque do Pichasso",                           ref:"—",             unit:"ok/ñok",  tipo:"ok_nok"  },
@@ -99,6 +105,12 @@ const checklistM3 = [
   { id:"m3c30", secao:"Rolos",    item:"Passe Rolo curvo após 2ª Prensa (33-21-0-10-45)",        ref:"1",             unit:"%",       tipo:"valor"   },
   { id:"m3c31", secao:"Rolos",    item:"Passe PRIME PRESS",                                     ref:"1,6",           unit:"%",       tipo:"valor"   },
   { id:"m3c32", secao:"Rolos",    item:"Passe Rolo curvo após 3ª Prensa (33-21-0-10-78)",        ref:"0,2",           unit:"%",       tipo:"valor"   },
+  { id:"m3c33", secao:"Telas",    item:"Chuveiro leque tela superior entupido?",                ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c34", secao:"Telas",    item:"Chuveiro leque tela inferior entupido?",                ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c35", secao:"Feltros",  item:"Feltro pickup – chuveiro químico entupido?",            ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c36", secao:"Feltros",  item:"Feltro 2ª prensa – chuveiro químico entupido?",         ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c37", secao:"Feltros",  item:"Feltro 3ª prensa Sup – chuveiro químico entupido?",     ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
+  { id:"m3c38", secao:"Feltros",  item:"Feltro 3ª prensa Inf – chuveiro químico entupido?",     ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
 ];
 
 // ─── Check-list Passagem de Ponta (igual M2 e M3 — mesmo formulário) ─────────
