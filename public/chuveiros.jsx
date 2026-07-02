@@ -141,6 +141,48 @@ function IconeChuveiro({cor, tipo, ativo=true, size=30}){
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// EFICIÊNCIA MENSAL — vencimento real dia a dia vs execuções feitas
+// ═══════════════════════════════════════════════════════════════════════════
+export function eficienciaMes(maq){
+  const def = DEF_CHUVEIROS(maq);
+  const dados = storageGet("chuveiros_h2")?.[maq]||{};
+  const hoje_ = new Date();
+  const inicioMes = new Date(hoje_.getFullYear(), hoje_.getMonth(), 1);
+  const diasNoMes = Math.floor((hoje_-inicioMes)/86400000)+1;
+
+  // para cada chuveiro, monta lista de datas de execução (ordenada) dentro/antes do mês
+  const execsPorChuveiro = {};
+  def.forEach(d=>{
+    const hist = (dados[d.id]?.historico||[]).map(h=>h.data).sort();
+    execsPorChuveiro[d.id]=hist;
+  });
+
+  let esperado=0, feito=0;
+  def.forEach(d=>{
+    const execs = execsPorChuveiro[d.id];
+    // "última execução antes do mês" define a base do primeiro vencimento
+    let ultimaData = null;
+    for(const dt of execs){ if(dt < inicioMes.toISOString().slice(0,10)) ultimaData=dt; }
+    // percorre cada dia do mês até hoje, verifica se venceu e se foi feito depois
+    for(let i=0;i<diasNoMes;i++){
+      const dia = new Date(inicioMes); dia.setDate(dia.getDate()+i);
+      const diaStr = dia.toISOString().slice(0,10);
+      const diasDesdeUltima = ultimaData ? Math.round((dia-new Date(ultimaData+"T00:00:00"))/86400000) : d.intervaloDias; // sem histórico = já "vencido" ao entrar no mês
+      if(diasDesdeUltima >= d.intervaloDias){
+        esperado++;
+        const feitoNoDia = execs.includes(diaStr);
+        if(feitoNoDia){ feito++; ultimaData=diaStr; }
+      }
+      // atualiza ultimaData se houve execução nesse dia (mesmo sem estar vencido, conta como feito extra)
+      if(execs.includes(diaStr) && diasDesdeUltima < d.intervaloDias){ ultimaData=diaStr; }
+    }
+  });
+
+  const pct = esperado>0 ? Math.round((feito/esperado)*100) : 100;
+  return { pct, esperado, feito };
+}
+
 export function ChuveirosTela({ maquina="M2" }){
   const [maq,setMaq]=useState(maquina);
   const [chuveiros,setChuveiros]=useState(()=>storageGet("chuveiros_h2")||{M2:{},M3:{}});
