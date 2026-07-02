@@ -290,7 +290,7 @@ const checklistCortadeiraM2 = [
     ref:"1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5", unit:"bar", tipo:"faquinhas",
     refs:["1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5"],
     faixas:[[1.5,2.5,"Normal","green"],[2.5,3.5,"Atenção","yellow"],[3.5,4.0,"Crítico","red"]] },
-  { id:"cs2_34", secao:"Faquinhas",  item:"Corte do Facão por Fardo (1 a 12)",
+  { id:"cs2_34", secao:"Faquinhas",  item:"Criticidade do Corte do Facão por Fardo (1 a 12)",
     ref:"OK", unit:"nível", tipo:"facao_fardos", fardos:12 },
   // EXTRA ────────────────────────────────────────────────────────────────────
   { id:"cs2_32", secao:"Extra",      item:"Atuadores reparados disponíveis na área",
@@ -383,7 +383,7 @@ const checklistCortadeiraM3 = [
     ref:"1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5", unit:"bar", tipo:"faquinhas",
     refs:["1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5"],
     faixas:[[1.5,2.5,"Normal","green"],[2.5,3.5,"Atenção","yellow"],[3.5,4.0,"Crítico","red"]] },
-  { id:"cs3_34", secao:"Faquinhas",  item:"Corte do Facão por Fardo (1 a 12)",
+  { id:"cs3_34", secao:"Faquinhas",  item:"Criticidade do Corte do Facão por Fardo (1 a 12)",
     ref:"OK", unit:"nível", tipo:"facao_fardos", fardos:12 },
   // EXTRA ────────────────────────────────────────────────────────────────────
   { id:"cs3_32", secao:"Extra",      item:"Atuadores reparados disponíveis na área",
@@ -527,6 +527,53 @@ const cloudGet = async (key) => {
     }
   } catch {}
   return storageGet(key);
+};
+
+
+// --- Desidrata/reidrata fotos: salva fotos em doc separado fotos_<id> ---
+// Mantem historico_h2 leve (abaixo do limite de 1MB do Firestore).
+const ehFotoBase64 = (s) => typeof s==="string" && s.startsWith("data:image");
+
+// Extrai todas as fotos de um registro, substituindo por marcadores. Retorna {fotos, limpo}.
+const extrairFotos = (registro) => {
+  const fotos = {};
+  let contador = 0;
+  const subst = (arr) => arr.map((src)=>{
+    if(ehFotoBase64(src)){ const ref="f"+(contador++); fotos[ref]=src; return "@@"+ref; }
+    return src;
+  });
+  const limpo = JSON.parse(JSON.stringify(registro));
+  if(Array.isArray(limpo.items)) limpo.items.forEach(it=>{ if(Array.isArray(it.fotos)) it.fotos=subst(it.fotos); });
+  if(limpo.unit&&Array.isArray(limpo.unit.foto)) limpo.unit.foto=subst(limpo.unit.foto);
+  if(Array.isArray(limpo.fotos)) limpo.fotos=subst(limpo.fotos);
+  if(limpo.fotos&&typeof limpo.fotos==="object"&&!Array.isArray(limpo.fotos)){
+    Object.keys(limpo.fotos).forEach(k=>{ if(Array.isArray(limpo.fotos[k])) limpo.fotos[k]=subst(limpo.fotos[k]); });
+  }
+  return { fotos, limpo, temFotos: contador>0 };
+};
+
+// Reidrata um registro: troca marcadores @@fN pelas fotos do mapa.
+const reidratarRegistro = (registro, fotosMap) => {
+  if(!fotosMap) return registro;
+  const rest = (arr) => arr.map(s=> (typeof s==="string"&&s.startsWith("@@")) ? (fotosMap[s.slice(2)]||s) : s);
+  const r = JSON.parse(JSON.stringify(registro));
+  if(Array.isArray(r.items)) r.items.forEach(it=>{ if(Array.isArray(it.fotos)) it.fotos=rest(it.fotos); });
+  if(r.unit&&Array.isArray(r.unit.foto)) r.unit.foto=rest(r.unit.foto);
+  if(Array.isArray(r.fotos)) r.fotos=rest(r.fotos);
+  if(r.fotos&&typeof r.fotos==="object"&&!Array.isArray(r.fotos)){
+    Object.keys(r.fotos).forEach(k=>{ if(Array.isArray(r.fotos[k])) r.fotos[k]=rest(r.fotos[k]); });
+  }
+  return r;
+};
+
+// Verifica se um registro tem marcadores de foto (precisa reidratar).
+const temMarcadores = (registro) => {
+  const check = (arr)=>Array.isArray(arr)&&arr.some(s=>typeof s==="string"&&s.startsWith("@@"));
+  if(Array.isArray(registro.items)&&registro.items.some(it=>check(it.fotos))) return true;
+  if(registro.unit&&check(registro.unit.foto)) return true;
+  if(check(registro.fotos)) return true;
+  if(registro.fotos&&typeof registro.fotos==="object"&&!Array.isArray(registro.fotos)&&Object.values(registro.fotos).some(check)) return true;
+  return false;
 };
 
 // ─── Escala Operacional — estrutura preparada para implementação futura ───────
@@ -2352,9 +2399,9 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                             const val=valores[key]||"";
                             const NIVEIS=[
                               {id:"ok",label:"OK",cor:"#00E676"},
-                              {id:"baixo",label:"Baixo",cor:"#FFC107"},
-                              {id:"medio",label:"Médio",cor:"#FF8C00"},
-                              {id:"alto",label:"Alto",cor:"#FF5252"},
+                              {id:"baixo",label:"Crit. Baixa",cor:"#FFC107"},
+                              {id:"medio",label:"Crit. Média",cor:"#FF8C00"},
+                              {id:"alto",label:"Crit. Alta",cor:"#FF5252"},
                             ];
                             const atual=NIVEIS.find(n=>n.id===val);
                             return(
@@ -3087,7 +3134,18 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
   const filtrados=(filtroTipo==="TODOS"?porArea:porArea.filter(h=>h.tipoId===filtroTipo)).filter(h=>!buscaData||h.data===buscaData).sort((a,b)=>b.id-a.id);
   const AREAS_HIST=[{id:"pu",label:"Parte Úmida"},{id:"cs",label:"P. Seca/Cortad."},{id:"enf",label:"Enfardamento"}];
   const [fotoAmp,setFotoAmp]=useState(null);
-  const reg=sel!=null?historico.find(h=>h.id===sel):null;
+  const [fotosCarregadas,setFotosCarregadas]=useState({}); // {regId: fotosMap}
+  const regBase=sel!=null?historico.find(h=>h.id===sel):null;
+  // Reidrata fotos sob demanda ao abrir um registro com marcadores
+  React.useEffect(()=>{
+    if(regBase&&temMarcadores(regBase)&&!fotosCarregadas[regBase.id]){
+      cloudGet("fotos_"+regBase.id).then(fmap=>{
+        if(fmap) setFotosCarregadas(prev=>({...prev,[regBase.id]:fmap}));
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[sel]);
+  const reg=regBase?(temMarcadores(regBase)?reidratarRegistro(regBase,fotosCarregadas[regBase.id]):regBase):null;
 
   if(reg){
     const noksItems=reg.items?.filter(i=>["nok","nao","atencao","critico","desvio"].includes(i.resp))||[];
@@ -3573,7 +3631,28 @@ export default function App() {
   const totalNotas=todos.reduce((a,e)=>a+e.notas.length,0);
   const notasComum=eqState.comum.reduce((a,e)=>a+e.notas.length,0);
   const salvouNaSessao=useRef(false);
-  const salvarChecklist=async(registro)=>{salvouNaSessao.current=true;const novo=[...historico,registro];setHistorico(novo);try{localStorage.setItem("historico_h2",JSON.stringify(novo));}catch{}try{await setDoc(doc(COL,"historico_h2"),{val:novo,ts:Date.now()});}catch(e){console.error("Firestore erro historico:",e);}};
+  const salvarChecklist=async(registro)=>{
+    salvouNaSessao.current=true;
+    // Mantem registro completo (com fotos) no state e localStorage para uso imediato
+    const novo=[...historico,registro];
+    setHistorico(novo);
+    try{localStorage.setItem("historico_h2",JSON.stringify(novo));}catch{}
+    // Para o Firestore: separa fotos em doc proprio e salva historico leve
+    try{
+      const {fotos,limpo,temFotos}=extrairFotos(registro);
+      if(temFotos){ await setDoc(doc(COL,"fotos_"+registro.id),{val:fotos,ts:Date.now()}); }
+      // Desidrata TODOS os registros; migra fotos de registros antigos ainda nao migrados
+      const historicoLeve=[];
+      for(const r of novo){
+        if(r.id===registro.id){ historicoLeve.push(limpo); continue; }
+        if(temMarcadores(r)){ historicoLeve.push(r); continue; } // ja desidratado
+        const ex=extrairFotos(r);
+        if(ex.temFotos){ try{ await setDoc(doc(COL,"fotos_"+r.id),{val:ex.fotos,ts:Date.now()}); }catch{} }
+        historicoLeve.push(ex.limpo);
+      }
+      await setDoc(doc(COL,"historico_h2"),{val:historicoLeve,ts:Date.now()});
+    }catch(e){console.error("Firestore erro historico:",e);}
+  };
   const eqCarregado=useRef(false);
   React.useEffect(()=>{
     cloudGet("historico_h2").then(data=>{
