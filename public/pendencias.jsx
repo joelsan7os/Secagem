@@ -240,10 +240,10 @@ function MuralInterno({ eqState = {}, onVoltar }) {
         for (let fi=0; fi<12; fi++) {
           const nivel = ultimo.valores?.[`${facaoId}_${fi}`];
           if (nivel==="medio" || nivel==="alto") {
-            const lbl = nivel==="alto" ? "Alto" : "Médio";
+            const lbl = nivel==="alto" ? "Crítica" : "Média";
             lista.push({ chave:`facao:${mq}:${fi}`, janela:"cs", origem:"Facão",
-              titulo:`Fardo ${fi+1} — corte ${lbl}`, tag:mq,
-              descricao:`Falha de corte do facão nível ${lbl} — ajustar/trocar em PP da cortadeira`,
+              titulo:`Fardo ${fi+1} — criticidade ${lbl}`, tag:mq,
+              descricao:`Corte do facão com criticidade ${lbl} — ajustar/trocar em PP da cortadeira`,
               nota:"", prazo:"Urgente", disciplina:"Mecânica", maquina:mq, area:"Cortadeira",
               data:ultimo.data||"", operador:ultimo.opPU||"", tempo:0, tipo:"auto" });
           }
