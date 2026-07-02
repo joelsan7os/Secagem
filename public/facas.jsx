@@ -78,7 +78,49 @@ const gravarPasse=(maq,f,c)=>{
   return true;
 };
 
-// ── Ícone da faca: disco (lâmina) + haste (atuador) ───────────────────────────
+// níveis do corte do facão por fardo — mesmos 4 níveis do checklist
+const NIVEIS_FACAO=[
+  {id:"ok",label:"OK",cor:"#00E676"},
+  {id:"baixo",label:"Baixo",cor:"#FFC107"},
+  {id:"medio",label:"Médio",cor:"#FF8C00"},
+  {id:"alto",label:"Alto",cor:"#FF5252"},
+];
+const nivelFardo=(maq,fardoIdx)=>{
+  const itemId=maq==="M2"?"cs2_34":"cs3_34";
+  const ult=ultimoChecklist(maq);
+  if(!ult)return null;
+  const val=ult.valores?.[`${itemId}_${fardoIdx}`];
+  return NIVEIS_FACAO.find(n=>n.id===val)||null;
+};
+const gravarNivelFardo=(maq,fardoIdx,nivelId)=>{
+  const itemId=maq==="M2"?"cs2_34":"cs3_34";
+  const hist=storageGet("historico_h2")||[];
+  let idx=-1, melhorId=-1;
+  hist.forEach((h,i)=>{ if(h&&h.tipoId==="cortadeira"&&h.maquina===maq&&(h.id||0)>melhorId){melhorId=h.id||0;idx=i;} });
+  if(idx<0)return false;
+  const reg={...hist[idx]};
+  reg.valores={...(reg.valores||{})};
+  reg.valores[`${itemId}_${fardoIdx}`]=nivelId;
+  hist[idx]=reg;
+  storageSet("historico_h2",hist);
+  return true;
+};
+
+// ── Ícone do fardo: bloco retangular com profundidade (pseudo-3D) ─────────────
+function IconeFardo({cor, size=22}){
+  const h=size*0.8, d=size*0.32;
+  return(
+    <svg width={size+d} height={h+d} viewBox={`0 0 ${size+d} ${h+d}`}>
+      {/* face lateral direita (sombra) */}
+      <polygon points={`${size},${d} ${size+d},0 ${size+d},${h} ${size},${h+d}`} fill={cor} opacity="0.45"/>
+      {/* face superior (topo) */}
+      <polygon points={`0,${d} ${size},${d} ${size+d},0 ${d},0`} fill={cor} opacity="0.75"/>
+      {/* face frontal */}
+      <rect x="0" y={d} width={size} height={h} fill={cor} opacity="0.9" rx="1"/>
+      <rect x="0" y={d} width={size} height={h} fill="none" stroke={cor} strokeWidth="1" opacity="0.6" rx="1"/>
+    </svg>
+  );
+}
 function IconeFaca({cor, ativo, size=40}){
   return(
     <svg width={size} height={size*1.15} viewBox="0 0 40 46">
@@ -102,6 +144,8 @@ export function FacasTela({ maquina="M2" }){
   },[]);
   const [modalFaca,setModalFaca]=useState(null);
   const [modalFacao,setModalFacao]=useState(false);
+  const [modalFardo,setModalFardo]=useState(null); // {idx}
+  const [nivelSel,setNivelSel]=useState("ok");
   const [modalPasse,setModalPasse]=useState(false);
   const [passeF,setPasseF]=useState("");
   const [passeC,setPasseC]=useState("");
@@ -213,41 +257,98 @@ export function FacasTela({ maquina="M2" }){
       </div>
 
       {/* Facão */}
-      <div onClick={()=>setModalFacao(true)} style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.blueLight}`,borderRadius:12,padding:16,cursor:"pointer"}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.blueLight}`,borderRadius:12,padding:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
           <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:800}}>Facão — corte transversal</div>
-          <span style={{color:C.textDim,fontSize:16}}>›</span>
+          <button onClick={()=>setModalFacao(true)} style={{background:"transparent",border:"none",color:C.textDim,fontSize:16,cursor:"pointer"}}>›</button>
         </div>
         {(()=>{
           const d=dadosFacao();
-          const ultimoAjuste=d.historico?.find(h=>h.tipo==="ajuste");
           return(
             <>
-              <div style={{position:"relative",height:34,marginBottom:10}}>
-                <div style={{position:"absolute",top:14,left:0,right:0,height:3,background:C.blueLight,borderRadius:2,boxShadow:`0 0 6px ${C.blueLight}88`}}/>
-                <div style={{display:"flex",justifyContent:"space-between",position:"relative"}}>
-                  {Array.from({length:N_FARDOS},(_,i)=>i+1).map(f=>{
-                    const marcado=ultimoAjuste?.fardoRef===String(f);
+              <div style={{position:"relative",marginBottom:10}}>
+                <div style={{position:"absolute",top:11,left:0,right:0,height:3,background:C.blueLight,borderRadius:2,boxShadow:`0 0 6px ${C.blueLight}88`,zIndex:0}}/>
+                <div style={{display:"flex",justifyContent:"space-between",position:"relative",zIndex:1}}>
+                  {Array.from({length:N_FARDOS},(_,i)=>i).map(fi=>{
+                    const nivel=nivelFardo(maq,fi);
+                    const cor=nivel?nivel.cor:C.textDim;
                     return(
-                      <div key={f} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                        <div style={{width:marcado?12:6,height:marcado?12:6,borderRadius:"50%",
-                          background:marcado?C.warningLight:C.blueLight,
-                          border:marcado?`2px solid ${C.warningLight}`:"none",
-                          boxShadow:marcado?`0 0 8px ${C.warningLight}`:"none",marginTop:marcado?8:11}}/>
-                        <span style={{fontSize:7,color:C.textDim,fontFamily:"monospace"}}>{f}</span>
-                      </div>
+                      <button key={fi} onClick={()=>{setModalFardo({idx:fi});setNivelSel(nivel?nivel.id:"ok");setDataReg(hoje());setObs("");}}
+                        style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:"transparent",border:"none",cursor:"pointer",padding:0}}>
+                        <IconeFardo cor={cor} size={16}/>
+                        <span style={{fontSize:7,color:C.textDim,fontFamily:"monospace"}}>{fi+1}</span>
+                      </button>
                     );
                   })}
                 </div>
               </div>
+              <div style={{display:"flex",gap:10,marginBottom:10,fontSize:8,color:C.textDim,justifyContent:"center"}}>
+                {NIVEIS_FACAO.map(n=>(
+                  <span key={n.id} style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:6,height:6,borderRadius:2,background:n.cor}}/>{n.label}</span>
+                ))}
+              </div>
               <div style={{display:"flex",justifyContent:"space-between",fontSize:10}}>
-                <span style={{color:C.textMuted}}>Último ajuste: <b style={{color:C.text}}>{ultimoAjuste?`fardo ${ultimoAjuste.fardoRef} · ${fmtD(ultimoAjuste.data)}`:"sem registro"}</b></span>
                 <span style={{color:C.textMuted}}>Última troca: <b style={{color:d.ultimaTroca?C.accentLight:C.textDim}}>{d.ultimaTroca?fmtD(d.ultimaTroca):"—"}</b></span>
+                <span onClick={()=>setModalFacao(true)} style={{color:C.blueLight,fontWeight:700,cursor:"pointer"}}>Ver histórico geral →</span>
               </div>
             </>
           );
         })()}
       </div>
+
+      {/* ── Modal Fardo individual (nível + data editável) ── */}
+      {modalFardo&&(
+        <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setModalFardo(null)}>
+          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <IconeFardo cor={NIVEIS_FACAO.find(n=>n.id===nivelSel)?.cor||C.textDim} size={26}/>
+              <div>
+                <div style={{color:C.white,fontWeight:800,fontSize:15}}>Fardo {modalFardo.idx+1}</div>
+                <div style={{color:C.textDim,fontSize:10}}>Facão · Máquina {maq.replace("M","")}</div>
+              </div>
+            </div>
+            <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:6}}>Qualidade do corte</div>
+            <div style={{display:"flex",gap:6,marginBottom:14}}>
+              {NIVEIS_FACAO.map(n=>(
+                <button key={n.id} onClick={()=>setNivelSel(n.id)} style={{flex:1,padding:"11px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11,
+                  background:nivelSel===n.id?`${n.cor}22`:C.tagBg,border:`1.5px solid ${nivelSel===n.id?n.cor:C.border}`,color:nivelSel===n.id?n.cor:C.textMuted}}>
+                  {n.label}
+                </button>
+              ))}
+            </div>
+            <div style={{marginBottom:14}}>
+              <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:5}}>Data do registro</div>
+              <input type="date" value={dataReg} onChange={e=>setDataReg(e.target.value)} style={{...inputStyle,colorScheme:"dark"}}/>
+            </div>
+            {(nivelSel==="medio"||nivelSel==="alto")&&(
+              <div style={{background:"rgba(255,140,0,0.12)",border:`1px solid ${NIVEIS_FACAO.find(n=>n.id===nivelSel).cor}55`,borderRadius:8,padding:"8px 12px",marginBottom:14}}>
+                <span style={{color:NIVEIS_FACAO.find(n=>n.id===nivelSel).cor,fontSize:11,fontWeight:700}}>Este nível aparece no mural de oportunidades.</span>
+              </div>
+            )}
+            {nivelSel==="ok"&&(
+              <div style={{background:`${C.accentLight}11`,border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 12px",marginBottom:14}}>
+                <span style={{color:C.accentLight,fontSize:11,fontWeight:700}}>OK — sai do mural de oportunidades.</span>
+              </div>
+            )}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setModalFardo(null)} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
+              <button onClick={()=>{
+                  gravarNivelFardo(maq,modalFardo.idx,nivelSel);
+                  // registra também no historico do facão para rastreabilidade
+                  const atual=facao[maq]||{ultimaTroca:null,historico:[]};
+                  const evento={tipo:"ajuste",data:dataReg||hoje(),hora:horaAtual(),operador,fardoRef:String(modalFardo.idx+1),nivel:nivelSel,obs:obs.trim()};
+                  const novo={ultimaTroca:atual.ultimaTroca,historico:[evento,...(atual.historico||[])]};
+                  const novoFacao={...facao,[maq]:novo};
+                  setFacao(novoFacao); storageSet("facao_h2",novoFacao);
+                  setTick(t=>t+1); setModalFardo(null);
+                }}
+                style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:C.accentDark,border:`1px solid ${C.accentLight}`,color:C.accentLight}}>
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal Faca ── */}
       {modalFaca&&(()=>{
