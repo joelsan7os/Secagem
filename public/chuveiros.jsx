@@ -183,7 +183,19 @@ export function eficienciaMes(maq){
   return { pct, esperado, feito };
 }
 
-export function ChuveirosTela({ maquina="M2" }){
+export function sugestaoTurno(maq){
+  const def = DEF_CHUVEIROS(maq);
+  const dados = storageGet("chuveiros_h2")?.[maq]||{};
+  const lista = def.map(d=>({
+    ...d,
+    ultimaData: dados[d.id]?.ultimaData||null,
+    entupido: estaEntupido(maq,d.checklistItem),
+  }));
+  const turnoAgora = turnoPorHora(new Date().getHours());
+  return { turno:turnoAgora, itens: sugerirItens(lista, QTD_POR_TURNO[turnoAgora]) };
+}
+
+export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
   const [maq,setMaq]=useState(maquina);
   const [chuveiros,setChuveiros]=useState(()=>storageGet("chuveiros_h2")||{M2:{},M3:{}});
   const [tick,setTick]=useState(0);
@@ -197,6 +209,13 @@ export function ChuveirosTela({ maquina="M2" }){
   const inputFotoRef=React.useRef();
   const cfg=storageGet("op_config")||{};
   const operador=cfg.matricula||cfg.nomeOperador||cfg.nome||"—";
+  React.useEffect(()=>{
+    if(abrirDireto){
+      if(abrirDireto.maq) setMaq(abrirDireto.maq);
+      if(abrirDireto.id){ setModalChuveiro(abrirDireto.id); setDataReg(hoje()); setFotos([]); }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
   const turnoAgora = turnoPorHora(new Date().getHours());
 
