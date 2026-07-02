@@ -652,15 +652,17 @@ function comprimirFoto(file) {
 function BotaoFoto({ fotos=[], onAdd, onRemove, compact=false }) {
   const inputRef = React.useRef();
   const handleFile = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files||[]);
+    if (!files.length) return;
     e.target.value = "";
-    try { const b64 = await comprimirFoto(file); onAdd(b64); }
-    catch { const rd = new FileReader(); rd.onload = ev => onAdd(ev.target.result); rd.readAsDataURL(file); }
+    for (const file of files) {
+      try { const b64 = await comprimirFoto(file); onAdd(b64); }
+      catch { const rd = new FileReader(); rd.onload = ev => onAdd(ev.target.result); rd.readAsDataURL(file); }
+    }
   };
   return (
     <div>
-      <input ref={inputRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handleFile}/>
+      <input ref={inputRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFile}/>
       {fotos.length>0&&(
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
           {fotos.map((src,i)=>(
@@ -1455,8 +1457,8 @@ function UnitBarcodeInput({ lote, setLote, unidade, setUnidade, unitFoto, setUni
         {/* Foto */}
         <label style={{flexShrink:0,width:42,height:38,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:18}}>
           📷
-          <input type="file" accept="image/*" capture="environment" style={{display:"none"}}
-            onChange={e=>{const f=e.target.files?.[0];if(f){comprimirFoto(f).then(b64=>{setUnitFoto(p=>[...p,b64]);setSalvo(false);}).catch(()=>{const rd=new FileReader();rd.onload=()=>{setUnitFoto(p=>[...p,rd.result]);setSalvo(false);};rd.readAsDataURL(f);});}}}/>
+          <input type="file" accept="image/*" multiple style={{display:"none"}}
+            onChange={e=>{const files=Array.from(e.target.files||[]);e.target.value="";files.forEach(f=>{comprimirFoto(f).then(b64=>{setUnitFoto(p=>[...p,b64]);setSalvo(false);}).catch(()=>{const rd=new FileReader();rd.onload=()=>{setUnitFoto(p=>[...p,rd.result]);setSalvo(false);};rd.readAsDataURL(f);});});}}/>
         </label>
       </div>
 
