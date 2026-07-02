@@ -81,9 +81,9 @@ const gravarPasse=(maq,f,c)=>{
 // níveis do corte do facão por fardo — mesmos 4 níveis do checklist
 const NIVEIS_FACAO=[
   {id:"ok",label:"OK",cor:"#00E676"},
-  {id:"baixo",label:"Baixo",cor:"#FFC107"},
-  {id:"medio",label:"Médio",cor:"#FF8C00"},
-  {id:"alto",label:"Alto",cor:"#FF5252"},
+  {id:"baixo",label:"Crit. Baixa",cor:"#FFC107"},
+  {id:"medio",label:"Crit. Média",cor:"#FF8C00"},
+  {id:"alto",label:"Crit. Alta",cor:"#FF5252"},
 ];
 const nivelFardo=(maq,fardoIdx)=>{
   const itemId=maq==="M2"?"cs2_34":"cs3_34";
@@ -307,7 +307,7 @@ export function FacasTela({ maquina="M2" }){
                 <div style={{color:C.textDim,fontSize:10}}>Facão · Máquina {maq.replace("M","")}</div>
               </div>
             </div>
-            <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:6}}>Qualidade do corte</div>
+            <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:6}}>Criticidade do corte</div>
             <div style={{display:"flex",gap:6,marginBottom:14}}>
               {NIVEIS_FACAO.map(n=>(
                 <button key={n.id} onClick={()=>setNivelSel(n.id)} style={{flex:1,padding:"11px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11,
