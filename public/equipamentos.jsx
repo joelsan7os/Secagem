@@ -1463,7 +1463,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
             background:`linear-gradient(155deg,${C.blueLight}18,rgba(7,24,40,0.97))`,border:`2px solid ${C.blueLight}66`,borderRadius:12,padding:"13px 16px",
             cursor:"pointer",marginBottom:14,boxShadow:`0 0 14px ${C.blueLight}22`}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <span style={{fontSize:20}}>🗡️</span>
+              <span style={{width:8,height:8,borderRadius:2,background:C.blueLight,boxShadow:`0 0 6px ${C.blueLight}`}}/>
               <div style={{textAlign:"left"}}>
                 <div style={{color:C.text,fontWeight:900,fontSize:13,letterSpacing:"0.03em"}}>Controle de Facas & Facão</div>
                 <div style={{color:C.textDim,fontSize:10}}>11 facas + facão · {filtroSub}</div>
