@@ -1279,9 +1279,10 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                       ...sM3.itens.map(it=>({...it,maq:"M3",cor:C.blueLight})),
                     ];
                     if(!linhas.length)return null;
+                    const top4=linhas.slice(0,4);
                     return(
                       <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                        {linhas.map(it=>(
+                        {top4.map(it=>(
                           <div key={it.maq+it.id} onClick={e=>{e.stopPropagation();setChuveiroAlvo({maq:it.maq,id:it.id});setTela("chuveiros");}}
                             style={{display:"flex",alignItems:"center",gap:8,background:C.tagBg,border:`1px solid ${it.cor}44`,borderLeft:`3px solid ${it.cor}`,borderRadius:8,padding:"6px 10px",cursor:"pointer"}}>
                             <span style={{color:it.cor,fontSize:9,fontWeight:900,fontFamily:"monospace"}}>{it.maq}</span>
