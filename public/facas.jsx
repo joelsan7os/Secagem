@@ -52,6 +52,31 @@ const barDaFaca=(maq,pos)=>{
   const n=parseFloat(String(raw||"").replace(",","."));
   return isNaN(n)?null:n;
 };
+// passe das facas (F/C) — valor único para todas, do item cs2_12/cs3_12
+const passeAtual=(maq)=>{
+  const itemId=maq==="M2"?"cs2_12":"cs3_12";
+  const ult=ultimoChecklist(maq);
+  if(!ult)return{f:null,c:null};
+  const rf=ult.valores?.[`${itemId}_f`], rc=ult.valores?.[`${itemId}_c`];
+  return{
+    f: rf!==undefined&&rf!==""?rf:null,
+    c: rc!==undefined&&rc!==""?rc:null,
+  };
+};
+const gravarPasse=(maq,f,c)=>{
+  const itemId=maq==="M2"?"cs2_12":"cs3_12";
+  const hist=storageGet("historico_h2")||[];
+  let idx=-1, melhorId=-1;
+  hist.forEach((h,i)=>{ if(h&&h.tipoId==="cortadeira"&&h.maquina===maq&&(h.id||0)>melhorId){melhorId=h.id||0;idx=i;} });
+  if(idx<0)return false;
+  const reg={...hist[idx]};
+  reg.valores={...(reg.valores||{})};
+  reg.valores[`${itemId}_f`]=String(f).replace(".",",");
+  reg.valores[`${itemId}_c`]=String(c).replace(".",",");
+  hist[idx]=reg;
+  storageSet("historico_h2",hist);
+  return true;
+};
 
 // ── Ícone da faca: disco (lâmina) + haste (atuador) ───────────────────────────
 function IconeFaca({cor, ativo, size=40}){
@@ -77,6 +102,9 @@ export function FacasTela({ maquina="M2" }){
   },[]);
   const [modalFaca,setModalFaca]=useState(null);
   const [modalFacao,setModalFacao]=useState(false);
+  const [modalPasse,setModalPasse]=useState(false);
+  const [passeF,setPasseF]=useState("");
+  const [passeC,setPasseC]=useState("");
   const [tipoReg,setTipoReg]=useState("ajuste");
   const [fardoRef,setFardoRef]=useState("");
   const [obs,setObs]=useState("");
@@ -149,8 +177,19 @@ export function FacasTela({ maquina="M2" }){
 
       {/* Régua de facas */}
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:14}}>
-        <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:800,marginBottom:12}}>
-          Facas — corte longitudinal · pressão atual
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+          <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:800}}>
+            Facas — corte longitudinal · pressão atual
+          </div>
+          <button onClick={()=>{const p=passeAtual(maq);setPasseF(p.f!==null?String(p.f):"5");setPasseC(p.c!==null?String(p.c):"5");setModalPasse(true);}}
+            style={{display:"flex",alignItems:"center",gap:6,background:C.tagBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"4px 9px",cursor:"pointer"}}>
+            {(()=>{const p=passeAtual(maq);return(
+              <>
+                <span style={{color:C.textDim,fontSize:9,fontWeight:700}}>PASSE</span>
+                <span style={{color:C.text,fontFamily:"monospace",fontSize:11,fontWeight:800}}>F:{p.f!==null?p.f:"—"} C:{p.c!==null?p.c:"—"}%</span>
+              </>
+            );})()}
+          </button>
         </div>
         <div style={{display:"flex",justifyContent:"space-between",overflowX:"auto",gap:2,paddingBottom:4}}>
           {Array.from({length:N_FACAS},(_,i)=>i+1).map(pos=>{
@@ -360,6 +399,35 @@ export function FacasTela({ maquina="M2" }){
           </div>
         );
       })()}
+      {/* ── Modal Passe (F/C) ── */}
+      {modalPasse&&(
+        <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setModalPasse(false)}>
+          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600}} onClick={e=>e.stopPropagation()}>
+            <div style={{color:C.white,fontWeight:800,fontSize:15,marginBottom:2}}>Passe das Facas</div>
+            <div style={{color:C.textDim,fontSize:10,marginBottom:16}}>Máquina {maq.replace("M","")} · valor único para as 11 facas</div>
+            <div style={{display:"flex",gap:10,marginBottom:14}}>
+              <div style={{flex:1}}>
+                <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:5}}>Frente (F) %</div>
+                <input type="number" inputMode="decimal" value={passeF} onChange={e=>setPasseF(e.target.value)} style={{...inputStyle,textAlign:"center",fontSize:16,fontWeight:800}}/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:5}}>Costa (C) %</div>
+                <input type="number" inputMode="decimal" value={passeC} onChange={e=>setPasseC(e.target.value)} style={{...inputStyle,textAlign:"center",fontSize:16,fontWeight:800}}/>
+              </div>
+            </div>
+            <div style={{background:`${C.accentLight}11`,border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 12px",marginBottom:16}}>
+              <span style={{color:C.accentLight,fontSize:11,fontWeight:700}}>Após PP com ajuste/troca geral, o passe costuma voltar para 5%.</span>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setModalPasse(false)} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
+              <button onClick={()=>{gravarPasse(maq,passeF||"0",passeC||"0");setModalPasse(false);setTick(t=>t+1);}}
+                style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:C.accentDark,border:`1px solid ${C.accentLight}`,color:C.accentLight}}>
+                Salvar Passe
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
