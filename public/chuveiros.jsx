@@ -23,6 +23,18 @@ const cloudGet=async(k)=>{try{const s=await getDoc(doc(COL,k));if(s.exists()){co
 
 const hoje=()=>new Date().toISOString().slice(0,10);
 const horaAtual=()=>{const a=new Date();return`${String(a.getHours()).padStart(2,"0")}:${String(a.getMinutes()).padStart(2,"0")}`;};
+const getAutoTurno=()=>{const h=new Date().getHours();if(h>=0&&h<8)return"00x08";if(h>=8&&h<16)return"08x16";return"16x24";};
+const calcularLetra=()=>{
+  const SEQUENCIA=["E","D","A","B","C"];
+  const BASE=new Date("2026-06-09T00:00:00");
+  const agora=new Date();
+  const diasPassados=Math.floor((agora-BASE)/(1000*60*60*24));
+  const blocoAtual=Math.floor(diasPassados/2)%5;
+  const h=agora.getHours();
+  const turno=h<8?0:h<16?1:2;
+  const indice=((blocoAtual-turno)%5+5)%5;
+  return SEQUENCIA[indice];
+};
 const fmtD=d=>{if(!d)return"nunca";const[y,m,dia]=d.split("-");return`${dia}/${m}/${y.slice(2)}`;};
 const diasDesde=d=>{if(!d)return Infinity;const a=new Date(d+"T00:00:00");const b=new Date(hoje()+"T00:00:00");return Math.round((b-a)/86400000);};
 
@@ -196,6 +208,10 @@ export function sugestaoTurno(maq){
 }
 
 export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
+  const [aba,setAba]=useState("chuveiros"); // "chuveiros" | "ranking"
+  const [rkMaq,setRkMaq]=useState("todas");
+  const [rkLetra,setRkLetra]=useState("todas");
+  const [rkOperador,setRkOperador]=useState("todos");
   const [maq,setMaq]=useState(maquina);
   const [chuveiros,setChuveiros]=useState(()=>storageGet("chuveiros_h2")||{M2:{},M3:{}});
   const [tick,setTick]=useState(0);
@@ -252,7 +268,7 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
   const salvar=()=>{
     const id=modalChuveiro;
     const atual=chuveiros[maq]?.[id]||{historico:[]};
-    const evento={data:dataReg||hoje(),hora:horaAtual(),operador,fotos};
+    const evento={data:dataReg||hoje(),hora:horaAtual(),operador,turno:getAutoTurno(),letra:calcularLetra(),fotos};
     const novo={ ultimaData: dataReg||hoje(), historico:[evento,...(atual.historico||[])] };
     const novoChuveiros={...chuveiros,[maq]:{...chuveiros[maq],[id]:novo}};
     setChuveiros(novoChuveiros);
@@ -267,8 +283,85 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
     return g;
   },[listaCompleta]);
 
+  const rankingDados = React.useMemo(()=>{
+    const mesAtual = hoje().slice(0,7); // YYYY-MM
+    const maquinas = rkMaq==="todas" ? ["M2","M3"] : [rkMaq];
+    const contagem = {}; // operador -> {total, porMaq:{M2,M3}}
+    maquinas.forEach(m=>{
+      const def = DEF_CHUVEIROS(m);
+      const dados = chuveiros[m]||{};
+      def.forEach(d=>{
+        (dados[d.id]?.historico||[]).forEach(ev=>{
+          if(!ev.data?.startsWith(mesAtual))return;
+          if(rkLetra!=="todas" && ev.letra!==rkLetra)return;
+          if(rkOperador!=="todos" && ev.operador!==rkOperador)return;
+          if(!contagem[ev.operador])contagem[ev.operador]={total:0,M2:0,M3:0};
+          contagem[ev.operador].total++;
+          contagem[ev.operador][m]++;
+        });
+      });
+    });
+    return Object.entries(contagem).map(([op,d])=>({operador:op,...d})).sort((a,b)=>b.total-a.total);
+  },[chuveiros,rkMaq,rkLetra,rkOperador,tick]);
+
+  const operadoresDisponiveis = React.useMemo(()=>{
+    const set=new Set();
+    ["M2","M3"].forEach(m=>{
+      const def=DEF_CHUVEIROS(m);
+      const dados=chuveiros[m]||{};
+      def.forEach(d=>(dados[d.id]?.historico||[]).forEach(ev=>set.add(ev.operador)));
+    });
+    return Array.from(set).sort();
+  },[chuveiros]);
+
   return(
     <div>
+      {/* Toggle Chuveiros / Ranking */}
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        {[{id:"chuveiros",l:"Chuveiros"},{id:"ranking",l:"🏆 Ranking"}].map(t=>(
+          <button key={t.id} onClick={()=>setAba(t.id)} style={{flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:12,
+            background:aba===t.id?C.blue:C.tagBg,border:`2px solid ${aba===t.id?C.blueLight:C.border}`,color:aba===t.id?C.blueLight:C.textMuted}}>
+            {t.l}
+          </button>
+        ))}
+      </div>
+
+      {aba==="ranking"?(
+        <div>
+          <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+            <select value={rkMaq} onChange={e=>setRkMaq(e.target.value)} style={{...inputStyle,flex:1,minWidth:90}}>
+              <option value="todas">Ambas máquinas</option>
+              <option value="M2">M2</option>
+              <option value="M3">M3</option>
+            </select>
+            <select value={rkLetra} onChange={e=>setRkLetra(e.target.value)} style={{...inputStyle,flex:1,minWidth:90}}>
+              <option value="todas">Todas letras</option>
+              {["A","B","C","D","E"].map(l=><option key={l} value={l}>{l}</option>)}
+            </select>
+            <select value={rkOperador} onChange={e=>setRkOperador(e.target.value)} style={{...inputStyle,flex:1,minWidth:110}}>
+              <option value="todos">Todos operadores</option>
+              {operadoresDisponiveis.map(o=><option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:800,marginBottom:10}}>
+            Ranking do mês — {hoje().slice(0,7)}
+          </div>
+          {rankingDados.length===0?(
+            <div style={{textAlign:"center",color:C.textDim,padding:"30px 0",fontSize:12}}>Nenhum registro no mês com esses filtros.</div>
+          ):rankingDados.map((r,i)=>(
+            <div key={r.operador} style={{display:"flex",alignItems:"center",gap:12,background:C.card,border:`1px solid ${C.border}`,
+              borderLeft:`3px solid ${i===0?C.warningLight:i===1?C.textMuted:i===2?"#CD7F32":C.border}`,borderRadius:10,padding:"10px 14px",marginBottom:6}}>
+              <span style={{color:i<3?C.warningLight:C.textDim,fontWeight:900,fontSize:16,fontFamily:"monospace",width:24}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}º`}</span>
+              <div style={{flex:1}}>
+                <div style={{color:C.text,fontWeight:800,fontSize:13}}>{r.operador}</div>
+                <div style={{color:C.textDim,fontSize:9}}>M2: {r.M2} · M3: {r.M3}</div>
+              </div>
+              <span style={{color:C.accentLight,fontWeight:900,fontSize:20,fontFamily:"monospace"}}>{r.total}</span>
+            </div>
+          ))}
+        </div>
+      ):(
+      <>
       {/* Seletor M2/M3 */}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         {["M2","M3"].map(m=>(
@@ -399,6 +492,8 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
           </div>
         );
       })()}
+      </>
+      )}
     </div>
   );
 }
