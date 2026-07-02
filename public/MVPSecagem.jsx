@@ -1212,36 +1212,6 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                       </div>
                     </div>
                   </div>
-                  {/* split chart eficiência / sedimentáveis */}
-                  <div style={{marginBottom:10,borderRadius:8,overflow:"hidden",background:"rgba(255,255,255,0.02)",padding:"4px 4px 2px"}}>
-                    <svg width="100%" height={H_SPLIT} viewBox={`0 0 ${SW} ${H_SPLIT}`} preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id="spFillH" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={corEg} stopOpacity="0.22"/>
-                          <stop offset="100%" stopColor={corEg} stopOpacity="0.02"/>
-                        </linearGradient>
-                      </defs>
-                      {/* zonas */}
-                      <rect x={0} y={0} width={SW} height={HU} fill="rgba(0,230,118,0.03)"/>
-                      <rect x={0} y={HU+HG} width={SW} height={HL} fill="rgba(255,193,7,0.03)"/>
-                      {/* divisor */}
-                      <line x1={0} y1={divY} x2={SW} y2={divY} stroke="rgba(255,255,255,0.1)" strokeWidth="1" strokeDasharray="4,4"/>
-                      {/* labels */}
-                      <text x={SW-2} y={9} textAnchor="end" fontSize="7" fill={corEg} fontFamily="monospace" fontWeight="700">EF%</text>
-                      {hasSd&&<text x={SW-2} y={H_SPLIT-2} textAnchor="end" fontSize="7" fill={C.warningLight} fontFamily="monospace" fontWeight="700">mL/L</text>}
-                      {/* área e linha eficiência bezier */}
-                      <path d={efAreaPath} fill="url(#spFillH)" opacity={0.7}/>
-                      <path d={efLinePath} fill="none" stroke={C.accentLight} strokeWidth="2" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${C.accentLight}88)`}}/>
-                      <circle cx={xOf(spVals.length-1)} cy={yEf(spVals[spVals.length-1])} r="3" fill={corEg} style={{filter:`drop-shadow(0 0 4px ${corEg})`}}/>
-                      {/* linha sedimentáveis bezier */}
-                      {hasSd&&sdLinePath&&<path d={sdLinePath} fill="none" stroke={C.warningLight} strokeWidth="2" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${C.warningLight}66)`}}/>}
-                      {hasSd&&sdPtsArr.length>0&&<circle cx={sdPtsArr[sdPtsArr.length-1].split(",")[0]} cy={sdPtsArr[sdPtsArr.length-1].split(",")[1]} r="3" fill={C.warningLight} style={{filter:`drop-shadow(0 0 4px ${C.warningLight})`}}/>}
-                    </svg>
-                    <div style={{display:"flex",gap:10,padding:"3px 2px 0"}}>
-                      <span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:12,height:2,background:corEg,display:"inline-block",borderRadius:1}}/><span style={{color:C.textDim,fontSize:7}}>Eficiência %</span></span>
-                      {hasSd&&<span style={{display:"flex",alignItems:"center",gap:3}}><span style={{width:12,height:2,background:C.warningLight,display:"inline-block",borderRadius:1}}/><span style={{color:C.textDim,fontSize:7}}>Sedim. mL/L</span></span>}
-                    </div>
-                  </div>
                   {/* rodapé: movimentações 10d */}
                   {(()=>{
                     const d10=new Date();d10.setDate(d10.getDate()-10);const d10s=d10.toISOString().slice(0,10);
