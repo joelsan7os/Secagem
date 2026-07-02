@@ -80,6 +80,7 @@ export function FacasTela({ maquina="M2" }){
   const [tipoReg,setTipoReg]=useState("ajuste");
   const [fardoRef,setFardoRef]=useState("");
   const [obs,setObs]=useState("");
+  const [dataReg,setDataReg]=useState(hoje());
   const cfg=storageGet("op_config")||{};
   const operador=cfg.matricula||cfg.nomeOperador||cfg.nome||"—";
 
@@ -107,10 +108,10 @@ export function FacasTela({ maquina="M2" }){
     const chave="f"+pos;
     const atual=facas[maq]?.[chave]||{historico:[]};
     const barAntes=barDaFaca(maq,pos);
-    const evento={tipo:tipoReg,data:hoje(),hora:horaAtual(),operador,barAntes,obs:obs.trim()};
+    const evento={tipo:tipoReg,data:dataReg||hoje(),hora:horaAtual(),operador,barAntes,obs:obs.trim()};
     const novo={
-      ultimaTroca: tipoReg==="troca"?hoje():atual.ultimaTroca,
-      ultimoAjuste: tipoReg==="ajuste"?hoje():atual.ultimoAjuste,
+      ultimaTroca: tipoReg==="troca"?(dataReg||hoje()):atual.ultimaTroca,
+      ultimoAjuste: tipoReg==="ajuste"?(dataReg||hoje()):atual.ultimoAjuste,
       historico:[evento,...(atual.historico||[])],
     };
     const novoFacas={...facas,[maq]:{...facas[maq],[chave]:novo}};
@@ -118,20 +119,20 @@ export function FacasTela({ maquina="M2" }){
     storageSet("facas_h2",novoFacas);
     // ajuste/troca sempre volta o bar para a referência (1,5) → sai do mural
     resetarBarNoChecklist(pos,BAR_REF);
-    setModalFaca(null); setObs(""); setTipoReg("ajuste");
+    setModalFaca(null); setObs(""); setTipoReg("ajuste"); setDataReg(hoje());
   };
 
   const salvarFacao=()=>{
     const atual=facao[maq]||{ultimaTroca:null,historico:[]};
-    const evento={tipo:tipoReg,data:hoje(),hora:horaAtual(),operador,fardoRef:fardoRef||null,obs:obs.trim()};
+    const evento={tipo:tipoReg,data:dataReg||hoje(),hora:horaAtual(),operador,fardoRef:fardoRef||null,obs:obs.trim()};
     const novo={
-      ultimaTroca: tipoReg==="troca"?hoje():atual.ultimaTroca,
+      ultimaTroca: tipoReg==="troca"?(dataReg||hoje()):atual.ultimaTroca,
       historico:[evento,...(atual.historico||[])],
     };
     const novoFacao={...facao,[maq]:novo};
     setFacao(novoFacao);
     storageSet("facao_h2",novoFacao);
-    setModalFacao(false); setObs(""); setFardoRef(""); setTipoReg("ajuste");
+    setModalFacao(false); setObs(""); setFardoRef(""); setTipoReg("ajuste"); setDataReg(hoje());
   };
 
   return(
@@ -254,9 +255,13 @@ export function FacasTela({ maquina="M2" }){
               <div style={{background:`${C.accentLight}11`,border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 12px",marginBottom:12}}>
                 <span style={{color:C.accentLight,fontSize:11,fontWeight:700}}>Ao confirmar, a pressão volta para 1,5 bar e sai do mural.</span>
               </div>
+              <div style={{marginBottom:12}}>
+                <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:5}}>Data do registro</div>
+                <input type="date" value={dataReg} onChange={e=>setDataReg(e.target.value)} style={{...inputStyle,colorScheme:"dark"}}/>
+              </div>
               <textarea value={obs} onChange={e=>setObs(e.target.value)} rows={2} placeholder="Observação opcional..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit",marginBottom:12}}/>
               <div style={{display:"flex",gap:8,marginBottom:16}}>
-                <button onClick={()=>{setModalFaca(null);setObs("");setTipoReg("ajuste");}} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
+                <button onClick={()=>{setModalFaca(null);setObs("");setTipoReg("ajuste");setDataReg(hoje());}} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
                 <button onClick={salvarFaca} style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
                   background:tipoReg==="troca"?C.danger:C.warning,border:"none",color:"#fff"}}>
                   Confirmar {tipoReg==="troca"?"Troca":"Ajuste"}
@@ -291,7 +296,7 @@ export function FacasTela({ maquina="M2" }){
       {modalFacao&&(()=>{
         const d=dadosFacao();
         return(
-          <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>{setModalFacao(false);setObs("");setFardoRef("");setTipoReg("ajuste");}}>
+          <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>{setModalFacao(false);setObs("");setFardoRef("");setTipoReg("ajuste");setDataReg(hoje());}}>
             <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
               <div style={{color:C.white,fontWeight:800,fontSize:15,marginBottom:2}}>Facão</div>
               <div style={{color:C.textDim,fontSize:10,marginBottom:14}}>Máquina {maq.replace("M","")} · corte transversal</div>
@@ -319,9 +324,13 @@ export function FacasTela({ maquina="M2" }){
                 </div>
               )}
 
+              <div style={{marginBottom:12}}>
+                <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:5}}>Data do registro</div>
+                <input type="date" value={dataReg} onChange={e=>setDataReg(e.target.value)} style={{...inputStyle,colorScheme:"dark"}}/>
+              </div>
               <textarea value={obs} onChange={e=>setObs(e.target.value)} rows={2} placeholder="Observação opcional..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit",marginBottom:12}}/>
               <div style={{display:"flex",gap:8,marginBottom:16}}>
-                <button onClick={()=>{setModalFacao(false);setObs("");setFardoRef("");setTipoReg("ajuste");}} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
+                <button onClick={()=>{setModalFacao(false);setObs("");setFardoRef("");setTipoReg("ajuste");setDataReg(hoje());}} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
                 <button disabled={tipoReg==="ajuste"&&!fardoRef} onClick={salvarFacao} style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
                   background:tipoReg==="troca"?C.danger:C.warning,border:"none",color:"#fff",opacity:(tipoReg==="ajuste"&&!fardoRef)?0.4:1}}>
                   Confirmar {tipoReg==="troca"?"Troca":"Ajuste"}
