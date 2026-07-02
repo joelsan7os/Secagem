@@ -501,7 +501,7 @@ import { COL, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "./firebase";
 import { TelaAuth, usePerfilAtivo, FUNCOES, validarPin } from "./auth";
 import { PainelAdmin } from "./admin";
 import { CleanersTela, RelatorioCleaners, CLEANERS_TOTAL } from "./cleaners";
-import { ChuveirosTela, eficienciaMes } from "./chuveiros";
+import { ChuveirosTela, eficienciaMes, sugestaoTurno } from "./chuveiros";
 import { BarcodeModal } from "./barcode";
 import { AvariasTela, AvariasAnalytics } from "./avarias";
 import { MuralOportunidades } from "./pendencias";
@@ -1268,10 +1268,30 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                     </div>
                     <span style={{color:C.blueLight,fontSize:11,fontWeight:700,letterSpacing:"0.04em"}}>abrir ›</span>
                   </div>
-                  <div style={{display:"flex",gap:10}}>
+                  <div style={{display:"flex",gap:10,marginBottom:10}}>
                     <Gauge label="M2" pct={effM2.pct}/>
                     <Gauge label="M3" pct={effM3.pct}/>
                   </div>
+                  {(()=>{
+                    const sM2=sugestaoTurno("M2"), sM3=sugestaoTurno("M3");
+                    const linhas=[
+                      ...sM2.itens.map(it=>({...it,maq:"M2",cor:C.accentLight})),
+                      ...sM3.itens.map(it=>({...it,maq:"M3",cor:C.blueLight})),
+                    ];
+                    if(!linhas.length)return null;
+                    return(
+                      <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                        {linhas.map(it=>(
+                          <div key={it.maq+it.id} onClick={e=>{e.stopPropagation();setChuveiroAlvo({maq:it.maq,id:it.id});setTela("chuveiros");}}
+                            style={{display:"flex",alignItems:"center",gap:8,background:C.tagBg,border:`1px solid ${it.cor}44`,borderLeft:`3px solid ${it.cor}`,borderRadius:8,padding:"6px 10px",cursor:"pointer"}}>
+                            <span style={{color:it.cor,fontSize:9,fontWeight:900,fontFamily:"monospace"}}>{it.maq}</span>
+                            <span style={{color:C.text,fontSize:11,fontWeight:700,flex:1}}>{it.label}</span>
+                            {it.entupido&&<span style={{color:C.dangerLight,fontSize:8,fontWeight:900}}>ENTUPIDO</span>}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })()}
@@ -3635,6 +3655,7 @@ export default function App() {
   const { perfil, setPerfil, logout } = usePerfilAtivo();
   const [adminAberto,setAdminAberto]=useState(false);
   const [tela,setTela]=useState("dashboard");
+  const [chuveiroAlvo,setChuveiroAlvo]=useState(null); // {maq,id} para abrir direto
   const [modoVisao,setModoVisao]=useState("app"); // "app" | "dashboard"
   const [historico,setHistorico]=useState(()=>storageGet("historico_h2")||[]);
   const [areaAtiva,setAreaAtiva]=useState("pu");
@@ -3735,7 +3756,7 @@ export default function App() {
     if(tela==="rotas")return <RotasTela historico={historico} onVoltar={()=>setTela("dashboard")}/>;
     if(tela==="mural")return <MuralOportunidades eqState={eqState} onVoltar={()=>setTela("dashboard")}/>;
     if(tela==="cleaners")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>setTela("dashboard")} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><CleanersTela eqState={eqState}/></div>;
-    if(tela==="chuveiros")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>setTela("dashboard")} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><ChuveirosTela/></div>;
+    if(tela==="chuveiros")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>{setTela("dashboard");setChuveiroAlvo(null);}} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><ChuveirosTela maquina={chuveiroAlvo?.maq||"M2"} abrirDireto={chuveiroAlvo}/></div>;
   };
   if(!perfil) return <TelaAuth onEntrar={setPerfil}/>;
   if(adminAberto && perfil.funcao==="dev") return <PainelAdmin onVoltar={()=>setAdminAberto(false)}/>;
