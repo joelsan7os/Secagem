@@ -501,6 +501,7 @@ import { COL, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "./firebase";
 import { TelaAuth, usePerfilAtivo, FUNCOES, validarPin } from "./auth";
 import { PainelAdmin } from "./admin";
 import { CleanersTela, RelatorioCleaners, CLEANERS_TOTAL } from "./cleaners";
+import { ChuveirosTela, eficienciaMes } from "./chuveiros";
 import { BarcodeModal } from "./barcode";
 import { AvariasTela, AvariasAnalytics } from "./avarias";
 import { MuralOportunidades } from "./pendencias";
@@ -1234,6 +1235,43 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                       </div>
                     );
                   })()}
+                </div>
+              );
+            })()}
+            {/* ── EFICIÊNCIA DE LIMPEZA (chuveiros) ── */}
+            {(()=>{
+              const effM2=eficienciaMes("M2");
+              const effM3=eficienciaMes("M3");
+              const corPct=(p)=>p<60?C.dangerLight:p<80?C.warningLight:C.accentLight;
+              const Gauge=({label,pct})=>{
+                const r=32,circ=2*Math.PI*r;
+                const cor=corPct(pct);
+                const fill=Math.min(pct,100)/100*circ;
+                return(
+                  <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                    <svg width={82} height={82} viewBox="0 0 82 82">
+                      <circle cx="41" cy="41" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8"/>
+                      <circle cx="41" cy="41" r={r} fill="none" stroke={cor} strokeWidth="8" strokeDasharray={`${fill} ${circ}`} strokeLinecap="round" transform="rotate(-90 41 41)" style={{filter:`drop-shadow(0 0 5px ${cor}aa)`,transition:"stroke-dasharray .8s"}}/>
+                      <text x="41" y="38" textAnchor="middle" fontSize="16" fontWeight="900" fill={cor} fontFamily="monospace">{pct}</text>
+                      <text x="41" y="50" textAnchor="middle" fontSize="8" fill={C.textDim}>%</text>
+                    </svg>
+                    <span style={{color:C.textMuted,fontSize:10,fontWeight:800,letterSpacing:"0.05em"}}>{label}</span>
+                  </div>
+                );
+              };
+              return(
+                <div onClick={()=>setTela("chuveiros")} style={{background:`linear-gradient(135deg,${C.card},${C.blueLight}08)`,border:`1px solid ${C.blueLight}44`,borderTop:`3px solid ${C.blueLight}`,borderRadius:14,padding:"14px 14px 12px",marginBottom:10,cursor:"pointer",boxShadow:`0 4px 24px ${C.blueLight}15`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{color:C.textDim,fontSize:9,fontWeight:900,letterSpacing:"0.1em"}}>06</span>
+                      <span style={{color:C.white,fontSize:13,fontWeight:900,letterSpacing:"0.06em"}}>EFICIÊNCIA DE LIMPEZA</span>
+                    </div>
+                    <span style={{color:C.blueLight,fontSize:11,fontWeight:700,letterSpacing:"0.04em"}}>abrir ›</span>
+                  </div>
+                  <div style={{display:"flex",gap:10}}>
+                    <Gauge label="M2" pct={effM2.pct}/>
+                    <Gauge label="M3" pct={effM3.pct}/>
+                  </div>
                 </div>
               );
             })()}
@@ -3697,6 +3735,7 @@ export default function App() {
     if(tela==="rotas")return <RotasTela historico={historico} onVoltar={()=>setTela("dashboard")}/>;
     if(tela==="mural")return <MuralOportunidades eqState={eqState} onVoltar={()=>setTela("dashboard")}/>;
     if(tela==="cleaners")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>setTela("dashboard")} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><CleanersTela eqState={eqState}/></div>;
+    if(tela==="chuveiros")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>setTela("dashboard")} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><ChuveirosTela/></div>;
   };
   if(!perfil) return <TelaAuth onEntrar={setPerfil}/>;
   if(adminAberto && perfil.funcao==="dev") return <PainelAdmin onVoltar={()=>setAdminAberto(false)}/>;
