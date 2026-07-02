@@ -1182,15 +1182,6 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
           <Badge color={statusColor(eq.status)}>{eq.status}</Badge>
         </div>
         {eq.sub==="Comum"&&<div style={{background:"#1a0f0055",border:`1px solid ${C.warningLight}44`,borderRadius:8,padding:"10px 12px",marginBottom:16}}><p style={{color:C.warningLight,fontSize:12,margin:0,fontWeight:600}}>⚡ Equipamento de Área Comum — uma falha aqui impacta Máquina 2 e Máquina 3</p></div>}
-        {/* Atalho: Controle de Facas/Facão */}
-        {(eq.nome.includes("Facas circulares")||eq.nome.includes("Facão"))&&(
-          <button onClick={()=>setSubModulo("facas")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",
-            background:`linear-gradient(135deg,${C.blueLight}18,${C.blue}44)`,border:`1.5px solid ${C.blueLight}66`,borderRadius:10,padding:"12px 14px",
-            cursor:"pointer",marginBottom:14,boxShadow:`0 0 12px ${C.blueLight}22`}}>
-            <span style={{color:C.text,fontWeight:800,fontSize:13}}>🗡️ Controle de Facas & Facão</span>
-            <span style={{color:C.blueLight,fontSize:16}}>›</span>
-          </button>
-        )}
         {/* Notas */}
         <div style={{background:C.surface,border:`1px solid ${eq.notas.length>0?C.warningLight+"44":C.border}`,borderTop:`2px solid ${eq.notas.length>0?C.warningLight:C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -1458,6 +1449,33 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
             {mkSel("M3","MÁQ. 3",[...eqState.m3,...eqState.cs_m3,...eqState.enf_m3],C.accentLight,"rgba(0,230,118,0.6)")}
             {areaAtiva==="pu"&&mkSel("Comum","⚡ COMUM",eqState.comum,C.warningLight,"rgba(255,193,7,0.6)")}
           </div>
+        );
+      })()}
+      {areaAtiva==="cs"&&(()=>{
+        // resumo rápido: nº de facas em atenção/crítico no último checklist da máquina
+        const itemId=filtroSub==="M2"?"cs2_31":"cs3_31";
+        const hist=storageGet("historico_h2")||[];
+        const ult=hist.filter(h=>h&&h.tipoId==="cortadeira"&&h.maquina===filtroSub).sort((a,b)=>(b.id||0)-(a.id||0))[0];
+        let atencao=0,critico=0,maxBar=0;
+        if(ult){for(let i=0;i<11;i++){const n=parseFloat(String(ult.valores?.[`${itemId}_${i}`]||"").replace(",","."));if(!isNaN(n)){if(n>maxBar)maxBar=n;if(n>=3.5)critico++;else if(n>=2.5)atencao++;}}}
+        return(
+          <button onClick={()=>setSubModulo("facas")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",
+            background:`linear-gradient(155deg,${C.blueLight}18,rgba(7,24,40,0.97))`,border:`2px solid ${C.blueLight}66`,borderRadius:12,padding:"13px 16px",
+            cursor:"pointer",marginBottom:14,boxShadow:`0 0 14px ${C.blueLight}22`}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:20}}>🗡️</span>
+              <div style={{textAlign:"left"}}>
+                <div style={{color:C.text,fontWeight:900,fontSize:13,letterSpacing:"0.03em"}}>Controle de Facas & Facão</div>
+                <div style={{color:C.textDim,fontSize:10}}>11 facas + facão · {filtroSub}</div>
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              {critico>0&&<span style={{background:"rgba(255,82,82,0.15)",border:`1px solid ${C.dangerLight}55`,color:C.dangerLight,borderRadius:10,padding:"2px 8px",fontSize:10,fontWeight:900}}>{critico} no limite</span>}
+              {atencao>0&&<span style={{background:"rgba(255,193,7,0.12)",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:10,padding:"2px 8px",fontSize:10,fontWeight:900}}>{atencao} atenção</span>}
+              {critico===0&&atencao===0&&<span style={{color:C.accentLight,fontSize:11,fontWeight:700}}>✓ OK</span>}
+              <span style={{color:C.blueLight,fontSize:18}}>›</span>
+            </div>
+          </button>
         );
       })()}
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
