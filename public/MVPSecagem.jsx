@@ -501,7 +501,7 @@ import { COL, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "./firebase";
 import { TelaAuth, usePerfilAtivo, FUNCOES, validarPin } from "./auth";
 import { PainelAdmin } from "./admin";
 import { CleanersTela, RelatorioCleaners, CLEANERS_TOTAL } from "./cleaners";
-import { ChuveirosTela, eficienciaMes, sugestaoTurno } from "./chuveiros";
+import { ChuveirosTela, eficienciaMes, sugestaoTurno, IconeChuveiro, corChuveiro } from "./chuveiros";
 import { BarcodeModal } from "./barcode";
 import { AvariasTela, AvariasAnalytics } from "./avarias";
 import { MuralOportunidades } from "./pendencias";
@@ -1282,14 +1282,18 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                     const top4=linhas.slice(0,4);
                     return(
                       <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                        {top4.map(it=>(
+                        {top4.map(it=>{
+                          const cor=corChuveiro(it,C);
+                          return(
                           <div key={it.maq+it.id} onClick={e=>{e.stopPropagation();setChuveiroAlvo({maq:it.maq,id:it.id});setTela("chuveiros");}}
-                            style={{display:"flex",alignItems:"center",gap:8,background:C.tagBg,border:`1px solid ${it.cor}44`,borderLeft:`3px solid ${it.cor}`,borderRadius:8,padding:"6px 10px",cursor:"pointer"}}>
+                            style={{display:"flex",alignItems:"center",gap:8,background:C.tagBg,border:`1px solid ${it.cor}44`,borderLeft:`3px solid ${cor}`,borderRadius:8,padding:"6px 10px",cursor:"pointer"}}>
+                            <IconeChuveiro cor={cor} tipo={it.tipo} size={22}/>
                             <span style={{color:it.cor,fontSize:9,fontWeight:900,fontFamily:"monospace"}}>{it.maq}</span>
                             <span style={{color:C.text,fontSize:11,fontWeight:700,flex:1}}>{it.label}</span>
                             {it.entupido&&<span style={{color:C.dangerLight,fontSize:8,fontWeight:900}}>ENTUPIDO</span>}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     );
                   })()}
