@@ -37,6 +37,15 @@ const calcularLetra=()=>{
 };
 const fmtD=d=>{if(!d)return"nunca";const[y,m,dia]=d.split("-");return`${dia}/${m}/${y.slice(2)}`;};
 const diasDesde=d=>{if(!d)return Infinity;const a=new Date(d+"T00:00:00");const b=new Date(hoje()+"T00:00:00");return Math.round((b-a)/86400000);};
+// Regra de cor: entupido/vencido = vermelho; ≤3 dias pra vencer = amarelo; senão verde.
+export const corChuveiro=(item, C_)=>{
+  if(item.entupido)return C_.dangerLight;
+  const dias=diasDesde(item.ultimaData);
+  const restam=item.intervaloDias-dias; // dias até vencer
+  if(restam<=0)return C_.dangerLight;   // vencido
+  if(restam<=3)return C_.warningLight;  // perto de vencer
+  return C_.accentLight;                // ok
+};
 
 // ── Comprimir foto (mesmo padrão do checklist) ────────────────────────────────
 function comprimirFoto(file){
@@ -135,7 +144,7 @@ const estaEntupido=(maq,checklistItem)=>{
 };
 
 // ── Ícone de chuveiro (bico + jato) ────────────────────────────────────────────
-function IconeChuveiro({cor, tipo, ativo=true, size=30}){
+export function IconeChuveiro({cor, tipo, ativo=true, size=30}){
   return(
     <svg width={size} height={size} viewBox="0 0 30 30">
       <line x1="8" y1="4" x2="22" y2="4" stroke={cor} strokeWidth="2" strokeLinecap="round" opacity={ativo?1:0.4}/>
@@ -295,13 +304,14 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
           if(!ev.data?.startsWith(mesAtual))return;
           if(rkLetra!=="todas" && ev.letra!==rkLetra)return;
           if(rkOperador!=="todos" && ev.operador!==rkOperador)return;
-          if(!contagem[ev.operador])contagem[ev.operador]={total:0,M2:0,M3:0};
+          if(!contagem[ev.operador])contagem[ev.operador]={total:0,M2:0,M3:0,letras:new Set()};
           contagem[ev.operador].total++;
           contagem[ev.operador][m]++;
+          if(ev.letra)contagem[ev.operador].letras.add(ev.letra);
         });
       });
     });
-    return Object.entries(contagem).map(([op,d])=>({operador:op,...d})).sort((a,b)=>b.total-a.total);
+    return Object.entries(contagem).map(([op,d])=>({operador:op,...d,letras:Array.from(d.letras).sort().join(", ")})).sort((a,b)=>b.total-a.total);
   },[chuveiros,rkMaq,rkLetra,rkOperador,tick]);
 
   const operadoresDisponiveis = React.useMemo(()=>{
@@ -354,7 +364,7 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
               <span style={{color:i<3?C.warningLight:C.textDim,fontWeight:900,fontSize:16,fontFamily:"monospace",width:24}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}º`}</span>
               <div style={{flex:1}}>
                 <div style={{color:C.text,fontWeight:800,fontSize:13}}>{r.operador}</div>
-                <div style={{color:C.textDim,fontSize:9}}>M2: {r.M2} · M3: {r.M3}</div>
+                <div style={{color:C.textDim,fontSize:9}}>Letra {r.letras||"—"} · M2: {r.M2} · M3: {r.M3}</div>
               </div>
               <span style={{color:C.accentLight,fontWeight:900,fontSize:20,fontFamily:"monospace"}}>{r.total}</span>
             </div>
@@ -401,8 +411,7 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
           <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
             {itens.map(it=>{
               const dias=diasDesde(it.ultimaData);
-              const vencido=dias>=it.intervaloDias;
-              const cor = it.entupido?C.dangerLight:(vencido?C.warningLight:TIPO_COR[it.tipo]);
+              const cor=corChuveiro(it,C);
               return(
                 <button key={it.id} onClick={()=>abrirModal(it.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:"transparent",border:"none",cursor:"pointer"}}>
                   <IconeChuveiro cor={cor} tipo={it.tipo} ativo={!!it.ultimaData} size={26}/>
