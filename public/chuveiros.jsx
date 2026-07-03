@@ -217,7 +217,7 @@ export function sugestaoTurno(maq){
 }
 
 export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
-  const [aba,setAba]=useState("chuveiros"); // "chuveiros" | "ranking"
+  const [aba,setAba]=useState("chuveiros"); // "chuveiros" | "prioridade" | "ranking"
   const [rkMaq,setRkMaq]=useState("todas");
   const [rkLetra,setRkLetra]=useState("todas");
   const [rkOperador,setRkOperador]=useState("todos");
@@ -256,7 +256,20 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
     }));
   },[maq,chuveiros,tick]);
 
-  const sugeridos = React.useMemo(()=>sugerirItens(listaCompleta, QTD_POR_TURNO[turnoAgora]),[listaCompleta,turnoAgora]);
+  // Cota do turno é travada: calculada 1x por dia+turno+maq, não realimenta ao escovar.
+  const cotaKey = `cota_${maq}_${hoje()}_${turnoAgora}`;
+  const cotaTravada = React.useMemo(()=>{
+    const salvo = storageGet(cotaKey);
+    if(salvo) return salvo;
+    const gerada = sugerirItens(listaCompleta, QTD_POR_TURNO[turnoAgora]).map(it=>it.id);
+    storageSet(cotaKey, gerada);
+    return gerada;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[cotaKey]);
+
+  const sugeridos = React.useMemo(()=>
+    cotaTravada.map(id=>listaCompleta.find(it=>it.id===id)).filter(Boolean)
+  ,[cotaTravada,listaCompleta]);
   const sugeridosIds = new Set(sugeridos.map(s=>s.id));
 
   const abrirModal=(id)=>{
@@ -332,7 +345,7 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
     <div>
       {/* Toggle Chuveiros / Ranking */}
       <div style={{display:"flex",gap:8,marginBottom:18,background:C.surface,padding:4,borderRadius:14,border:`1px solid ${C.border}`}}>
-        {[{id:"chuveiros",l:"CHUVEIROS"},{id:"ranking",l:"RANKING"}].map(t=>(
+        {[{id:"chuveiros",l:"CHUVEIROS"},{id:"prioridade",l:"PRIORIDADE"},{id:"ranking",l:"RANKING"}].map(t=>(
           <button key={t.id} onClick={()=>setAba(t.id)} style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",fontWeight:900,fontSize:11,letterSpacing:"0.08em",transition:"all .25s",
             background:aba===t.id?`linear-gradient(135deg,${C.blueLight}33,${C.blue})`:"transparent",
             border:`1px solid ${aba===t.id?C.blueLight+"88":"transparent"}`,color:aba===t.id?C.white:C.textDim,
@@ -394,6 +407,51 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
               </div>
             ))}
           </>)}
+        </div>
+      ):aba==="prioridade"?(
+        <div>
+          <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:900,marginBottom:12}}>
+            Fila geral de prioridade — todos os chuveiros, ambas máquinas
+          </div>
+          {(()=>{
+            const todos = [
+              ...DEF_CHUVEIROS("M2").map(d=>({...d,maq:"M2"})),
+              ...DEF_CHUVEIROS("M3").map(d=>({...d,maq:"M3"})),
+            ].map(d=>{
+              const dadosM = chuveiros[d.maq]||{};
+              return{
+                ...d,
+                ultimaData: dadosM[d.id]?.ultimaData||null,
+                entupido: estaEntupido(d.maq,d.checklistItem),
+              };
+            });
+            const ordenados = todos.map(it=>{
+              const dias=diasDesde(it.ultimaData);
+              const score = it.entupido?999999:(dias/it.intervaloDias);
+              return{...it,dias,score};
+            }).sort((a,b)=>b.score-a.score);
+            return ordenados.map((it,i)=>{
+              const cor=corChuveiro(it,C);
+              const restam=it.intervaloDias-it.dias;
+              return(
+                <button key={it.maq+it.id} onClick={()=>{setMaq(it.maq);setAba("chuveiros");abrirModal(it.id);}}
+                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",background:C.card,
+                  border:`1px solid ${cor}44`,borderLeft:`3px solid ${cor}`,borderRadius:10,padding:"9px 12px",marginBottom:6,cursor:"pointer"}}>
+                  <span style={{color:C.textDim,fontSize:10,fontFamily:"monospace",width:20}}>{i+1}</span>
+                  <div style={{filter:`drop-shadow(0 0 4px ${cor}55)`}}><IconeChuveiro cor={cor} tipo={it.tipo} size={24}/></div>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{color:it.maq==="M2"?C.accentLight:C.blueLight,fontSize:9,fontWeight:900,fontFamily:"monospace"}}>{it.maq}</span>
+                      <span style={{color:C.text,fontWeight:700,fontSize:12}}>{it.label}</span>
+                    </div>
+                    <div style={{color:C.textDim,fontSize:9,fontFamily:"monospace"}}>{it.ultimaData?`última ${fmtD(it.ultimaData)}`:"nunca escovado"}</div>
+                  </div>
+                  {it.entupido?<span style={{color:C.dangerLight,fontSize:8,fontWeight:900}}>ENTUPIDO</span>
+                    :<span style={{color:cor,fontSize:9,fontFamily:"monospace",fontWeight:700}}>{restam<=0?"vencido":`${restam}d`}</span>}
+                </button>
+              );
+            });
+          })()}
         </div>
       ):(
       <>
