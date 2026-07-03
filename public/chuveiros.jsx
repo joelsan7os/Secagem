@@ -324,13 +324,19 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
     return Array.from(set).sort();
   },[chuveiros]);
 
+  // progresso do turno: quantos dos sugeridos já foram escovados hoje
+  const feitosHoje = sugeridos.filter(s=>(chuveiros[maq]?.[s.id]?.historico||[]).some(h=>h.data===hoje())).length;
+  const cotaTurno = QTD_POR_TURNO[turnoAgora];
+
   return(
     <div>
       {/* Toggle Chuveiros / Ranking */}
-      <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[{id:"chuveiros",l:"Chuveiros"},{id:"ranking",l:"🏆 Ranking"}].map(t=>(
-          <button key={t.id} onClick={()=>setAba(t.id)} style={{flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:12,
-            background:aba===t.id?C.blue:C.tagBg,border:`2px solid ${aba===t.id?C.blueLight:C.border}`,color:aba===t.id?C.blueLight:C.textMuted}}>
+      <div style={{display:"flex",gap:8,marginBottom:18,background:C.surface,padding:4,borderRadius:14,border:`1px solid ${C.border}`}}>
+        {[{id:"chuveiros",l:"CHUVEIROS"},{id:"ranking",l:"RANKING"}].map(t=>(
+          <button key={t.id} onClick={()=>setAba(t.id)} style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",fontWeight:900,fontSize:11,letterSpacing:"0.08em",transition:"all .25s",
+            background:aba===t.id?`linear-gradient(135deg,${C.blueLight}33,${C.blue})`:"transparent",
+            border:`1px solid ${aba===t.id?C.blueLight+"88":"transparent"}`,color:aba===t.id?C.white:C.textDim,
+            boxShadow:aba===t.id?`0 0 16px ${C.blueLight}33`:"none"}}>
             {t.l}
           </button>
         ))}
@@ -338,85 +344,132 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
 
       {aba==="ranking"?(
         <div>
-          <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-            <select value={rkMaq} onChange={e=>setRkMaq(e.target.value)} style={{...inputStyle,flex:1,minWidth:90}}>
-              <option value="todas">Ambas máquinas</option>
-              <option value="M2">M2</option>
-              <option value="M3">M3</option>
+          {/* filtros */}
+          <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+            <select value={rkMaq} onChange={e=>setRkMaq(e.target.value)} style={{...inputStyle,flex:1,minWidth:90,fontSize:12}}>
+              <option value="todas">Ambas máquinas</option><option value="M2">M2</option><option value="M3">M3</option>
             </select>
-            <select value={rkLetra} onChange={e=>setRkLetra(e.target.value)} style={{...inputStyle,flex:1,minWidth:90}}>
+            <select value={rkLetra} onChange={e=>setRkLetra(e.target.value)} style={{...inputStyle,flex:1,minWidth:90,fontSize:12}}>
               <option value="todas">Todas letras</option>
-              {["A","B","C","D","E"].map(l=><option key={l} value={l}>{l}</option>)}
+              {["A","B","C","D","E"].map(l=><option key={l} value={l}>Letra {l}</option>)}
             </select>
-            <select value={rkOperador} onChange={e=>setRkOperador(e.target.value)} style={{...inputStyle,flex:1,minWidth:110}}>
+            <select value={rkOperador} onChange={e=>setRkOperador(e.target.value)} style={{...inputStyle,flex:1,minWidth:110,fontSize:12}}>
               <option value="todos">Todos operadores</option>
               {operadoresDisponiveis.map(o=><option key={o} value={o}>{o}</option>)}
             </select>
           </div>
-          <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:800,marginBottom:10}}>
-            Ranking do mês — {hoje().slice(0,7)}
-          </div>
+
           {rankingDados.length===0?(
-            <div style={{textAlign:"center",color:C.textDim,padding:"30px 0",fontSize:12}}>Nenhum registro no mês com esses filtros.</div>
-          ):rankingDados.map((r,i)=>(
-            <div key={r.operador} style={{display:"flex",alignItems:"center",gap:12,background:C.card,border:`1px solid ${C.border}`,
-              borderLeft:`3px solid ${i===0?C.warningLight:i===1?C.textMuted:i===2?"#CD7F32":C.border}`,borderRadius:10,padding:"10px 14px",marginBottom:6}}>
-              <span style={{color:i<3?C.warningLight:C.textDim,fontWeight:900,fontSize:16,fontFamily:"monospace",width:24}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}º`}</span>
-              <div style={{flex:1}}>
-                <div style={{color:C.text,fontWeight:800,fontSize:13}}>{r.operador}</div>
-                <div style={{color:C.textDim,fontSize:9}}>Letra {r.letras||"—"} · M2: {r.M2} · M3: {r.M3}</div>
-              </div>
-              <span style={{color:C.accentLight,fontWeight:900,fontSize:20,fontFamily:"monospace"}}>{r.total}</span>
+            <div style={{textAlign:"center",color:C.textDim,padding:"40px 0",fontSize:12}}>Nenhum registro no mês com esses filtros.</div>
+          ):(<>
+            {/* pódio top 3 */}
+            <div style={{display:"flex",alignItems:"flex-end",gap:8,marginBottom:18}}>
+              {[1,0,2].map(pos=>{
+                const r=rankingDados[pos]; if(!r)return <div key={pos} style={{flex:1}}/>;
+                const alturas=[92,74,60], medal=["🥇","🥈","🥉"], glow=[C.warningLight,"#C0C8D4","#CD7F32"];
+                return(
+                  <div key={pos} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+                    <div style={{fontSize:22}}>{medal[pos]}</div>
+                    <div style={{color:C.white,fontWeight:800,fontSize:11,textAlign:"center",lineHeight:1.1}}>{r.operador}</div>
+                    <div style={{width:"100%",height:alturas[pos],borderRadius:"10px 10px 0 0",position:"relative",
+                      background:`linear-gradient(180deg,${glow[pos]}33,${C.card})`,border:`1px solid ${glow[pos]}66`,borderBottom:"none",
+                      boxShadow:`0 0 20px ${glow[pos]}22`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
+                      <span style={{color:glow[pos],fontWeight:900,fontSize:26,fontFamily:"monospace",textShadow:`0 0 12px ${glow[pos]}88`}}>{r.total}</span>
+                      <span style={{color:C.textDim,fontSize:8}}>escovas</span>
+                      <span style={{color:C.textMuted,fontSize:8,fontWeight:700}}>Letra {r.letras||"—"}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
+            {/* restante da lista */}
+            {rankingDados.slice(3).map((r,i)=>(
+              <div key={r.operador} style={{display:"flex",alignItems:"center",gap:12,background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 14px",marginBottom:6}}>
+                <span style={{color:C.textDim,fontWeight:900,fontSize:14,fontFamily:"monospace",width:24}}>{i+4}º</span>
+                <div style={{flex:1}}>
+                  <div style={{color:C.text,fontWeight:800,fontSize:13}}>{r.operador}</div>
+                  <div style={{color:C.textDim,fontSize:9}}>Letra {r.letras||"—"} · M2 {r.M2} · M3 {r.M3}</div>
+                </div>
+                <span style={{color:C.accentLight,fontWeight:900,fontSize:20,fontFamily:"monospace"}}>{r.total}</span>
+              </div>
+            ))}
+          </>)}
         </div>
       ):(
       <>
       {/* Seletor M2/M3 */}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         {["M2","M3"].map(m=>(
-          <button key={m} onClick={()=>setMaq(m)} style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13,
-            background:maq===m?C.accentDark:C.tagBg,border:`2px solid ${maq===m?C.accentLight:C.border}`,color:maq===m?C.accentLight:C.textMuted}}>
+          <button key={m} onClick={()=>setMaq(m)} style={{flex:1,padding:"11px",borderRadius:12,cursor:"pointer",fontWeight:900,fontSize:14,letterSpacing:"0.05em",transition:"all .2s",
+            background:maq===m?`linear-gradient(135deg,${C.accentDark},${C.card})`:C.tagBg,border:`2px solid ${maq===m?C.accentLight:C.border}`,color:maq===m?C.accentLight:C.textMuted,
+            boxShadow:maq===m?`0 0 18px ${C.accentLight}22`:"none"}}>
             {m}
           </button>
         ))}
       </div>
 
-      {/* Sugestão do turno */}
-      <div style={{background:C.card,border:`1px solid ${C.blueLight}55`,borderTop:`3px solid ${C.blueLight}`,borderRadius:12,padding:16,marginBottom:14}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:800}}>Sugestão de limpeza — {LABEL_TURNO[turnoAgora]}</div>
-          <span style={{background:`${C.blueLight}22`,color:C.blueLight,borderRadius:10,padding:"2px 8px",fontSize:10,fontWeight:900}}>{sugeridos.length} chuveiros</span>
+      {/* MISSÃO DO TURNO */}
+      <div style={{background:`linear-gradient(160deg,${C.card},${C.blueLight}0A)`,border:`1px solid ${C.blueLight}44`,borderTop:`3px solid ${C.blueLight}`,borderRadius:16,padding:16,marginBottom:16,boxShadow:`0 4px 28px ${C.blueLight}12`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+          <div>
+            <div style={{color:C.blueLight,fontSize:9,textTransform:"uppercase",letterSpacing:"0.14em",fontWeight:900}}>Missão do Turno</div>
+            <div style={{color:C.white,fontSize:15,fontWeight:800,marginTop:2}}>{LABEL_TURNO[turnoAgora]}</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{color:feitosHoje>=cotaTurno?C.accentLight:C.blueLight,fontFamily:"monospace",fontWeight:900,fontSize:22}}>{feitosHoje}<span style={{color:C.textDim,fontSize:14}}>/{cotaTurno}</span></div>
+            <div style={{color:C.textDim,fontSize:8,textTransform:"uppercase",letterSpacing:"0.1em"}}>concluído</div>
+          </div>
+        </div>
+        {/* barra de progresso */}
+        <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.06)",marginBottom:14,overflow:"hidden"}}>
+          <div style={{height:"100%",borderRadius:3,width:`${Math.min(feitosHoje/cotaTurno*100,100)}%`,transition:"width .6s",
+            background:feitosHoje>=cotaTurno?C.accentLight:C.blueLight,boxShadow:`0 0 10px ${feitosHoje>=cotaTurno?C.accentLight:C.blueLight}`}}/>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {sugeridos.map(s=>(
-            <button key={s.id} onClick={()=>abrirModal(s.id)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",
-              background:s.entupido?"rgba(255,82,82,0.12)":C.tagBg,border:`1.5px solid ${s.entupido?C.dangerLight:C.border}`,borderRadius:10,padding:"9px 12px",cursor:"pointer"}}>
-              <IconeChuveiro cor={TIPO_COR[s.tipo]} tipo={s.tipo} size={26}/>
-              <div style={{flex:1}}>
-                <div style={{color:C.text,fontWeight:700,fontSize:12}}>{s.label}</div>
-                <div style={{color:C.textDim,fontSize:9}}>{s.ultimaData?`última: ${fmtD(s.ultimaData)} (${s.dias}d)`:"nunca escovado"}</div>
-              </div>
-              {s.entupido&&<span style={{background:"rgba(255,82,82,0.2)",color:C.dangerLight,borderRadius:8,padding:"2px 7px",fontSize:9,fontWeight:900}}>ENTUPIDO</span>}
-            </button>
-          ))}
+          {sugeridos.map(s=>{
+            const cor=corChuveiro(s,C);
+            const jaFeito=(chuveiros[maq]?.[s.id]?.historico||[]).some(h=>h.data===hoje());
+            return(
+              <button key={s.id} onClick={()=>abrirModal(s.id)} style={{display:"flex",alignItems:"center",gap:12,width:"100%",textAlign:"left",
+                background:jaFeito?`${C.accentLight}0C`:C.tagBg,border:`1.5px solid ${jaFeito?C.accentLight+"55":cor+"44"}`,borderLeft:`3px solid ${jaFeito?C.accentLight:cor}`,
+                borderRadius:12,padding:"11px 13px",cursor:"pointer",opacity:jaFeito?0.65:1,transition:"all .2s"}}>
+                <div style={{filter:`drop-shadow(0 0 5px ${cor}66)`}}><IconeChuveiro cor={jaFeito?C.accentLight:cor} tipo={s.tipo} size={30}/></div>
+                <div style={{flex:1}}>
+                  <div style={{color:C.text,fontWeight:800,fontSize:12.5}}>{s.label}</div>
+                  <div style={{color:C.textDim,fontSize:9,fontFamily:"monospace"}}>{s.ultimaData?`última ${fmtD(s.ultimaData)} · ${s.dias}d`:"nunca escovado"}</div>
+                </div>
+                {jaFeito ? <span style={{color:C.accentLight,fontSize:16}}>✓</span>
+                  : s.entupido ? <span style={{background:"rgba(255,82,82,0.2)",color:C.dangerLight,borderRadius:8,padding:"3px 8px",fontSize:8,fontWeight:900,letterSpacing:"0.05em"}}>ENTUPIDO</span>
+                  : <span style={{color:cor,fontSize:15}}>›</span>}
+              </button>
+            );
+          })}
+          {sugeridos.length===0&&<div style={{textAlign:"center",color:C.textDim,padding:"14px 0",fontSize:11}}>Nada pendente neste turno.</div>}
         </div>
       </div>
 
-      {/* Visão geral por grupo */}
-      <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:800,marginBottom:8}}>Todos os chuveiros — {maq}</div>
-      {Object.entries(grupos).map(([grupo,itens])=>(
-        <div key={grupo} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",marginBottom:8}}>
-          <div style={{color:C.textMuted,fontSize:10,fontWeight:800,marginBottom:6}}>{grupo}</div>
-          <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
+      {/* MAPA DE CHUVEIROS (SCADA) */}
+      <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.14em",fontWeight:900,marginBottom:10}}>Mapa de Chuveiros — {maq}</div>
+      {Object.entries(grupos).map(([grupo,itens],gi)=>(
+        <div key={grupo} style={{background:`linear-gradient(150deg,${C.card},transparent)`,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",marginBottom:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+            <span style={{color:C.textDim,fontSize:9,fontFamily:"monospace",fontWeight:900}}>{String(gi+1).padStart(2,"0")}</span>
+            <span style={{color:C.textMuted,fontSize:11,fontWeight:800,letterSpacing:"0.03em"}}>{grupo}</span>
+            <div style={{flex:1,height:1,background:C.border}}/>
+          </div>
+          <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
             {itens.map(it=>{
               const dias=diasDesde(it.ultimaData);
               const cor=corChuveiro(it,C);
+              const restam=it.intervaloDias-dias;
               return(
-                <button key={it.id} onClick={()=>abrirModal(it.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:"transparent",border:"none",cursor:"pointer"}}>
-                  <IconeChuveiro cor={cor} tipo={it.tipo} ativo={!!it.ultimaData} size={26}/>
-                  <span style={{color:cor,fontSize:8,fontWeight:800}}>{TIPO_LABEL[it.tipo].split(" ")[0]}</span>
-                  <span style={{color:C.textDim,fontSize:7,fontFamily:"monospace"}}>{it.ultimaData?`${dias}d`:"—"}</span>
+                <button key={it.id} onClick={()=>abrirModal(it.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"transparent",border:"none",cursor:"pointer",minWidth:52}}>
+                  <div style={{position:"relative",filter:`drop-shadow(0 0 6px ${cor}55)`}}>
+                    <IconeChuveiro cor={cor} tipo={it.tipo} ativo={!!it.ultimaData} size={30}/>
+                    {it.entupido&&<span style={{position:"absolute",top:-4,right:-4,width:9,height:9,borderRadius:"50%",background:C.dangerLight,boxShadow:`0 0 6px ${C.dangerLight}`}}/>}
+                  </div>
+                  <span style={{color:cor,fontSize:8,fontWeight:900,letterSpacing:"0.03em"}}>{TIPO_LABEL[it.tipo].split(" ")[0].toUpperCase()}</span>
+                  <span style={{color:C.textDim,fontSize:7.5,fontFamily:"monospace"}}>{it.ultimaData?(restam<=0?"vencido":`${restam}d`):"—"}</span>
                 </button>
               );
             })}
