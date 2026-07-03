@@ -192,6 +192,10 @@ export function estatisticasChuveiros({ maq="todas", letra="todas", mes=null }={
         if(letra!=="todas" && j.letra!==letra)return;
         totalJustif++;
         if(j.motivo)porMotivo[j.motivo]=(porMotivo[j.motivo]||0)+1;
+        // justificativa credita o operador como se tivesse limpado (não penaliza quem justificou)
+        porMaquina[m]=(porMaquina[m]||0)+1;
+        if(j.letra&&porLetra[j.letra]!==undefined)porLetra[j.letra]++;
+        if(j.operador)porOperador[j.operador]=(porOperador[j.operador]||0)+1;
       });
     });
   });
