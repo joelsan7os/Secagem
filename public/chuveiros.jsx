@@ -182,9 +182,11 @@ export function eficienciaMes(maq){
   let esperado=0, feito=0;
   def.forEach(d=>{
     const execs = execsPorChuveiro[d.id];
-    // "última execução antes do mês" define a base do primeiro vencimento
+    // sem histórico algum: considera "recém-instalado hoje" (não retroage culpa do mês todo)
     let ultimaData = null;
-    for(const dt of execs){ if(dt < inicioMes.toISOString().slice(0,10)) ultimaData=dt; }
+    let temHistorico = false;
+    for(const dt of execs){ if(dt < inicioMes.toISOString().slice(0,10)){ ultimaData=dt; temHistorico=true; } }
+    if(!temHistorico && execs.length===0){ ultimaData = hoje_.toISOString().slice(0,10); }
     // percorre cada dia do mês até hoje, verifica se venceu e se foi feito depois
     for(let i=0;i<diasNoMes;i++){
       const dia = new Date(inicioMes); dia.setDate(dia.getDate()+i);
