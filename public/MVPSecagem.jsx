@@ -501,7 +501,7 @@ import { COL, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "./firebase";
 import { TelaAuth, usePerfilAtivo, FUNCOES, validarPin } from "./auth";
 import { PainelAdmin } from "./admin";
 import { CleanersTela, RelatorioCleaners, CLEANERS_TOTAL } from "./cleaners";
-import { ChuveirosTela, eficienciaMes, sugestaoTurno, IconeChuveiro, corChuveiro, ModalRegistroChuveiro } from "./chuveiros";
+import { ChuveirosTela, eficienciaMes, sugestaoTurno, IconeChuveiro, corChuveiro, ModalRegistroChuveiro, estatisticasChuveiros } from "./chuveiros";
 import { BarcodeModal } from "./barcode";
 import { AvariasTela, AvariasAnalytics } from "./avarias";
 import { MuralOportunidades } from "./pendencias";
@@ -2885,7 +2885,111 @@ function GraficoLetrasAntigo({ historico }) {
   );
 }
 
-// ─── GraficoEficiencia — Eficiência de Lançamento por Letra ───────────────────
+// ─── GraficoEficienciaLimpeza — módulo de eficiência de chuveiros ─────────────
+function GraficoEficienciaLimpeza(){
+  const [maqF,setMaqF]=useState("todas");
+  const [letraF,setLetraF]=useState("todas");
+  const stats=React.useMemo(()=>estatisticasChuveiros({maq:maqF,letra:letraF}),[maqF,letraF]);
+  const corEfic=(p)=>p>=80?C.accentLight:p>=60?C.warningLight:C.dangerLight;
+  const maxLetra=Math.max(1,...Object.values(stats.porLetra));
+
+  return(
+    <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.accentLight}`,borderRadius:14,padding:16}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+        <IconeChuveiro cor={C.accentLight} tipo="leque" size={22}/>
+        <span style={{color:C.white,fontWeight:800,fontSize:14,letterSpacing:"0.02em"}}>Eficiência de Limpeza</span>
+      </div>
+      <div style={{color:C.textDim,fontSize:10,marginBottom:14}}>Escovações do mês por letra, operador e máquina — cruzando com a eficiência de cada linha.</div>
+
+      {/* eficiência por máquina (gauges) */}
+      <div style={{display:"flex",gap:10,marginBottom:16}}>
+        {[["M2",stats.eficM2],["M3",stats.eficM3]].map(([m,pct])=>(
+          <div key={m} style={{flex:1,background:C.tagBg,border:`1px solid ${corEfic(pct)}44`,borderRadius:10,padding:"10px 12px",textAlign:"center"}}>
+            <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.08em"}}>{m}</div>
+            <div style={{color:corEfic(pct),fontWeight:900,fontSize:24,fontFamily:"monospace",textShadow:`0 0 10px ${corEfic(pct)}55`}}>{pct}%</div>
+            <div style={{color:C.textDim,fontSize:8}}>{stats.porMaquina[m]||0} escovas</div>
+          </div>
+        ))}
+      </div>
+
+      {/* filtro máquina */}
+      <div style={{display:"flex",gap:5,marginBottom:8}}>
+        {[{id:"todas",l:"Ambas"},{id:"M2",l:"Máq. 2"},{id:"M3",l:"Máq. 3"}].map(o=>(
+          <button key={o.id} onClick={()=>setMaqF(o.id)} style={{flex:1,padding:"7px 4px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:11,border:`1.5px solid ${maqF===o.id?C.blueLight:C.border}`,background:maqF===o.id?C.blue:C.tagBg,color:maqF===o.id?"#fff":C.textMuted}}>{o.l}</button>
+        ))}
+      </div>
+      {/* filtro letra */}
+      <div style={{display:"flex",gap:5,marginBottom:16}}>
+        {[{id:"todas",l:"Todas"},{id:"A",l:"A"},{id:"B",l:"B"},{id:"C",l:"C"},{id:"D",l:"D"},{id:"E",l:"E"}].map(l=>(
+          <button key={l.id} onClick={()=>setLetraF(l.id)} style={{flex:1,padding:"6px 4px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:11,border:`1.5px solid ${letraF===l.id?C.accent:C.border}`,background:letraF===l.id?C.accentDark:C.tagBg,color:letraF===l.id?C.white:C.textMuted}}>{l.l}</button>
+        ))}
+      </div>
+
+      {/* barras por letra (quem lança mais) */}
+      <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Escovações por letra</div>
+      <div style={{display:"flex",gap:10,alignItems:"flex-end",height:120,marginBottom:8}}>
+        {Object.entries(stats.porLetra).map(([L,n])=>{
+          const barH=n===0?3:Math.max(6,Math.round((n/maxLetra)*120));
+          return(
+            <div key={L} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",height:"100%"}}>
+              {n>0&&<div style={{color:C.accentLight,fontSize:13,fontWeight:900,marginBottom:4}}>{n}</div>}
+              <div style={{width:"70%",maxWidth:42,height:barH,borderRadius:"6px 6px 0 0",background:n===0?C.tagBg:`linear-gradient(180deg,${C.accentLight},${C.accentLight}88)`,border:`1px solid ${n===0?C.border:C.accentLight}`,boxShadow:n>0?`0 0 10px ${C.accentLight}44`:"none",transition:"height .5s"}}/>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{display:"flex",gap:10,marginBottom:16}}>
+        {Object.keys(stats.porLetra).map(L=>(
+          <div key={L} style={{flex:1,display:"flex",justifyContent:"center"}}>
+            <div style={{width:30,height:30,borderRadius:9,background:C.tagBg,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",color:C.textMuted,fontSize:14,fontWeight:900}}>{L}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ranking operadores */}
+      <div style={{borderTop:`1px solid ${C.border}`,paddingTop:12}}>
+        <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Operadores que mais escovaram</div>
+        {stats.rankOperadores.length===0?(
+          <div style={{color:C.textDim,fontSize:11,textAlign:"center",padding:"14px 0"}}>Nenhuma escovação no mês com esses filtros.</div>
+        ):stats.rankOperadores.slice(0,8).map((r,i)=>(
+          <div key={r.operador} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:i<stats.rankOperadores.length-1?`1px solid ${C.border}`:"none"}}>
+            <span style={{color:i===0?C.warningLight:C.textDim,fontWeight:900,fontSize:13,width:22,fontFamily:"monospace"}}>{i===0?"🥇":`${i+1}º`}</span>
+            <span style={{flex:1,color:C.text,fontWeight:700,fontSize:12}}>{r.operador}</span>
+            <span style={{color:C.accentLight,fontWeight:900,fontSize:15,fontFamily:"monospace"}}>{r.total}</span>
+          </div>
+        ))}
+        <div style={{color:C.textDim,fontSize:10,textAlign:"right",marginTop:8}}>Total: <span style={{color:C.textMuted,fontWeight:700}}>{stats.total}</span> escovações</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── EficienciaHub — seletor de módulos de eficiência (extensível) ────────────
+const MODULOS_EFICIENCIA=[
+  { id:"checklist", label:"Checklist", Comp:({historico})=><GraficoEficiencia historico={historico}/> },
+  { id:"chuveiros", label:"Chuveiros", Comp:()=><GraficoEficienciaLimpeza/> },
+  // futuros módulos entram aqui: { id:"...", label:"...", Comp:()=><.../> }
+];
+function EficienciaHub({ historico }){
+  const [mod,setMod]=useState("checklist");
+  const Atual=MODULOS_EFICIENCIA.find(m=>m.id===mod)?.Comp||(()=>null);
+  return(
+    <div>
+      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto"}}>
+        {MODULOS_EFICIENCIA.map(m=>(
+          <button key={m.id} onClick={()=>setMod(m.id)} style={{flexShrink:0,padding:"8px 16px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:11,letterSpacing:"0.05em",transition:"all .2s",
+            background:mod===m.id?`linear-gradient(135deg,${C.accentDark},${C.card})`:C.tagBg,border:`1.5px solid ${mod===m.id?C.accentLight:C.border}`,color:mod===m.id?C.accentLight:C.textMuted,
+            boxShadow:mod===m.id?`0 0 12px ${C.accentLight}22`:"none"}}>
+            {m.label}
+          </button>
+        ))}
+      </div>
+      <Atual historico={historico}/>
+    </div>
+  );
+}
+
+
 function GraficoEficiencia({ historico }) {
   const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
   const hoje=new Date();
@@ -3306,7 +3410,7 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
       </div>
       {abaHist==="ana"?(
         <div>
-          <GraficoEficiencia historico={historico}/>
+          <EficienciaHub historico={historico}/>
         </div>
       ):abaHist==="avarias"?(
         <AvariasAnalytics avariasData={storageGet("avarias_h2")||[]} perfil={perfil}/>
@@ -3407,7 +3511,7 @@ function ConfiguracoesTela({ perfil, onLogout, onAbrirAdmin }) {
   const [resetErro,setResetErro]=useState("");
   const [resetando,setResetando]=useState(false);
   const [resetOk,setResetOk]=useState(false);
-  const CHAVES_RESET=["historico_h2","ocorrencias_h2","eqstate_h2","chamados_h2","cleaners_h2","cleaners_estoque_h2","cleaners_hist_h2","justificativas_h2","notas_hist_h2","cleaners_sedim_h2","pendencias_h2","reconhecimentos_h2","comp_em_h2"];
+  const CHAVES_RESET=["historico_h2","ocorrencias_h2","eqstate_h2","chamados_h2","cleaners_h2","cleaners_estoque_h2","cleaners_hist_h2","justificativas_h2","notas_hist_h2","cleaners_sedim_h2","pendencias_h2","reconhecimentos_h2","comp_em_h2","chuveiros_h2","facas_h2","facao_h2"];
   const executarReset=async()=>{
     setResetErro("");
     if(resetPin.length!==4){setResetErro("Digite seu PIN de 4 dígitos.");return;}
@@ -3419,6 +3523,10 @@ function ConfiguracoesTela({ perfil, onLogout, onAbrirAdmin }) {
       try{localStorage.removeItem(k);}catch{}
       try{await deleteDoc(doc(COL,k));}catch{}
     }
+    // Limpa chaves de cota travada dos chuveiros (prefixo dinâmico "cota_")
+    try{
+      Object.keys(localStorage).filter(k=>k.startsWith("cota_")).forEach(k=>localStorage.removeItem(k));
+    }catch{}
     try{await setDoc(doc(COL,"app_control"),{reset_ts:new Date().toISOString(),by:perfil?.matricula||"—"});}catch{}
     setResetando(false);setResetOk(true);
     setTimeout(()=>{try{location.reload();}catch{}},1500);
@@ -3746,7 +3854,7 @@ export default function App() {
     return ()=>unsub();
   },[]);
   React.useEffect(()=>{
-    const CHAVES_ALL=["historico_h2","ocorrencias_h2","eqstate_h2","chamados_h2","cleaners_h2","cleaners_estoque_h2","cleaners_hist_h2","justificativas_h2","notas_hist_h2","cleaners_sedim_h2","pendencias_h2","reconhecimentos_h2","comp_em_h2"];
+    const CHAVES_ALL=["historico_h2","ocorrencias_h2","eqstate_h2","chamados_h2","cleaners_h2","cleaners_estoque_h2","cleaners_hist_h2","justificativas_h2","notas_hist_h2","cleaners_sedim_h2","pendencias_h2","reconhecimentos_h2","comp_em_h2","chuveiros_h2","facas_h2","facao_h2"];
     const unsub=onSnapshot(doc(COL,"app_control"),(snap)=>{
       if(!snap.exists())return;
       const {reset_ts}=snap.data();
