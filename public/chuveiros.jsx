@@ -265,6 +265,9 @@ export function sugestaoTurno(maq){
 export function ModalRegistroChuveiro({ maq, chuveiroId, onClose, onSalvo }){
   const [dataReg,setDataReg]=useState(hoje());
   const [fotos,setFotos]=useState([]);
+  const [modo,setModo]=useState("escovar"); // "escovar" | "justificar"
+  const [motivoSel,setMotivoSel]=useState("");
+  const [motivoObs,setMotivoObs]=useState("");
   const inputFotoRef=React.useRef();
   const cfg=storageGet("op_config")||{};
   const operador=cfg.matricula||cfg.nomeOperador||cfg.nome||"—";
@@ -296,6 +299,18 @@ export function ModalRegistroChuveiro({ maq, chuveiroId, onClose, onSalvo }){
     if(onClose)onClose();
   };
 
+  const salvarJustif=()=>{
+    if(!motivoSel)return;
+    const chuveiros=storageGet("chuveiros_h2")||{M2:{},M3:{}};
+    const atual=chuveiros[maq]?.[chuveiroId]||{historico:[]};
+    const justif={ tipo:"justificativa", motivo:motivoSel, obs:motivoObs.trim(), data:dataReg||hoje(), hora:horaAtual(), operador, turno:getAutoTurno(), letra:calcularLetra() };
+    const novo={ ...atual, justificativas:[justif,...(atual.justificativas||[])] };
+    const novoChuveiros={...chuveiros,[maq]:{...chuveiros[maq],[chuveiroId]:novo}};
+    storageSet("chuveiros_h2",novoChuveiros);
+    if(onSalvo)onSalvo();
+    if(onClose)onClose();
+  };
+
   if(!item)return null;
   const dias=diasDesde(item.ultimaData);
 
@@ -321,11 +336,22 @@ export function ModalRegistroChuveiro({ maq, chuveiroId, onClose, onSalvo }){
           <div style={{color:C.text,fontWeight:800,fontSize:14,fontFamily:"monospace"}}>{item.ultimaData?`${fmtD(item.ultimaData)} (${dias} dias atrás)`:"nunca escovado"}</div>
         </div>
 
+        {/* toggle escovar / justificar */}
+        <div style={{display:"flex",gap:6,marginBottom:14,background:C.card,padding:4,borderRadius:12,border:`1px solid ${C.border}`}}>
+          {[{id:"escovar",l:"Escovei",c:C.accentLight},{id:"justificar",l:"Justificar",c:C.warningLight}].map(o=>(
+            <button key={o.id} onClick={()=>setModo(o.id)} style={{flex:1,padding:"9px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:12,
+              background:modo===o.id?`${o.c}22`:"transparent",border:`1px solid ${modo===o.id?o.c:"transparent"}`,color:modo===o.id?o.c:C.textDim}}>
+              {o.l}
+            </button>
+          ))}
+        </div>
+
         <div style={{marginBottom:12}}>
           <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:5}}>Data do registro</div>
           <input type="date" value={dataReg} onChange={e=>setDataReg(e.target.value)} style={{...inputStyle,colorScheme:"dark"}}/>
         </div>
 
+        {modo==="escovar"?(<>
         <div style={{marginBottom:14}}>
           <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:6}}>Fotos (opcional)</div>
           <input ref={inputFotoRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFotos}/>
@@ -347,6 +373,28 @@ export function ModalRegistroChuveiro({ maq, chuveiroId, onClose, onSalvo }){
             Confirmar Escovação
           </button>
         </div>
+        </>):(<>
+        <div style={{color:C.warningLight,fontSize:10,marginBottom:10}}>O chuveiro continua pendente para limpeza futura, mas o operador fica registrado.</div>
+        <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:8}}>Motivo</div>
+        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
+          {MOTIVOS_JUSTIF.map(m=>(
+            <button key={m} onClick={()=>setMotivoSel(m)} style={{textAlign:"left",padding:"11px 13px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:12,
+              background:motivoSel===m?`${C.warningLight}18`:C.tagBg,border:`1.5px solid ${motivoSel===m?C.warningLight:C.border}`,color:motivoSel===m?C.warningLight:C.textMuted}}>
+              {m}
+            </button>
+          ))}
+        </div>
+        {motivoSel==="Outros"&&(
+          <textarea value={motivoObs} onChange={e=>setMotivoObs(e.target.value)} rows={2} placeholder="Descreva o motivo..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit",marginBottom:12}}/>
+        )}
+        <div style={{display:"flex",gap:8,marginBottom:16}}>
+          <button onClick={onClose} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
+          <button onClick={salvarJustif} disabled={!motivoSel} style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
+            background:C.warning,border:"none",color:"#fff",opacity:motivoSel?1:0.4}}>
+            Registrar Justificativa
+          </button>
+        </div>
+        </>)}
 
         <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8,fontWeight:800}}>Histórico</div>
         {(item.historico||[]).length===0?(
@@ -497,9 +545,6 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
     cloudGet("historico_h2").then(()=>setTick(t=>t+1));
   },[]);
   const [modalChuveiro,setModalChuveiro]=useState(null); // {id}
-  const [modalJustif,setModalJustif]=useState(null); // {id} chuveiro a justificar
-  const [motivoSel,setMotivoSel]=useState("");
-  const [motivoObs,setMotivoObs]=useState("");
   const cfg=storageGet("op_config")||{};
   const operador=cfg.matricula||cfg.nomeOperador||cfg.nome||"—";
   React.useEffect(()=>{
@@ -541,17 +586,6 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
   const sugeridosIds = new Set(sugeridos.map(s=>s.id));
 
   const abrirModal=(id)=>setModalChuveiro(id);
-  const salvarJustificativa=()=>{
-    if(!motivoSel)return;
-    const id=modalJustif;
-    const atual=chuveiros[maq]?.[id]||{historico:[]};
-    const justif={ tipo:"justificativa", motivo:motivoSel, obs:motivoObs.trim(), data:hoje(), hora:horaAtual(), operador, turno:getAutoTurno(), letra:calcularLetra() };
-    const novo={ ...atual, justificativas:[justif,...(atual.justificativas||[])] };
-    const novoChuveiros={...chuveiros,[maq]:{...chuveiros[maq],[id]:novo}};
-    setChuveiros(novoChuveiros);
-    storageSet("chuveiros_h2",novoChuveiros);
-    setModalJustif(null); setMotivoSel(""); setMotivoObs("");
-  };
 
   // agrupa por grupo (feltro/tela) para exibição visual
   const grupos = React.useMemo(()=>{
@@ -742,29 +776,19 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
           {sugeridos.map(s=>{
             const cor=corChuveiro(s,C);
             const jaFeito=(chuveiros[maq]?.[s.id]?.historico||[]).some(h=>h.data===hoje());
-            const jaJustif=(chuveiros[maq]?.[s.id]?.justificativas||[]).some(j=>j.data===hoje()&&j.turno===getAutoTurno());
             return(
-              <div key={s.id} style={{display:"flex",alignItems:"stretch",gap:6}}>
-                <button onClick={()=>abrirModal(s.id)} style={{display:"flex",alignItems:"center",gap:12,flex:1,textAlign:"left",
-                  background:jaFeito?`${C.accentLight}0C`:C.tagBg,border:`1.5px solid ${jaFeito?C.accentLight+"55":cor+"44"}`,borderLeft:`3px solid ${jaFeito?C.accentLight:cor}`,
-                  borderRadius:12,padding:"11px 13px",cursor:"pointer",opacity:jaFeito?0.65:1,transition:"all .2s"}}>
-                  <div style={{filter:`drop-shadow(0 0 5px ${cor}66)`}}><IconeChuveiro cor={jaFeito?C.accentLight:cor} tipo={s.tipo} size={30}/></div>
-                  <div style={{flex:1}}>
-                    <div style={{color:C.text,fontWeight:800,fontSize:12.5}}>{s.label}</div>
-                    <div style={{color:C.textDim,fontSize:9,fontFamily:"monospace"}}>{s.ultimaData?`última ${fmtD(s.ultimaData)} · ${s.dias}d`:"nunca escovado"}</div>
-                  </div>
-                  {jaFeito ? <span style={{color:C.accentLight,fontSize:16}}>✓</span>
-                    : s.entupido ? <span style={{background:"rgba(255,82,82,0.2)",color:C.dangerLight,borderRadius:8,padding:"3px 8px",fontSize:8,fontWeight:900,letterSpacing:"0.05em"}}>ENTUPIDO</span>
-                    : <span style={{color:cor,fontSize:15}}>›</span>}
-                </button>
-                {!jaFeito&&(
-                  <button onClick={()=>{setModalJustif(s.id);setMotivoSel("");setMotivoObs("");}} title="Justificar não-limpeza"
-                    style={{width:44,flexShrink:0,borderRadius:12,cursor:"pointer",background:jaJustif?`${C.warningLight}18`:C.tagBg,
-                    border:`1.5px solid ${jaJustif?C.warningLight:C.border}`,color:jaJustif?C.warningLight:C.textDim,fontSize:16,fontWeight:900}}>
-                    {jaJustif?"!":"?"}
-                  </button>
-                )}
-              </div>
+              <button key={s.id} onClick={()=>abrirModal(s.id)} style={{display:"flex",alignItems:"center",gap:12,width:"100%",textAlign:"left",
+                background:jaFeito?`${C.accentLight}0C`:C.tagBg,border:`1.5px solid ${jaFeito?C.accentLight+"55":cor+"44"}`,borderLeft:`3px solid ${jaFeito?C.accentLight:cor}`,
+                borderRadius:12,padding:"11px 13px",cursor:"pointer",opacity:jaFeito?0.65:1,transition:"all .2s"}}>
+                <div style={{filter:`drop-shadow(0 0 5px ${cor}66)`}}><IconeChuveiro cor={jaFeito?C.accentLight:cor} tipo={s.tipo} size={30}/></div>
+                <div style={{flex:1}}>
+                  <div style={{color:C.text,fontWeight:800,fontSize:12.5}}>{s.label}</div>
+                  <div style={{color:C.textDim,fontSize:9,fontFamily:"monospace"}}>{s.ultimaData?`última ${fmtD(s.ultimaData)} · ${s.dias}d`:"nunca escovado"}</div>
+                </div>
+                {jaFeito ? <span style={{color:C.accentLight,fontSize:16}}>✓</span>
+                  : s.entupido ? <span style={{background:"rgba(255,82,82,0.2)",color:C.dangerLight,borderRadius:8,padding:"3px 8px",fontSize:8,fontWeight:900,letterSpacing:"0.05em"}}>ENTUPIDO</span>
+                  : <span style={{color:cor,fontSize:15}}>›</span>}
+              </button>
             );
           })}
           {sugeridos.length===0&&<div style={{textAlign:"center",color:C.textDim,padding:"14px 0",fontSize:11}}>Nada pendente neste turno.</div>}
@@ -801,39 +825,6 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
       ))}
 
       {/* ── Modal registro ── */}
-      {modalJustif&&(()=>{
-        const def=DEF_CHUVEIROS(maq).find(d=>d.id===modalJustif);
-        return(
-          <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setModalJustif(null)}>
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
-              <div style={{color:C.white,fontWeight:800,fontSize:15,marginBottom:2}}>Justificar não-limpeza</div>
-              <div style={{color:C.textDim,fontSize:10,marginBottom:4}}>{def?.label} · Máquina {maq.replace("M","")}</div>
-              <div style={{color:C.warningLight,fontSize:10,marginBottom:16}}>O chuveiro continua pendente para limpeza futura.</div>
-
-              <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:8}}>Motivo</div>
-              <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14}}>
-                {MOTIVOS_JUSTIF.map(m=>(
-                  <button key={m} onClick={()=>setMotivoSel(m)} style={{textAlign:"left",padding:"11px 13px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:12,
-                    background:motivoSel===m?`${C.warningLight}18`:C.tagBg,border:`1.5px solid ${motivoSel===m?C.warningLight:C.border}`,color:motivoSel===m?C.warningLight:C.textMuted}}>
-                    {m}
-                  </button>
-                ))}
-              </div>
-              {motivoSel==="Outros"&&(
-                <textarea value={motivoObs} onChange={e=>setMotivoObs(e.target.value)} rows={2} placeholder="Descreva o motivo..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit",marginBottom:14}}/>
-              )}
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>setModalJustif(null)} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
-                <button onClick={salvarJustificativa} disabled={!motivoSel} style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
-                  background:C.warning,border:"none",color:"#fff",opacity:motivoSel?1:0.4}}>
-                  Registrar Justificativa
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
       {modalChuveiro&&(
         <ModalRegistroChuveiro maq={maq} chuveiroId={modalChuveiro}
           onClose={()=>setModalChuveiro(null)}
