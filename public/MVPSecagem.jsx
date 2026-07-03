@@ -2960,6 +2960,23 @@ function GraficoEficienciaLimpeza(){
         ))}
         <div style={{color:C.textDim,fontSize:10,textAlign:"right",marginTop:8}}>Total: <span style={{color:C.textMuted,fontWeight:700}}>{stats.total}</span> escovações</div>
       </div>
+
+      {/* justificativas de não-limpeza */}
+      {stats.totalJustif>0&&(
+        <div style={{borderTop:`1px solid ${C.border}`,paddingTop:12,marginTop:12}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <span style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em"}}>Justificativas de não-limpeza</span>
+            <span style={{color:C.warningLight,fontWeight:900,fontSize:15,fontFamily:"monospace"}}>{stats.totalJustif}</span>
+          </div>
+          {Object.entries(stats.porMotivo).sort((a,b)=>b[1]-a[1]).map(([motivo,n])=>(
+            <div key={motivo} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0"}}>
+              <span style={{width:6,height:6,borderRadius:"50%",background:C.warningLight,flexShrink:0}}/>
+              <span style={{flex:1,color:C.textMuted,fontSize:11}}>{motivo}</span>
+              <span style={{color:C.warningLight,fontWeight:800,fontSize:12,fontFamily:"monospace"}}>{n}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
