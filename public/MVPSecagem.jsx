@@ -1268,7 +1268,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                     </div>
                     <span style={{color:C.blueLight,fontSize:11,fontWeight:700,letterSpacing:"0.04em"}}>abrir ›</span>
                   </div>
-                  <div style={{display:"flex",gap:10,marginBottom:10}}>
+                  <div style={{display:"flex",gap:10,marginBottom:14}}>
                     <Gauge label="M2" pct={effM2.pct}/>
                     <Gauge label="M3" pct={effM3.pct}/>
                   </div>
@@ -1281,6 +1281,12 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                     if(!linhas.length)return null;
                     const top4=linhas.slice(0,4);
                     return(
+                      <>
+                      <div style={{display:"flex",alignItems:"center",gap:8,margin:"2px 0 12px"}}>
+                        <div style={{flex:1,height:1,background:`linear-gradient(90deg,transparent,${C.blueLight}66,transparent)`}}/>
+                        <span style={{color:C.textDim,fontSize:8,fontWeight:900,letterSpacing:"0.12em",textTransform:"uppercase"}}>Sugestão do turno</span>
+                        <div style={{flex:1,height:1,background:`linear-gradient(90deg,transparent,${C.blueLight}66,transparent)`}}/>
+                      </div>
                       <div style={{display:"flex",flexDirection:"column",gap:5}}>
                         {top4.map(it=>{
                           const cor=corChuveiro(it,C);
@@ -1295,6 +1301,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                           );
                         })}
                       </div>
+                      </>
                     );
                   })()}
                 </div>
