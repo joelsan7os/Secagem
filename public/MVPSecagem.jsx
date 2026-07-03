@@ -501,7 +501,7 @@ import { COL, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "./firebase";
 import { TelaAuth, usePerfilAtivo, FUNCOES, validarPin } from "./auth";
 import { PainelAdmin } from "./admin";
 import { CleanersTela, RelatorioCleaners, CLEANERS_TOTAL } from "./cleaners";
-import { ChuveirosTela, eficienciaMes, sugestaoTurno, IconeChuveiro, corChuveiro } from "./chuveiros";
+import { ChuveirosTela, eficienciaMes, sugestaoTurno, IconeChuveiro, corChuveiro, ModalRegistroChuveiro } from "./chuveiros";
 import { BarcodeModal } from "./barcode";
 import { AvariasTela, AvariasAnalytics } from "./avarias";
 import { MuralOportunidades } from "./pendencias";
@@ -1285,7 +1285,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                         {top4.map(it=>{
                           const cor=corChuveiro(it,C);
                           return(
-                          <div key={it.maq+it.id} onClick={e=>{e.stopPropagation();setChuveiroAlvo({maq:it.maq,id:it.id});setTela("chuveiros");}}
+                          <div key={it.maq+it.id} onClick={e=>{e.stopPropagation();setModalChuveiroHome({maq:it.maq,id:it.id});}}
                             style={{display:"flex",alignItems:"center",gap:8,background:C.tagBg,border:`1px solid ${it.cor}44`,borderLeft:`3px solid ${cor}`,borderRadius:8,padding:"6px 10px",cursor:"pointer"}}>
                             <IconeChuveiro cor={cor} tipo={it.tipo} size={22}/>
                             <span style={{color:it.cor,fontSize:9,fontWeight:900,fontFamily:"monospace"}}>{it.maq}</span>
@@ -1345,6 +1345,13 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
             onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surface;}}>{a.label}</button>
         ))}
       </div>
+
+      {/* Registro rápido de chuveiro direto da Home */}
+      {modalChuveiroHome&&(
+        <ModalRegistroChuveiro maq={modalChuveiroHome.maq} chuveiroId={modalChuveiroHome.id}
+          onClose={()=>setModalChuveiroHome(null)}
+          onSalvo={()=>setModalChuveiroHome(null)}/>
+      )}
 
       {/* Popup detalhe dos Checklists do turno (X/3) */}
       {popupChecks&&(
@@ -3661,6 +3668,7 @@ export default function App() {
   const [adminAberto,setAdminAberto]=useState(false);
   const [tela,setTela]=useState("dashboard");
   const [chuveiroAlvo,setChuveiroAlvo]=useState(null); // {maq,id} para abrir direto
+  const [modalChuveiroHome,setModalChuveiroHome]=useState(null); // {maq,id} registro rápido sem sair da Home
   const [modoVisao,setModoVisao]=useState("app"); // "app" | "dashboard"
   const [historico,setHistorico]=useState(()=>storageGet("historico_h2")||[]);
   const [areaAtiva,setAreaAtiva]=useState("pu");
