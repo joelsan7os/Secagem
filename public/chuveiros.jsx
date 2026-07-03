@@ -216,6 +216,116 @@ export function sugestaoTurno(maq){
   return { turno:turnoAgora, itens: sugerirItens(lista, QTD_POR_TURNO[turnoAgora]) };
 }
 
+export function ModalRegistroChuveiro({ maq, chuveiroId, onClose, onSalvo }){
+  const [dataReg,setDataReg]=useState(hoje());
+  const [fotos,setFotos]=useState([]);
+  const inputFotoRef=React.useRef();
+  const cfg=storageGet("op_config")||{};
+  const operador=cfg.matricula||cfg.nomeOperador||cfg.nome||"—";
+
+  const item = React.useMemo(()=>{
+    const def=DEF_CHUVEIROS(maq).find(d=>d.id===chuveiroId);
+    if(!def)return null;
+    const dados=storageGet("chuveiros_h2")?.[maq]?.[chuveiroId]||{};
+    return{...def,ultimaData:dados.ultimaData||null,historico:dados.historico||[],entupido:estaEntupido(maq,def.checklistItem)};
+  },[maq,chuveiroId]);
+
+  const handleFotos=async(e)=>{
+    const files=Array.from(e.target.files||[]);
+    e.target.value="";
+    for(const f of files){
+      try{ const b64=await comprimirFoto(f); setFotos(p=>[...p,b64]); }
+      catch{ const rd=new FileReader(); rd.onload=ev=>setFotos(p=>[...p,ev.target.result]); rd.readAsDataURL(f); }
+    }
+  };
+
+  const salvar=()=>{
+    const chuveiros=storageGet("chuveiros_h2")||{M2:{},M3:{}};
+    const atual=chuveiros[maq]?.[chuveiroId]||{historico:[]};
+    const evento={data:dataReg||hoje(),hora:horaAtual(),operador,turno:getAutoTurno(),letra:calcularLetra(),fotos};
+    const novo={ ultimaData: dataReg||hoje(), historico:[evento,...(atual.historico||[])] };
+    const novoChuveiros={...chuveiros,[maq]:{...chuveiros[maq],[chuveiroId]:novo}};
+    storageSet("chuveiros_h2",novoChuveiros);
+    if(onSalvo)onSalvo();
+    if(onClose)onClose();
+  };
+
+  if(!item)return null;
+  const dias=diasDesde(item.ultimaData);
+
+  return(
+    <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={onClose}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+          <IconeChuveiro cor={TIPO_COR[item.tipo]} tipo={item.tipo} size={32}/>
+          <div>
+            <div style={{color:C.white,fontWeight:800,fontSize:15}}>{item.label}</div>
+            <div style={{color:C.textDim,fontSize:10}}>{item.grupo} · Máquina {maq.replace("M","")} · intervalo {item.intervaloDias}d</div>
+          </div>
+        </div>
+
+        {item.entupido&&(
+          <div style={{background:"rgba(255,82,82,0.15)",border:`1.5px solid ${C.dangerLight}`,borderRadius:10,padding:"8px 12px",marginBottom:12}}>
+            <span style={{color:C.dangerLight,fontWeight:900,fontSize:11}}>Apontado como ENTUPIDO no checklist de rotina</span>
+          </div>
+        )}
+
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",marginBottom:14}}>
+          <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase"}}>Última escovação</div>
+          <div style={{color:C.text,fontWeight:800,fontSize:14,fontFamily:"monospace"}}>{item.ultimaData?`${fmtD(item.ultimaData)} (${dias} dias atrás)`:"nunca escovado"}</div>
+        </div>
+
+        <div style={{marginBottom:12}}>
+          <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:5}}>Data do registro</div>
+          <input type="date" value={dataReg} onChange={e=>setDataReg(e.target.value)} style={{...inputStyle,colorScheme:"dark"}}/>
+        </div>
+
+        <div style={{marginBottom:14}}>
+          <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:6}}>Fotos (opcional)</div>
+          <input ref={inputFotoRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFotos}/>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {fotos.map((f,i)=>(
+              <div key={i} style={{position:"relative",width:56,height:56}}>
+                <img src={f} style={{width:56,height:56,objectFit:"cover",borderRadius:8,border:`1px solid ${C.border}`}}/>
+                <button onClick={()=>setFotos(p=>p.filter((_,idx)=>idx!==i))} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:C.danger,color:"#fff",border:"none",fontSize:11,cursor:"pointer",lineHeight:1}}>×</button>
+              </div>
+            ))}
+            <button onClick={()=>inputFotoRef.current?.click()} style={{width:56,height:56,borderRadius:8,border:`1.5px dashed ${C.border}`,background:C.tagBg,color:C.textDim,fontSize:20,cursor:"pointer"}}>+</button>
+          </div>
+        </div>
+
+        <div style={{display:"flex",gap:8,marginBottom:16}}>
+          <button onClick={onClose} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
+          <button onClick={salvar} style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
+            background:C.accentDark,border:`1px solid ${C.accentLight}`,color:C.accentLight}}>
+            Confirmar Escovação
+          </button>
+        </div>
+
+        <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8,fontWeight:800}}>Histórico</div>
+        {(item.historico||[]).length===0?(
+          <div style={{textAlign:"center",color:C.textDim,padding:"20px 0",fontSize:12}}>Nenhum registro ainda.</div>
+        ):(item.historico||[]).map((ev,i)=>(
+          <div key={i} style={{display:"flex",gap:10,marginBottom:8}}>
+            <div style={{width:8,height:8,borderRadius:"50%",background:C.accentLight,marginTop:4,flexShrink:0,boxShadow:`0 0 5px ${C.accentLight}`}}/>
+            <div style={{flex:1,background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.accentLight}`,borderRadius:8,padding:"7px 10px"}}>
+              <div style={{display:"flex",justifyContent:"space-between"}}>
+                <span style={{color:C.text,fontWeight:800,fontSize:11}}>{ev.operador}</span>
+                <span style={{color:C.textDim,fontFamily:"monospace",fontSize:9}}>{fmtD(ev.data)} {ev.hora}</span>
+              </div>
+              {ev.fotos?.length>0&&(
+                <div style={{display:"flex",gap:4,marginTop:5}}>
+                  {ev.fotos.map((f,fi)=>(<img key={fi} src={f} style={{width:34,height:34,objectFit:"cover",borderRadius:5,border:`1px solid ${C.border}`}}/>))}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
   const [aba,setAba]=useState("chuveiros"); // "chuveiros" | "prioridade" | "ranking"
   const [rkMaq,setRkMaq]=useState("todas");
@@ -229,15 +339,12 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
     cloudGet("historico_h2").then(()=>setTick(t=>t+1));
   },[]);
   const [modalChuveiro,setModalChuveiro]=useState(null); // {id}
-  const [dataReg,setDataReg]=useState(hoje());
-  const [fotos,setFotos]=useState([]);
-  const inputFotoRef=React.useRef();
   const cfg=storageGet("op_config")||{};
   const operador=cfg.matricula||cfg.nomeOperador||cfg.nome||"—";
   React.useEffect(()=>{
     if(abrirDireto){
       if(abrirDireto.maq) setMaq(abrirDireto.maq);
-      if(abrirDireto.id){ setModalChuveiro(abrirDireto.id); setDataReg(hoje()); setFotos([]); }
+      if(abrirDireto.id) setModalChuveiro(abrirDireto.id);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
@@ -272,31 +379,7 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
   ,[cotaTravada,listaCompleta]);
   const sugeridosIds = new Set(sugeridos.map(s=>s.id));
 
-  const abrirModal=(id)=>{
-    setModalChuveiro(id);
-    setDataReg(hoje());
-    setFotos([]);
-  };
-
-  const handleFotos=async(e)=>{
-    const files=Array.from(e.target.files||[]);
-    e.target.value="";
-    for(const f of files){
-      try{ const b64=await comprimirFoto(f); setFotos(p=>[...p,b64]); }
-      catch{ const rd=new FileReader(); rd.onload=ev=>setFotos(p=>[...p,ev.target.result]); rd.readAsDataURL(f); }
-    }
-  };
-
-  const salvar=()=>{
-    const id=modalChuveiro;
-    const atual=chuveiros[maq]?.[id]||{historico:[]};
-    const evento={data:dataReg||hoje(),hora:horaAtual(),operador,turno:getAutoTurno(),letra:calcularLetra(),fotos};
-    const novo={ ultimaData: dataReg||hoje(), historico:[evento,...(atual.historico||[])] };
-    const novoChuveiros={...chuveiros,[maq]:{...chuveiros[maq],[id]:novo}};
-    setChuveiros(novoChuveiros);
-    storageSet("chuveiros_h2",novoChuveiros);
-    setModalChuveiro(null); setFotos([]); setDataReg(hoje());
-  };
+  const abrirModal=(id)=>setModalChuveiro(id);
 
   // agrupa por grupo (feltro/tela) para exibição visual
   const grupos = React.useMemo(()=>{
@@ -536,82 +619,11 @@ export function ChuveirosTela({ maquina="M2", abrirDireto=null }){
       ))}
 
       {/* ── Modal registro ── */}
-      {modalChuveiro&&(()=>{
-        const it=listaCompleta.find(x=>x.id===modalChuveiro);
-        if(!it)return null;
-        const dias=diasDesde(it.ultimaData);
-        return(
-          <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setModalChuveiro(null)}>
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-                <IconeChuveiro cor={TIPO_COR[it.tipo]} tipo={it.tipo} size={32}/>
-                <div>
-                  <div style={{color:C.white,fontWeight:800,fontSize:15}}>{it.label}</div>
-                  <div style={{color:C.textDim,fontSize:10}}>{it.grupo} · Máquina {maq.replace("M","")} · intervalo {it.intervaloDias}d</div>
-                </div>
-              </div>
-
-              {it.entupido&&(
-                <div style={{background:"rgba(255,82,82,0.15)",border:`1.5px solid ${C.dangerLight}`,borderRadius:10,padding:"8px 12px",marginBottom:12}}>
-                  <span style={{color:C.dangerLight,fontWeight:900,fontSize:11}}>Apontado como ENTUPIDO no checklist de rotina</span>
-                </div>
-              )}
-
-              <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",marginBottom:14}}>
-                <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase"}}>Última escovação</div>
-                <div style={{color:C.text,fontWeight:800,fontSize:14,fontFamily:"monospace"}}>{it.ultimaData?`${fmtD(it.ultimaData)} (${dias} dias atrás)`:"nunca escovado"}</div>
-              </div>
-
-              <div style={{marginBottom:12}}>
-                <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:5}}>Data do registro</div>
-                <input type="date" value={dataReg} onChange={e=>setDataReg(e.target.value)} style={{...inputStyle,colorScheme:"dark"}}/>
-              </div>
-
-              <div style={{marginBottom:14}}>
-                <div style={{color:C.textDim,fontSize:10,textTransform:"uppercase",marginBottom:6}}>Fotos (opcional)</div>
-                <input ref={inputFotoRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFotos}/>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {fotos.map((f,i)=>(
-                    <div key={i} style={{position:"relative",width:56,height:56}}>
-                      <img src={f} style={{width:56,height:56,objectFit:"cover",borderRadius:8,border:`1px solid ${C.border}`}}/>
-                      <button onClick={()=>setFotos(p=>p.filter((_,idx)=>idx!==i))} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:C.danger,color:"#fff",border:"none",fontSize:11,cursor:"pointer",lineHeight:1}}>×</button>
-                    </div>
-                  ))}
-                  <button onClick={()=>inputFotoRef.current?.click()} style={{width:56,height:56,borderRadius:8,border:`1.5px dashed ${C.border}`,background:C.tagBg,color:C.textDim,fontSize:20,cursor:"pointer"}}>+</button>
-                </div>
-              </div>
-
-              <div style={{display:"flex",gap:8,marginBottom:16}}>
-                <button onClick={()=>setModalChuveiro(null)} style={{...btnSec,flex:1,padding:13,fontSize:13}}>Cancelar</button>
-                <button onClick={salvar} style={{flex:2,padding:13,borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,
-                  background:C.accentDark,border:`1px solid ${C.accentLight}`,color:C.accentLight}}>
-                  Confirmar Escovação
-                </button>
-              </div>
-
-              <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8,fontWeight:800}}>Histórico</div>
-              {(it.historico||[]).length===0?(
-                <div style={{textAlign:"center",color:C.textDim,padding:"20px 0",fontSize:12}}>Nenhum registro ainda.</div>
-              ):(it.historico||[]).map((ev,i)=>(
-                <div key={i} style={{display:"flex",gap:10,marginBottom:8}}>
-                  <div style={{width:8,height:8,borderRadius:"50%",background:C.accentLight,marginTop:4,flexShrink:0,boxShadow:`0 0 5px ${C.accentLight}`}}/>
-                  <div style={{flex:1,background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.accentLight}`,borderRadius:8,padding:"7px 10px"}}>
-                    <div style={{display:"flex",justifyContent:"space-between"}}>
-                      <span style={{color:C.text,fontWeight:800,fontSize:11}}>{ev.operador}</span>
-                      <span style={{color:C.textDim,fontFamily:"monospace",fontSize:9}}>{fmtD(ev.data)} {ev.hora}</span>
-                    </div>
-                    {ev.fotos?.length>0&&(
-                      <div style={{display:"flex",gap:4,marginTop:5}}>
-                        {ev.fotos.map((f,fi)=>(<img key={fi} src={f} style={{width:34,height:34,objectFit:"cover",borderRadius:5,border:`1px solid ${C.border}`}}/>))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
+      {modalChuveiro&&(
+        <ModalRegistroChuveiro maq={maq} chuveiroId={modalChuveiro}
+          onClose={()=>setModalChuveiro(null)}
+          onSalvo={()=>{ cloudGet("chuveiros_h2").then(d=>{if(d)setChuveiros(d);}); setTick(t=>t+1); }}/>
+      )}
       </>
       )}
     </div>
