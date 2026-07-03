@@ -165,6 +165,32 @@ export function IconeChuveiro({cor, tipo, ativo=true, size=30}){
 // ═══════════════════════════════════════════════════════════════════════════
 // EFICIÊNCIA MENSAL — vencimento real dia a dia vs execuções feitas
 // ═══════════════════════════════════════════════════════════════════════════
+export function estatisticasChuveiros({ maq="todas", letra="todas", mes=null }={}){
+  const mesRef = mes || hoje().slice(0,7);
+  const maquinas = maq==="todas" ? ["M2","M3"] : [maq];
+  const chuveiros = storageGet("chuveiros_h2")||{M2:{},M3:{}};
+  const porLetra = {A:0,B:0,C:0,D:0,E:0};
+  const porOperador = {};
+  const porMaquina = {M2:0,M3:0};
+  let total=0;
+  maquinas.forEach(m=>{
+    const def = DEF_CHUVEIROS(m);
+    const dados = chuveiros[m]||{};
+    def.forEach(d=>{
+      (dados[d.id]?.historico||[]).forEach(ev=>{
+        if(!ev.data?.startsWith(mesRef))return;
+        if(letra!=="todas" && ev.letra!==letra)return;
+        total++;
+        porMaquina[m]=(porMaquina[m]||0)+1;
+        if(ev.letra&&porLetra[ev.letra]!==undefined)porLetra[ev.letra]++;
+        if(ev.operador)porOperador[ev.operador]=(porOperador[ev.operador]||0)+1;
+      });
+    });
+  });
+  const rankOperadores = Object.entries(porOperador).map(([op,n])=>({operador:op,total:n})).sort((a,b)=>b.total-a.total);
+  return { total, porLetra, porMaquina, rankOperadores, eficM2:eficienciaMes("M2").pct, eficM3:eficienciaMes("M3").pct };
+}
+
 export function eficienciaMes(maq){
   const def = DEF_CHUVEIROS(maq);
   const dados = storageGet("chuveiros_h2")?.[maq]||{};
@@ -327,6 +353,118 @@ export function ModalRegistroChuveiro({ maq, chuveiroId, onClose, onSalvo }){
                 </div>
               )}
             </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GRÁFICO DE EFICIÊNCIA DE LIMPEZA — módulo do painel Histórico > Eficiência
+// ═══════════════════════════════════════════════════════════════════════════
+export function GraficoEficienciaLimpeza(){
+  const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const hoje_=new Date();
+  const [maqFiltro,setMaqFiltro]=useState("ambas");
+  const [letraFiltro,setLetraFiltro]=useState("todas");
+  const [ano,setAno]=useState(hoje_.getFullYear());
+  const [mes,setMes]=useState(hoje_.getMonth());
+  const ehMesAtual = ano===hoje_.getFullYear() && mes===hoje_.getMonth();
+  const mesAnterior=()=>{ if(mes===0){setMes(11);setAno(ano-1);}else setMes(mes-1); };
+  const mesProximo=()=>{ if(ehMesAtual)return; if(mes===11){setMes(0);setAno(ano+1);}else setMes(mes+1); };
+  const corPct=(p)=>p===null?C.textDim:p<60?C.dangerLight:p<80?C.warningLight:C.accentLight;
+
+  const chuveiros = storageGet("chuveiros_h2")||{M2:{},M3:{}};
+  const maquinas = maqFiltro==="ambas"?["M2","M3"]:[maqFiltro];
+
+  // eficiência do mês selecionado (só permite mês atual pela função eficienciaMes, que usa hoje real)
+  const effs = maquinas.map(m=>({maq:m,...eficienciaMes(m)}));
+  const effGeral = effs.length ? Math.round(effs.reduce((s,e)=>s+e.pct,0)/effs.length) : 100;
+
+  // agregações por letra e por máquina no mês selecionado
+  const mesAno = `${ano}-${String(mes+1).padStart(2,"0")}`;
+  const porLetra={}; const porMaquina={M2:0,M3:0};
+  maquinas.forEach(m=>{
+    Object.values(chuveiros[m]||{}).forEach(ch=>{
+      (ch.historico||[]).forEach(ev=>{
+        if(!ev.data?.startsWith(mesAno))return;
+        if(letraFiltro!=="todas" && ev.letra!==letraFiltro)return;
+        porLetra[ev.letra]=(porLetra[ev.letra]||0)+1;
+        porMaquina[m]=(porMaquina[m]||0)+1;
+      });
+    });
+  });
+  const letras=["A","B","C","D","E"];
+  const maxLetra=Math.max(1,...letras.map(l=>porLetra[l]||0));
+
+  return(
+    <div style={{background:`linear-gradient(160deg,${C.card} 0%,${C.surface} 100%)`,border:`1px solid ${C.border}`,borderRadius:14,padding:18,marginBottom:16,boxShadow:"0 4px 24px rgba(0,0,0,0.35)"}}>
+      <div style={{height:3,background:`linear-gradient(90deg,${C.blueLight},${C.accentLight},${C.blueLight})`,borderRadius:3,marginBottom:14,boxShadow:`0 0 8px ${C.blueLight}66`}}/>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+        <div style={{display:"flex",alignItems:"center",gap:7}}>
+          <span style={{fontSize:15}}>🚿</span>
+          <span style={{color:C.white,fontWeight:800,fontSize:14,letterSpacing:"0.02em"}}>Eficiência de Limpeza</span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <button onClick={mesAnterior} style={{width:26,height:26,borderRadius:7,cursor:"pointer",border:`1px solid ${C.border}`,background:C.tagBg,color:C.blueLight,fontSize:14,fontWeight:800,lineHeight:1,padding:0}}>‹</button>
+          <span style={{color:C.white,fontSize:12,fontWeight:700,fontFamily:"monospace",minWidth:96,textAlign:"center"}}>{MESES[mes]} {ano}</span>
+          <button onClick={mesProximo} disabled={ehMesAtual} style={{width:26,height:26,borderRadius:7,cursor:ehMesAtual?"not-allowed":"pointer",border:`1px solid ${C.border}`,background:C.tagBg,color:ehMesAtual?C.textDim:C.blueLight,fontSize:14,fontWeight:800,lineHeight:1,padding:0,opacity:ehMesAtual?0.4:1}}>›</button>
+        </div>
+      </div>
+      <p style={{color:C.textDim,fontSize:10,margin:"0 0 14px",lineHeight:1.4}}>Escovações feitas ÷ esperadas no ciclo real de cada chuveiro. Comparativo por letra e máquina no mês.</p>
+
+      <div style={{display:"flex",gap:5,marginBottom:8}}>
+        {[{id:"ambas",l:"Ambas"},{id:"M2",l:"Máq. 2"},{id:"M3",l:"Máq. 3"}].map(m=>(
+          <button key={m.id} onClick={()=>setMaqFiltro(m.id)} style={{flex:1,padding:"6px 8px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${maqFiltro===m.id?C.blueLight:C.border}`,background:maqFiltro===m.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,color:maqFiltro===m.id?C.white:C.textMuted}}>{m.l}</button>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:5,marginBottom:16}}>
+        {[{id:"todas",l:"Todas"},...letras.map(l=>({id:l,l}))].map(l=>(
+          <button key={l.id} onClick={()=>setLetraFiltro(l.id)} style={{flex:1,padding:"6px 4px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:11,border:`1.5px solid ${letraFiltro===l.id?C.accentLight:C.border}`,background:letraFiltro===l.id?C.accentDark:C.tagBg,color:letraFiltro===l.id?C.white:C.textMuted}}>{l.l}</button>
+        ))}
+      </div>
+
+      {/* Gauges de eficiência atual por máquina (tempo real, não retroativo por mês) */}
+      <div style={{display:"flex",gap:14,justifyContent:"center",marginBottom:18}}>
+        {effs.map(e=>{
+          const cor=corPct(e.pct);
+          return(
+            <div key={e.maq} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+              <div style={{width:64,height:64,borderRadius:"50%",border:`4px solid ${cor}`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 0 14px ${cor}55`}}>
+                <span style={{color:cor,fontWeight:900,fontSize:17,fontFamily:"monospace"}}>{e.pct}%</span>
+              </div>
+              <span style={{color:C.textMuted,fontSize:10,fontWeight:800}}>{e.maq}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Barras por letra */}
+      <div style={{borderTop:`1px solid ${C.border}`,paddingTop:12,marginBottom:12}}>
+        <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Escovações por letra — {MESES[mes]}</div>
+        <div style={{display:"flex",gap:10,alignItems:"flex-end",height:90}}>
+          {letras.map(l=>{
+            const v=porLetra[l]||0;
+            const h=Math.max(4,Math.round((v/maxLetra)*80));
+            return(
+              <div key={l} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",height:"100%"}}>
+                {v>0&&<span style={{color:C.accentLight,fontSize:11,fontWeight:900,marginBottom:3}}>{v}</span>}
+                <div style={{width:"70%",maxWidth:36,height:h,borderRadius:"5px 5px 0 0",background:v>0?`linear-gradient(180deg,${C.accentLight},${C.accentDark})`:C.tagBg,border:`1px solid ${v>0?C.accentLight:C.border}`,boxShadow:v>0?`0 0 8px ${C.accentLight}44`:"none"}}/>
+                <span style={{color:C.textMuted,fontSize:10,fontWeight:800,marginTop:4}}>{l}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Comparativo por máquina */}
+      <div style={{display:"flex",gap:8}}>
+        {["M2","M3"].map(m=>(
+          <div key={m} style={{flex:1,background:C.tagBg,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 12px",textAlign:"center"}}>
+            <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase"}}>{m}</div>
+            <div style={{color:C.blueLight,fontWeight:900,fontSize:20,fontFamily:"monospace"}}>{porMaquina[m]||0}</div>
+            <div style={{color:C.textDim,fontSize:8}}>escovações no mês</div>
           </div>
         ))}
       </div>
