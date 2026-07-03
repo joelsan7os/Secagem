@@ -213,7 +213,13 @@ export function sugestaoTurno(maq){
     entupido: estaEntupido(maq,d.checklistItem),
   }));
   const turnoAgora = turnoPorHora(new Date().getHours());
-  return { turno:turnoAgora, itens: sugerirItens(lista, QTD_POR_TURNO[turnoAgora]) };
+  // usa a mesma cota travada por dia+turno+maq que a tela de chuveiros usa
+  const cotaKey = `cota_${maq}_${hoje()}_${turnoAgora}`;
+  let ids = storageGet(cotaKey);
+  if(!ids){ ids = sugerirItens(lista, QTD_POR_TURNO[turnoAgora]).map(it=>it.id); storageSet(cotaKey, ids); }
+  const itens = ids.map(id=>lista.find(it=>it.id===id)).filter(Boolean)
+    .filter(it=>!(dados[it.id]?.historico||[]).some(h=>h.data===hoje())); // some após escovado hoje
+  return { turno:turnoAgora, itens };
 }
 
 export function ModalRegistroChuveiro({ maq, chuveiroId, onClose, onSalvo }){
