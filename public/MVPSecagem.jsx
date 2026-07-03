@@ -851,7 +851,7 @@ const MOTIVOS_OC={
   vermelho:["Parada de máquina","Risco de vazamento","Queda de material","Projeção de produtos químicos","Trip na caldeira","Outro"],
 };
 
-function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorrencias, setOcorrencias, perfil }) {
+function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorrencias, setOcorrencias, perfil, modalChuveiroHome, setModalChuveiroHome }) {
   const [recon,setRecon]=useState(()=>storageGet("reconhecimentos_h2")||{});
   React.useEffect(()=>{
     const unsub=onSnapshot(doc(COL,"reconhecimentos_h2"),(snap)=>{
@@ -3761,10 +3761,10 @@ export default function App() {
     {id:"configuracoes",label:"Config.",icon:"⚙️"},
   ].filter(n=>n.id!=="historico"||veHistorico);
   const renderTela=()=>{
-    if(tela==="dashboard")return <Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil}/>;
+    if(tela==="dashboard")return <Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil} modalChuveiroHome={modalChuveiroHome} setModalChuveiroHome={setModalChuveiroHome}/>;
     if(tela==="checklist")return <ChecklistTela onSalvar={salvarChecklist} historico={historico} perfil={perfil}/>;
     if(tela==="equipamentos")return <EquipamentosTela eqState={eqState} setEqState={setEqState} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} historico={historico} setTela={setTela}/>;
-    if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva} perfil={perfil}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil}/>;
+    if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva} perfil={perfil}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil} modalChuveiroHome={modalChuveiroHome} setModalChuveiroHome={setModalChuveiroHome}/>;
     if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout} onAbrirAdmin={()=>setAdminAberto(true)}/>;
     if(tela==="rotas")return <RotasTela historico={historico} onVoltar={()=>setTela("dashboard")}/>;
     if(tela==="mural")return <MuralOportunidades eqState={eqState} onVoltar={()=>setTela("dashboard")}/>;
