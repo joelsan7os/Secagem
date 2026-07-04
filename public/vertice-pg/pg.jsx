@@ -5,6 +5,7 @@ import { collection } from "firebase/firestore";
 import { usePerfilAtivo } from "../auth";
 import { PG_AREAS, PG_MAQUINAS, PG_DATA } from "./pgData";
 import { PG_MARCOS, PG_ATIVIDADES, PG_AREAS_ATIV, PG_ESCALA } from "./pgPlano";
+import DashboardPG from "./dashboardPG";
 
 // ─── Paleta (mesmos tokens do app) ───────────────────────────────────────────
 const C = {
@@ -144,6 +145,7 @@ export default function PGApp() {
   const [maq, setMaq] = useState(null);
   const [area, setArea] = useState(null);
   const [eqI, setEqI] = useState(null);
+  const [tela, setTela] = useState("dash");
   const [secao, setSecao] = useState(null);
   const [filtroMaq, setFiltroMaq] = useState("TODAS");
   const [idxEsc, setIdxEsc] = useState(()=>{
@@ -167,6 +169,10 @@ export default function PGApp() {
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C.textMuted,fontFamily:"monospace",fontSize:12,padding:24,textAlign:"center"}}>
       Sessão encerrada. Recarregue para entrar novamente.
     </div>
+  );
+
+  if(tela==="dash") return (
+    <DashboardPG onChecklist={()=>setTela("checklist")} onOperacao={irOperacao} onSair={sair}/>
   );
 
   const dId = maq && area ? docIdDe(maq,area) : null;
@@ -226,6 +232,7 @@ export default function PGApp() {
               {perfil.nome} · {feitosGeral}/{TOTAIS.__geral} ITENS · {pct(feitosGeral,TOTAIS.__geral)}%
             </div>
           </div>
+          <BtnTopo cor={C.blue} onClick={()=>setTela("dash")}>Painel</BtnTopo>
           <BtnTopo cor={C.accent} onClick={irOperacao}>Operação</BtnTopo>
           <BtnTopo cor={C.danger} onClick={sair}>Sair</BtnTopo>
         </div>
