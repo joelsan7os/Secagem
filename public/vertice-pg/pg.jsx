@@ -1,8 +1,8 @@
 // ─── pg.jsx — VÉRTICE PG · Checklist de Partida (Parada Geral) ────────────────
 import { useState, useEffect } from "react";
-import { db, doc, setDoc, onSnapshot } from "./firebase";
+import { db, doc, setDoc, onSnapshot } from "../firebase";
 import { collection } from "firebase/firestore";
-import { usePerfilAtivo } from "./auth";
+import { usePerfilAtivo } from "../auth";
 import { PG_AREAS, PG_MAQUINAS, PG_DATA } from "./pgData";
 import { PG_MARCOS, PG_ATIVIDADES, PG_AREAS_ATIV, PG_ESCALA } from "./pgPlano";
 
