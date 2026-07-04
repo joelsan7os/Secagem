@@ -4,6 +4,7 @@ import { db, doc, onSnapshot } from "../firebase";
 import { collection } from "firebase/firestore";
 import { PG_AREAS, PG_MAQUINAS, PG_DATA } from "./pgData";
 import { PG_MARCOS, PG_ATIVIDADES, PG_AREAS_ATIV, PG_ESCALA } from "./pgPlano";
+import { PG_PERIODO, PG_FACILITADORES, PG_LTS, PG_PREMISSAS, PG_MATERIAIS, PG_MAT_SEGURANCA, PG_RADIOS, PG_INSPECAO_TANQUES, PG_LIMPEZA } from "./pgBook";
 
 const C = {
   bg:"#04111D", accent:"#00E676", cyan:"#00F0FF", blue:"#5090FF",
@@ -53,9 +54,36 @@ function Btn({ cor, onClick, children }) {
   );
 }
 
+function Sec({ num, titulo, children }) {
+  return (
+    <div style={{background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",border:`1px solid ${C.borderPG}`,
+      borderRadius:14,overflow:"hidden"}}>
+      <div style={{display:"flex",alignItems:"center",gap:9,padding:"11px 15px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+        <span style={{fontFamily:"monospace",fontSize:10.5,fontWeight:700,color:C.textDim}}>{num}</span>
+        <span style={{fontWeight:800,fontSize:13,letterSpacing:".05em"}}>{titulo}</span>
+      </div>
+      <div style={{padding:"11px 15px"}}>{children}</div>
+    </div>
+  );
+}
+
+const Linha = ({ l, r }) => (
+  <div style={{display:"flex",justifyContent:"space-between",gap:10,padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+    <span style={{fontSize:11.5,color:"#B5C6DA"}}>{l}</span>
+    <span style={{fontSize:11.5,fontWeight:700,color:"#FFFFFF",textAlign:"right"}}>{r}</span>
+  </div>
+);
+
+const Topico = ({ children }) => (
+  <div style={{display:"flex",gap:7,padding:"3px 0",fontSize:11,color:"#B5C6DA",lineHeight:1.4}}>
+    <span style={{color:"#00F0FF"}}>·</span><span>{children}</span>
+  </div>
+);
+
 export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
   const [estados, setEstados] = useState({});
   const [agora, setAgora] = useState(Date.now());
+  const [aba, setAba] = useState(()=> Date.now() < new Date(PG_MARCOS[0][1]).getTime() ? "plan" : "exec");
 
   useEffect(()=>{
     const unsub = onSnapshot(collection(db,"pg_checklist_h2"), snap=>{
@@ -123,6 +151,24 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
         {onSair && <Btn cor={C.danger} onClick={onSair}>Sair</Btn>}
       </div>
 
+      {/* ── Abas ── */}
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        {[["plan","01","PLANEJAMENTO"],["exec","02","EXECUÇÃO"],["pos","03","PÓS-EXECUÇÃO"]].map(([id,num,lab])=>(
+          <button key={id} onClick={()=>setAba(id)} style={{
+            flex:1, padding:"9px 6px", borderRadius:10, cursor:"pointer",
+            display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+            fontFamily:"monospace", fontSize:11.5, fontWeight:800, letterSpacing:".12em",
+            border:`1.5px solid ${aba===id?C.cyan:"rgba(255,255,255,.1)"}`,
+            background: aba===id ? "rgba(0,240,255,.08)" : "rgba(255,255,255,.02)",
+            color: aba===id ? "#FFFFFF" : C.textDim,
+            boxShadow: aba===id ? `0 0 14px rgba(0,240,255,.15)` : "none",
+          }}>
+            <span style={{color:aba===id?C.cyan:C.textDim}}>{num}</span>{lab}
+          </button>
+        ))}
+      </div>
+
+      {aba==="exec" && (<>
       {/* ── Termômetro geral ── */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
         {[["Máquina 2","MQ2"],["Máquina 3","MQ3"],["Geral","GERAL"]].map(([lab,m])=>{
@@ -258,6 +304,86 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
           </div>
         </div>
       </div>
+      </>)}
+
+      {/* ── Aba Planejamento ── */}
+      {aba==="plan" && (
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+          <Sec num="01" titulo="PERÍODO E FACILITADORES">
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+              {[["MQ3",PG_PERIODO.MQ3],["MQ2",PG_PERIODO.MQ2]].map(([m,p])=>(
+                <div key={m} style={{border:`1px solid ${CORMAQ[m]}44`,borderRadius:10,padding:"8px 10px"}}>
+                  <div style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ[m],letterSpacing:".14em"}}>{m} · {p.ini} → {p.fim}</div>
+                  <div style={{fontFamily:"monospace",fontSize:11.5,fontWeight:800,color:"#FFFFFF",marginTop:3}}>Parada {p.parada}</div>
+                </div>
+              ))}
+            </div>
+            {PG_FACILITADORES.map(([l,r])=><Linha key={l} l={l} r={r}/>)}
+          </Sec>
+          <Sec num="02" titulo="LIBERAÇÕES DE TRABALHO E BLOQUEIO">
+            {PG_LTS.map(([l,r])=><Linha key={l} l={l} r={r}/>)}
+            <div style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,marginTop:9,lineHeight:1.5}}>
+              LTs centralizadas no responsável ou, na falta, no operador do horário.
+            </div>
+          </Sec>
+          <Sec num="03" titulo="PREMISSAS · MÁQUINA 3">
+            <div style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.MQ3,letterSpacing:".14em",marginBottom:4}}>PRÉ-PARADA</div>
+            {PG_PREMISSAS.MQ3.pre.map((t,i)=><Topico key={i}>{t}</Topico>)}
+            <div style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.MQ3,letterSpacing:".14em",margin:"9px 0 4px"}}>PARADA</div>
+            {PG_PREMISSAS.MQ3.parada.map((t,i)=><Topico key={i}>{t}</Topico>)}
+          </Sec>
+          <Sec num="04" titulo="PREMISSAS · MÁQUINA 2">
+            <div style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.MQ2,letterSpacing:".14em",marginBottom:4}}>PRÉ-PARADA</div>
+            {PG_PREMISSAS.MQ2.pre.map((t,i)=><Topico key={i}>{t}</Topico>)}
+            <div style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.MQ2,letterSpacing:".14em",margin:"9px 0 4px"}}>PARADA</div>
+            {PG_PREMISSAS.MQ2.parada.map((t,i)=><Topico key={i}>{t}</Topico>)}
+          </Sec>
+          <Sec num="05" titulo="MATERIAIS, SEGURANÇA E RÁDIOS">
+            {PG_MATERIAIS.map((t,i)=><Topico key={i}>{t}</Topico>)}
+            <div style={{fontFamily:"monospace",fontSize:9.5,color:C.warning,letterSpacing:".14em",margin:"9px 0 4px"}}>SEGURANÇA</div>
+            {PG_MAT_SEGURANCA.map((t,i)=><Topico key={i}>{t}</Topico>)}
+            <div style={{fontFamily:"monospace",fontSize:9.5,color:C.blue,letterSpacing:".14em",margin:"9px 0 4px"}}>RÁDIOS</div>
+            {PG_RADIOS.map((t,i)=><Topico key={i}>{t}</Topico>)}
+          </Sec>
+          <Sec num="06" titulo="INSPEÇÃO E LIMPEZA">
+            <div style={{fontFamily:"monospace",fontSize:9.5,color:C.cyan,letterSpacing:".14em",marginBottom:4}}>TANQUES PARA INSPEÇÃO</div>
+            {PG_INSPECAO_TANQUES.map((t,i)=><Topico key={i}>{t}</Topico>)}
+            <div style={{fontFamily:"monospace",fontSize:9.5,color:C.cyan,letterSpacing:".14em",margin:"9px 0 4px"}}>PLANO DE LIMPEZA</div>
+            {PG_LIMPEZA.map((t,i)=><Topico key={i}>{t}</Topico>)}
+          </Sec>
+        </div>
+      )}
+
+      {/* ── Aba Pós-execução ── */}
+      {aba==="pos" && (
+        <div style={{display:"flex",flexDirection:"column",gap:14,maxWidth:760}}>
+          <Sec num="01" titulo="CHECKLIST DE RETOMADA · PROGRESSO">
+            {[["Máquina 2","MQ2"],["Máquina 3","MQ3"],["Geral","GERAL"]].map(([lab,m])=>{
+              const f = m==="GERAL" ? feitosGeral : feitosMaq(m);
+              const t = m==="GERAL" ? TOTAIS.__geral : TOTAIS[m].__total;
+              return (
+                <div key={m} style={{marginBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11.5,marginBottom:4}}>
+                    <span style={{fontWeight:700,color:"#FFFFFF"}}>{lab}</span>
+                    <span style={{fontFamily:"monospace",color:CORMAQ[m]}}>{f}/{t} · {pct(f,t)}%</span>
+                  </div>
+                  <Barra f={f} t={t} h={7} cor={CORMAQ[m]}/>
+                </div>
+              );
+            })}
+            <div style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,margin:"6px 0 10px",lineHeight:1.5}}>
+              Alimentado pelos operadores de área conforme os equipamentos são liberados na retomada.
+            </div>
+            {onChecklist && (
+              <button onClick={onChecklist} style={{
+                width:"100%",padding:"11px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:13,
+                border:`1.5px solid ${C.cyan}`,background:"rgba(0,240,255,.08)",color:"#FFFFFF",
+                boxShadow:"0 0 14px rgba(0,240,255,.18)",letterSpacing:".05em",
+              }}>ABRIR CHECKLIST DE RETOMADA</button>
+            )}
+          </Sec>
+        </div>
+      )}
     </div>
   );
 }
