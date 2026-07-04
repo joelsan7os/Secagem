@@ -43,7 +43,17 @@ function Barra({ f, t, h=6, cor }) {
   );
 }
 
-export default function DashboardPG() {
+function Btn({ cor, onClick, children }) {
+  return (
+    <button onClick={onClick} style={{
+      background:"rgba(255,255,255,.03)", border:`1px solid ${cor}55`, color:cor,
+      borderRadius:9, padding:"6px 12px", fontSize:11.5, fontWeight:700,
+      cursor:"pointer", letterSpacing:".04em", whiteSpace:"nowrap",
+    }}>{children}</button>
+  );
+}
+
+export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
   const [estados, setEstados] = useState({});
   const [agora, setAgora] = useState(Date.now());
 
@@ -101,13 +111,16 @@ export default function DashboardPG() {
       color:C.text,fontFamily:"system-ui,sans-serif",padding:"20px 24px 40px"}}>
       <style>{`@keyframes trava{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
 
-      <div style={{display:"flex",alignItems:"baseline",gap:10,marginBottom:18}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18,flexWrap:"wrap"}}>
         <span style={{fontWeight:800,fontSize:20,letterSpacing:".24em"}}>VÉRTICE</span>
         <span style={{fontFamily:"monospace",fontWeight:800,fontSize:13,color:C.blue,letterSpacing:".14em",
           border:`1px solid ${C.blue}66`,borderRadius:5,padding:"1px 7px"}}>PG · DASHBOARD</span>
         <span style={{marginLeft:"auto",fontFamily:"monospace",fontSize:11,color:C.textDim}}>
           {new Date(agora).toLocaleString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}
         </span>
+        {onChecklist && <Btn cor={C.cyan} onClick={onChecklist}>Checklist</Btn>}
+        {onOperacao && <Btn cor={C.accent} onClick={onOperacao}>Operação</Btn>}
+        {onSair && <Btn cor={C.danger} onClick={onSair}>Sair</Btn>}
       </div>
 
       {/* ── Termômetro geral ── */}
