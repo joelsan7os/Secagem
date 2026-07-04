@@ -1,6 +1,6 @@
 // ─── dashboardPG.jsx — VÉRTICE PG · Dashboard de Gestão (organizadores) ──────
 import { useState, useEffect } from "react";
-import { db, doc, onSnapshot } from "./firebase";
+import { db, doc, onSnapshot } from "../firebase";
 import { collection } from "firebase/firestore";
 import { PG_AREAS, PG_MAQUINAS, PG_DATA } from "./pgData";
 import { PG_MARCOS, PG_ATIVIDADES, PG_AREAS_ATIV, PG_ESCALA } from "./pgPlano";
