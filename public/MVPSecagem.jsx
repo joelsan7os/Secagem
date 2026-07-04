@@ -198,6 +198,25 @@ const checklistQuebraMaquina = [
     descMax:"Acima de 5 mm — fora da faixa" },
 ];
 
+// ─── Ritmo das Máquinas — Consumo específico de Vapor (por máquina) ───────────
+const RITMO_VAPOR_PROCESSO = [
+  { id:"rvp1", item:"Verificar relação entre pH branqueamento x secagem — se houver diferença considerável, verificar instrumentos (secagem e branqueamento) e ajustar set point conforme necessidade.", acao:"Verificar instrumentos e ajustar set point." },
+  { id:"rvp2", item:"Verificar comportamento (trend) do pH branqueamento — se permanece estável ou com variações; se estiver instável, acionar operador de branqueamento e solicitar ação.", acao:"Acionar operador de branqueamento e solicitar ação." },
+  { id:"rvp3", item:"Verificar pH da água e do produto final — se houver recurso para reduzir, alinhar com a coordenação de fábrica e realizar ajuste para baixar resultado do produto final.", acao:"Alinhar com coordenação e ajustar produto final." },
+  { id:"rvp4", item:"Verificar possibilidade de alimentar pelo meio da torre HD (H2).", acao:"Avaliar e alimentar pela torre HD se possível." },
+  { id:"rvp5", item:"Verificar rampa de vácuo da mesa e ajustar caso esteja fora do padrão (rampa crescente).", acao:"Ajustar rampa de vácuo para padrão crescente." },
+];
+const RITMO_VAPOR_EQUIPAMENTOS = [
+  { id:"rve1", item:"Verificar tela da lateral por onde é captado o ar do prédio — caso esteja sujo, realizar limpeza.", acao:"Realizar limpeza da tela lateral." },
+  { id:"rve2", item:"Verificar as telas dos secadores — caso esteja suja, realizar limpeza (operação ou limpidez).", acao:"Realizar limpeza das telas dos secadores." },
+  { id:"rve3", item:"Verificar pressão de vapor para secador — se estiver baixa, alinhar com coordenação de fábrica se há possibilidade de aumentar.", acao:"Alinhar com coordenação para aumentar pressão." },
+  { id:"rve4", item:"Verificar se a pressão de vapor para secador permanece estável — caso não, ligar para operador do turbo gerador e verificar como normalizar.", acao:"Acionar operador do turbo gerador." },
+  { id:"rve5", item:"Verificar medidor de pressão interna do secador — pode estar indicando valor errado e balanço de ar estar operando desregulado — acionar instrumentação e checar.", acao:"Acionar instrumentação e checar medidor." },
+  { id:"rve6", item:"Verificar se há portas abertas no secador — fechar todas caso haja.", acao:"Fechar todas as portas do secador." },
+  { id:"rve7", item:"Verificar as correias dos ventiladores exaustão e suprimento (se caiu alguma, se está patinando) — caso haja algum desses problemas, mapear e/ou passar antiderrapante nas correias.", acao:"Mapear/passar antiderrapante nas correias." },
+  { id:"rve8", item:"Conferir aberturas das válvulas de controle de vapor p/ secador entre SDCD e campo.", acao:"Conferir aberturas SDCD x campo." },
+];
+
 // ─── WFT — dados do fluxo de diagnóstico (H2 = M2 + M3, meta 315 m³/h) ───────
 // Estrutura: cada "passo" tem uma pergunta ou verificação com ação associada
 const WFT_META_H2 = 315; // m³/h
@@ -485,6 +504,7 @@ const CATALOGO = [
   { id:"passagem_ponta",   label:"Passagem de Ponta",   icon:"", desc:"Check-list M2 e M3 — antes da passagem",               porMaquina:true,  tipo:"padrao",   area:"pu",  passagem:true, getItems:()=>checklistPassagemPonta },
   { id:"quebra_pu",        label:"PP / Quebra de Máq.", icon:"", desc:"Segurança, testes, inspeções e limpezas pós-quebra",    porMaquina:true,  tipo:"padrao",   area:"pu",  getItems:()=>checklistQuebraMaquina },
   { id:"wft",              label:"Consumo WFT",         icon:"", desc:"Diagnóstico de consumo de água — Meta H2: 315 m³/h",   porMaquina:false, tipo:"wft",      area:"pu",  getItems:()=>[] },
+  { id:"ritmo_vapor",      label:"Consumo de Vapor",    icon:"", desc:"Ritmo das Máquinas — Processo + Equipamentos",       porMaquina:true,  tipo:"ritmo_vapor", area:"pu", getItems:()=>[] },
   { id:"cortadeira",       label:"Rotina",              icon:"", desc:"Check-list operacional — Secador + Cortadeira + Layboy",porMaquina:true,  tipo:"padrao",   area:"cs",  getItems:(m)=>m==="M2"?checklistCortadeiraM2:checklistCortadeiraM3 },
   { id:"passagem_ponta_cs",label:"Passagem de Ponta",   icon:"", desc:"Check-list Parte Seca — antes da passagem de ponta",   porMaquina:true,  tipo:"padrao",   area:"cs",  passagem:true, getItems:()=>checklistPassagemPontaCS },
   { id:"rejeicao",         label:"Diagnóstico Rejeição",icon:"⚠️",desc:"Fluxo de diagnóstico — Faca circular / Facão / Transversal",porMaquina:false,tipo:"rejeicao",area:"cs",getItems:()=>[] },
@@ -2035,6 +2055,119 @@ function VerificacoesWFT({ respostas, setResp, fotos, addFoto, remFoto }) {
   );
 }
 
+// ─── RitmoVaporTela — Consumo específico de Vapor (por máquina) ───────────────
+function RitmoVaporTela({ onSalvar, turno, letra, opPU:opPUProp, opPainel:opPainelProp, data }) {
+  const [maquina,setMaquina]=useState("M2");
+  const [opPU,setOpPU]=useState(opPUProp||"");
+  const [opPainel,setOpPainel]=useState(opPainelProp||"");
+  const [respostas,setRespostas]=useState({});
+  const [fotos,setFotos]=useState({});
+  const [obs,setObs]=useState("");
+  const [salvo,setSalvo]=useState(false);
+  const setResp=(id,v)=>setRespostas(p=>({...p,[id]:v}));
+  const addFoto=(id,src)=>setFotos(p=>({...p,[id]:[...(p[id]||[]),src]}));
+  const remFoto=(id,i)=>setFotos(p=>({...p,[id]:p[id].filter((_,j)=>j!==i)}));
+  const trocar=(m)=>{setMaquina(m);setRespostas({});setFotos({});setObs("");setSalvo(false);};
+  const TODOS=[...RITMO_VAPOR_PROCESSO,...RITMO_VAPOR_EQUIPAMENTOS];
+  const respondidas=TODOS.filter(v=>respostas[v.id]).length;
+  const noks=TODOS.filter(v=>respostas[v.id]==="sim").length;
+  const handleSalvar=()=>{
+    const registro={id:Date.now(),tipoId:"ritmo_vapor",tipoLabel:"Consumo de Vapor",maquina,turno,letra,data,opPU,opPainel,respostas:{...respostas},fotos:{...fotos},obs,noks,total:TODOS.length,
+      items:TODOS.map(v=>({id:v.id,secao:RITMO_VAPOR_PROCESSO.some(p=>p.id===v.id)?"Processo":"Equipamentos",item:v.item,ref:"—",unit:"sim/não",resp:respostas[v.id]||"",fotos:fotos[v.id]||[]}))};
+    onSalvar(registro);setSalvo(true);
+  };
+  const Grupo=({titulo,num,itens})=>(
+    <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.blueLight}`,borderRadius:12,padding:16,marginBottom:14}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+        <span style={{color:C.textDim,fontSize:11,fontFamily:"monospace",fontWeight:900}}>{num}</span>
+        <span style={{color:C.white,fontWeight:800,fontSize:13,letterSpacing:"0.03em"}}>{titulo}</span>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {itens.map((v,i)=>{
+          const resp=respostas[v.id];
+          const isProblema=resp==="sim";
+          return(
+            <div key={v.id} style={{background:C.surface,borderRadius:10,padding:"12px 14px",border:`1px solid ${isProblema?C.dangerLight+"66":resp==="nao"?C.accentLight+"33":C.border}`,borderLeft:`3px solid ${isProblema?C.dangerLight:resp==="nao"?C.accentLight:"transparent"}`}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:isProblema?10:0}}>
+                <span style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:6,width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,flexShrink:0}}>{i+1}</span>
+                <div style={{flex:1}}>
+                  <p style={{color:C.text,fontSize:12,margin:"0 0 8px",lineHeight:1.4}}>{v.item}</p>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    {[{v:"nao",label:"OK"},{v:"sim",label:"NÃO OK"}].map(op=>(
+                      <button key={op.v} onClick={()=>setResp(v.id,op.v)} style={{padding:"4px 12px",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:700,border:resp===op.v?"none":`1px solid ${C.border}`,background:resp===op.v?(op.v==="sim"?C.danger:C.success):C.tagBg,color:resp===op.v?"#fff":C.textMuted}}>{op.label}</button>
+                    ))}
+                    <BotaoFoto compact fotos={fotos[v.id]||[]} onAdd={src=>addFoto(v.id,src)} onRemove={idx=>remFoto(v.id,idx)}/>
+                  </div>
+                </div>
+              </div>
+              {isProblema&&(<div style={{background:"#2a0808",border:`1px solid ${C.dangerLight}44`,borderRadius:8,padding:"10px 12px",marginTop:4}}><p style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",margin:"0 0 4px"}}>Ação</p><p style={{color:C.warningLight,fontSize:12,margin:0,lineHeight:1.5}}>→ {v.acao}</p></div>)}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+  return(
+    <div>
+      {/* Cabeçalho padrão */}
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:12}}>
+        <div style={{display:"flex",gap:8,marginBottom:14}}>
+          {["M2","M3"].map(m=>(
+            <button key={m} onClick={()=>trocar(m)} style={{flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,transition:"all .15s",background:maquina===m?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${maquina===m?"rgba(255,255,255,0.55)":C.border}`,color:maquina===m?"#fff":C.textMuted,boxShadow:maquina===m?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>
+              Máquina {m.replace("M","")}<div style={{fontSize:10,fontWeight:400,opacity:.8,marginTop:1}}>{m==="M2"?"32-xx":"33-xx"}</div>
+            </button>
+          ))}
+        </div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",background:"rgba(4,17,29,0.88)",border:"1px solid rgba(80,144,255,0.18)",borderRadius:10,padding:"7px 12px",marginBottom:12}}>
+          {[
+            {label:"TURNO",value:turno,color:"#5090FF"},
+            {label:"LETRA",value:letra,color:"#00E676"},
+            {label:"DATA",value:data.split("-").reverse().join("/"),color:"#B5C6DA"},
+            {label:"HORA",value:(()=>{const a=new Date();return`${String(a.getHours()).padStart(2,"0")}:${String(a.getMinutes()).padStart(2,"0")}`})(),color:C.text},
+          ].map(({label,value,color},idx,arr)=>(
+            <React.Fragment key={label}>
+              <div style={{textAlign:"center",flex:1}}>
+                <div style={{color:"rgba(255,255,255,0.22)",fontSize:7,letterSpacing:"0.18em",textTransform:"uppercase",fontFamily:"monospace",marginBottom:2}}>{label}</div>
+                <div style={{color,fontSize:15,fontWeight:900,letterSpacing:"0.05em",fontFamily:"monospace",whiteSpace:"nowrap"}}>{value}</div>
+              </div>
+              {idx<arr.length-1&&<div style={{width:1,height:26,background:"rgba(80,144,255,0.2)",flexShrink:0,margin:"0 6px"}}/>}
+            </React.Fragment>
+          ))}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <div>
+            <label style={{color:C.textDim,fontSize:9,display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.08em"}}>Operador</label>
+            <input value={opPU} onChange={e=>setOpPU(e.target.value)} placeholder="Nome..." style={{...inputStyle,fontSize:12,padding:"6px 10px"}}/>
+          </div>
+          <div>
+            <label style={{color:C.textDim,fontSize:9,display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.08em"}}>Op. Painel</label>
+            <input value={opPainel} onChange={e=>setOpPainel(e.target.value)} placeholder="Nome..." style={{...inputStyle,fontSize:12,padding:"6px 10px"}}/>
+          </div>
+        </div>
+      </div>
+
+      <div style={{background:"rgba(80,144,255,0.06)",border:`1px solid ${C.blueLight}33`,borderRadius:10,padding:"10px 14px",marginBottom:14}}>
+        <p style={{color:C.textMuted,fontSize:11,margin:0,lineHeight:1.5}}>Ritmo das Máquinas limitado em função do consumo específico de vapor. Verifique os itens de processo e a condição dos secadores.</p>
+      </div>
+
+      <Grupo titulo="Verificou itens do processo?" num="01" itens={RITMO_VAPOR_PROCESSO}/>
+      <Grupo titulo="Qual a condição dos secadores?" num="02" itens={RITMO_VAPOR_EQUIPAMENTOS}/>
+
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
+        <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:7}}>Observações</label>
+        <textarea value={obs} onChange={e=>setObs(e.target.value)} rows={3} placeholder="Anotações gerais..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/>
+      </div>
+
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
+        <div style={{flex:1,color:C.textDim,fontSize:11}}>{respondidas}/{TODOS.length} verificados{noks>0&&<span style={{color:C.dangerLight,fontWeight:800}}> · {noks} NÃO OK</span>}</div>
+        <button onClick={handleSalvar} disabled={salvo} style={{padding:"13px 28px",borderRadius:12,cursor:salvo?"default":"pointer",fontWeight:800,fontSize:14,border:"none",background:salvo?C.tagBg:`linear-gradient(135deg,${C.accentDark},${C.accent})`,color:salvo?C.textMuted:"#fff",boxShadow:salvo?"none":`0 0 16px ${C.accentLight}44`}}>
+          {salvo?"✓ Salvo":"Salvar Checklist"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── ChecklistTela ────────────────────────────────────────────────────────────
 function ChecklistTela({ onSalvar, historico=[], perfil }) {
   const hoje=new Date().toISOString().slice(0,10);
@@ -2285,6 +2418,8 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
         <RejeicaoTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):tipo?.tipo==="wft"?(
         <WFTTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
+      ):tipo?.tipo==="ritmo_vapor"?(
+        <RitmoVaporTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):(
       <>{/* Formulário padrão */}
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:16}}>
