@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import MVPSecagem from './MVPSecagem';
 
-const PG = lazy(() => import('./pg'));
+const PG = lazy(() => import('./vertice-pg/pg'));
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
