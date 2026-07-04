@@ -80,10 +80,73 @@ const Topico = ({ children }) => (
   </div>
 );
 
+function CarrosselExec({ frentes }) {
+  const [idx, setIdx] = useState(0);
+  const [pausa, setPausa] = useState(false);
+  useEffect(()=>{
+    if(pausa || frentes.length<2) return;
+    const t = setInterval(()=>setIdx(i=>(i+1)%frentes.length), 4000);
+    return ()=>clearInterval(t);
+  },[pausa, frentes.length]);
+  const f = frentes[idx];
+  if(!f) return null;
+  const restam = f.total - f.feitas;
+  return (
+    <div>
+      <div key={idx} onClick={()=>setPausa(p=>!p)} style={{
+        background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",border:`1px solid ${C.borderPG}`,
+        borderRadius:16,padding:"24px 28px",cursor:"pointer",position:"relative",overflow:"hidden",
+        minHeight:330,animation:"slideIn .45s ease"}}>
+        <div style={{position:"absolute",top:0,left:0,right:0,height:3,
+          background:`linear-gradient(90deg,${C.accent},${C.cyan},${C.blue})`,opacity:.85}}/>
+        <div style={{display:"flex",justifyContent:"space-between",fontFamily:"monospace",fontSize:10.5,color:C.textDim,letterSpacing:".18em"}}>
+          <span>FRENTE {p2(idx+1)}/{p2(frentes.length)}</span>
+          <span style={{color:pausa?C.warning:C.textDim}}>{pausa?"⏸ PAUSADO — toque para continuar":"● AUTO"}</span>
+        </div>
+        <div style={{fontSize:34,fontWeight:800,margin:"8px 0 18px",letterSpacing:".02em"}}>{f.ar}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:12,marginBottom:18}}>
+          {[["FEITAS",f.feitas,C.accent],["EM ANDAMENTO",f.andamento,C.cyan],["RESTAM",restam,"#FFFFFF"],["ATRASADAS",f.atrasadas.length,f.atrasadas.length?C.danger:C.textDim]].map(([lab,v,cor])=>(
+            <div key={lab} style={{textAlign:"center",border:`1px solid ${cor}33`,borderRadius:12,padding:"12px 6px",
+              boxShadow: lab==="ATRASADAS"&&v?`0 0 16px ${C.danger}44`:"none"}}>
+              <div style={{fontFamily:"monospace",fontSize:38,fontWeight:800,color:cor,lineHeight:1,
+                animation: lab==="ATRASADAS"&&v?"trava 1.4s ease-in-out infinite":"none"}}>{v}</div>
+              <div style={{fontFamily:"monospace",fontSize:9,color:C.textDim,letterSpacing:".16em",marginTop:6}}>{lab}</div>
+            </div>
+          ))}
+        </div>
+        <Barra f={f.feitas} t={f.total} h={9}/>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",margin:"14px 0 4px"}}>
+          {f.porMaq.map(([m,fe,tt])=>(
+            <span key={m} style={{fontFamily:"monospace",fontSize:11,fontWeight:700,color:CORMAQ[m],
+              border:`1px solid ${CORMAQ[m]}44`,borderRadius:7,padding:"3px 9px"}}>{m} {fe}/{tt}</span>
+          ))}
+        </div>
+        {f.atrasadas.slice(0,3).map(a=>(
+          <div key={a[0]} style={{display:"flex",gap:8,alignItems:"center",marginTop:7}}>
+            <span style={{width:6,height:6,borderRadius:"50%",background:C.danger,boxShadow:`0 0 6px ${C.danger}`,flexShrink:0}}/>
+            <span style={{fontSize:12.5,color:C.textMuted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              <b style={{color:CORMAQ[a[1]]}}>{a[1]}</b> · {a[3]}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",justifyContent:"center",gap:8,marginTop:12}}>
+        {frentes.map((x,i)=>(
+          <span key={x.ar} onClick={()=>{setIdx(i);setPausa(true);}} style={{
+            width:i===idx?22:8,height:8,borderRadius:8,cursor:"pointer",transition:"all .3s",
+            background:i===idx?C.cyan:"rgba(255,255,255,.16)",
+            boxShadow:i===idx?`0 0 8px ${C.cyan}`:"none"}}/>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
   const [estados, setEstados] = useState({});
   const [agora, setAgora] = useState(Date.now());
   const [aba, setAba] = useState(()=> Date.now() < new Date(PG_MARCOS[0][1]).getTime() ? "plan" : "exec");
+  const [modoExec, setModoExec] = useState("comando");
 
   useEffect(()=>{
     const unsub = onSnapshot(collection(db,"pg_checklist_h2"), snap=>{
@@ -121,6 +184,21 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
   const concluidas = PG_ATIVIDADES.filter(a=>statusAtiv(a)==="concluida").length;
   const zonaAcao = [...atrasadas, ...emRisco, ...criticasAndamento].slice(0,8);
 
+  const frentes = PG_AREAS_ATIV.map(ar=>{
+    const acts = PG_ATIVIDADES.filter(a=>a[2]===ar);
+    const st = acts.map(statusAtiv);
+    return {
+      ar, total: acts.length,
+      feitas: st.filter(s=>s==="concluida").length,
+      andamento: st.filter(s=>s==="andamento"||s==="risco").length,
+      atrasadas: acts.filter((a,i)=>st[i]==="atrasada"),
+      porMaq: ["MQ2","MQ3","GERAL"].map(m=>{
+        const l = acts.filter(a=>a[1]===m);
+        return [m, l.filter(a=>statusAtiv(a)==="concluida").length, l.length];
+      }).filter(x=>x[2]>0),
+    };
+  });
+
   // Marcos: passados / agora / próximos
   const idxAgora = PG_MARCOS.findIndex(m => agora <= new Date(m[2]||m[1]).getTime());
   const janela = PG_MARCOS.slice(Math.max(0,idxAgora-1), idxAgora+4);
@@ -137,7 +215,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
   return (
     <div style={{minHeight:"100vh",background:"radial-gradient(80% 60% at 50% 0%,#0a1622,#04080e 70%,#01040a)",
       color:C.text,fontFamily:"system-ui,sans-serif",padding:"20px 24px 40px"}}>
-      <style>{`@keyframes trava{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
+      <style>{`@keyframes trava{0%,100%{opacity:1}50%{opacity:.4}}@keyframes slideIn{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:translateX(0)}}`}</style>
 
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18,flexWrap:"wrap"}}>
         <span style={{fontWeight:800,fontSize:20,letterSpacing:".24em"}}>VÉRTICE</span>
@@ -169,6 +247,19 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
       </div>
 
       {aba==="exec" && (<>
+      <div style={{display:"flex",gap:8,marginBottom:14,maxWidth:360}}>
+        {[["comando","MODO COMANDO"],["tv","MODO APRESENTAÇÃO"]].map(([id,lab])=>(
+          <button key={id} onClick={()=>setModoExec(id)} style={{
+            flex:1,padding:"7px 8px",borderRadius:9,cursor:"pointer",
+            fontFamily:"monospace",fontSize:10,fontWeight:800,letterSpacing:".1em",
+            border:`1.5px solid ${modoExec===id?C.blue:"rgba(255,255,255,.1)"}`,
+            background:modoExec===id?"rgba(80,144,255,.1)":"rgba(255,255,255,.02)",
+            color:modoExec===id?"#FFFFFF":C.textDim,
+          }}>{lab}</button>
+        ))}
+      </div>
+
+      {modoExec==="tv" ? <CarrosselExec frentes={frentes}/> : (<>
       {/* ── Termômetro geral ── */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
         {[["Máquina 2","MQ2"],["Máquina 3","MQ3"],["Geral","GERAL"]].map(([lab,m])=>{
@@ -304,6 +395,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
           </div>
         </div>
       </div>
+      </>)}
       </>)}
 
       {/* ── Aba Planejamento ── */}
