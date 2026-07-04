@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import MVPSecagem from './MVPSecagem';
+
+const PG = lazy(() => import('./pg'));
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -23,10 +25,25 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+function lerModoPG() {
+  try {
+    return localStorage.getItem("vertice_modo") === "pg" && !!localStorage.getItem("perfil_ativo_h2");
+  } catch { return false; }
+}
+
 export default function App() {
+  const modoPG = lerModoPG();
   return (
     <ErrorBoundary>
-      <MVPSecagem />
+      {modoPG ? (
+        <Suspense fallback={
+          <div style={{minHeight:"100vh",background:"#04111D",display:"flex",alignItems:"center",justifyContent:"center",color:"#5090FF",fontFamily:"monospace",fontSize:12,letterSpacing:".3em"}}>
+            CARREGANDO PG…
+          </div>
+        }>
+          <PG/>
+        </Suspense>
+      ) : <MVPSecagem/>}
     </ErrorBoundary>
   );
 }
