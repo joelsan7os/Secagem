@@ -119,6 +119,25 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
   const eixo = via.map(([x,y],i)=>`${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
   const dNow = dep(agora);
   const flip = dNow > 0.7;
+  // cascata anti-colisão: nível de haste calculado por sobreposição horizontal real
+  const layout = {};
+  {
+    const grupos = [PG_MARCOS.filter(m=>m[3]!=="MQ2"), PG_MARCOS.filter(m=>m[3]==="MQ2")];
+    for(const lista of grupos){
+      const ocupado = [];
+      for(const m of lista){
+        const x = pt(new Date(m[1]).getTime())[0];
+        const txt = curto(m[4]);
+        const larg = Math.min(txt.length*8.6*0.6+16, 172);
+        const ta = x < 90 ? "start" : x > W-larg ? "end" : "middle";
+        const x1 = ta==="start" ? x : ta==="end" ? x-larg : x-larg/2;
+        let nv = 0;
+        while(nv < 6 && (ocupado[nv]||[]).some(([a,b])=> x1 < b+10 && x1+larg > a-10)) nv++;
+        (ocupado[nv] = ocupado[nv]||[]).push([x1, x1+larg]);
+        layout[m[0]] = { nv, x1, larg, ta };
+      }
+    }
+  }
   return (
     <div style={{background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",border:`1px solid ${C.borderPG}`,
       borderRadius:14,padding:"13px 16px 11px",marginBottom:16,position:"relative",overflow:"hidden"}}>
@@ -188,14 +207,10 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
           const cor = CORMAQ[maqM];
           const corTxt = ehProx?C.warning:atual?C.cyan:"#C7D6E6";
           const acima = maqM!=="MQ2";
-          // haste em comprimentos alternados (curta/média/longa) para escalonar chips
           const fs = 8.6, chipH = 22;
-          const larg = Math.min(txt.length*fs*0.6+16, 172);
-          const passo = [0, 30, 60][idx%3];
-          const hasteLen = (acima ? 20 : 16) + passo;
+          const { nv, x1:chipX, larg, ta } = layout[id];
+          const hasteLen = (acima ? 20 : 16) + nv*27;
           const chipY = acima ? y - hasteLen - chipH : y + hasteLen;
-          const ta = x < 90 ? "start" : x > W-larg ? "end" : "middle";
-          const chipX = ta==="start"?x:ta==="end"?x-larg:x-larg/2;
           const hAncora = acima ? chipY+chipH : chipY;
           const dim = passado && !atual && !ehProx;
           return (
