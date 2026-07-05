@@ -1,9 +1,11 @@
 // ─── dashboardPG.jsx — VÉRTICE PG · Dashboard de Gestão (organizadores) ──────
 import { useState, useEffect } from "react";
-import { db, doc, onSnapshot } from "../firebase";
+import { db, doc, setDoc, onSnapshot } from "../firebase";
 import { collection } from "firebase/firestore";
+import { usePerfilAtivo } from "../auth";
 import { PG_AREAS, PG_MAQUINAS, PG_DATA } from "./pgData";
 import { PG_MARCOS, PG_ATIVIDADES, PG_AREAS_ATIV, PG_ESCALA } from "./pgPlano";
+import { PG_CENARIOS, PG_TEMPOS_LIB } from "./pgTempos";
 import { PG_PERIODO, PG_FACILITADORES, PG_LTS, PG_PREMISSAS, PG_MATERIAIS, PG_MAT_SEGURANCA, PG_RADIOS, PG_INSPECAO_TANQUES, PG_LIMPEZA } from "./pgBook";
 
 const C = {
@@ -320,6 +322,11 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
   const [agora, setAgora] = useState(Date.now());
   const [aba, setAba] = useState(()=> Date.now() < new Date(PG_MARCOS[0][1]).getTime() ? "plan" : "exec");
   const [modoExec, setModoExec] = useState("comando");
+  const { perfil } = usePerfilAtivo();
+  const [buscaTempo, setBuscaTempo] = useState("");
+  const [cenAberto, setCenAberto] = useState(null);
+  const [editTempo, setEditTempo] = useState(null);
+  const [valTempo, setValTempo] = useState("");
 
   useEffect(()=>{
     const unsub = onSnapshot(collection(db,"pg_checklist_h2"), snap=>{
@@ -331,6 +338,18 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
   },[]);
 
   const ativEstado = (estados["plano_atividades"] && estados["plano_atividades"].ativ) || {};
+
+  const tempoAjuste = (estados["tempos_ajustes"] && estados["tempos_ajustes"].lib) || {};
+  const gravaTempo = (chave)=>{
+    let v = valTempo.trim();
+    if(!/^\d{1,2}:[0-5]\d$/.test(v)) return;
+    if(v.length===4) v = "0"+v;
+    setDoc(doc(db,"pg_checklist_h2","tempos_ajustes"),{
+      lib:{ [chave]: { dur:v, op:(perfil&&perfil.nome)||"—", ts:Date.now() } },
+      upd:Date.now(),
+    },{merge:true}).catch(()=>{});
+    setEditTempo(null); setValTempo("");
+  };
 
   // Progresso do checklist por máquina
   const areasDe = m => PG_AREAS.filter(a=>PG_DATA[m] && PG_DATA[m][a]);
@@ -565,6 +584,107 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
             <div style={{fontFamily:"monospace",fontSize:9.5,color:C.cyan,letterSpacing:".14em",margin:"9px 0 4px"}}>PLANO DE LIMPEZA</div>
             {PG_LIMPEZA.map((t,i)=><Topico key={i}>{t}</Topico>)}
           </Sec>
+          <div style={{gridColumn:"1 / -1"}}>
+            <Sec num="07" titulo="BIBLIOTECA DE TEMPOS · HISTÓRICO DE PARADAS">
+              <div style={{display:"grid",gridTemplateColumns:"1.1fr 1fr",gap:16}}>
+                <div>
+                  <input value={buscaTempo} onChange={e=>setBuscaTempo(e.target.value)}
+                    placeholder="Buscar atividade…" style={{
+                      width:"100%",boxSizing:"border-box",padding:"8px 11px",borderRadius:9,marginBottom:9,
+                      background:"rgba(255,255,255,.04)",border:`1px solid ${C.borderPG}`,
+                      color:"#FFFFFF",fontSize:12,fontFamily:"monospace",outline:"none"}}/>
+                  <div style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,letterSpacing:".14em",marginBottom:6}}>
+                    ATIVIDADES CATALOGADAS · TOQUE NA DURAÇÃO PARA AJUSTAR
+                  </div>
+                  <div style={{maxHeight:330,overflowY:"auto",display:"flex",flexDirection:"column"}}>
+                    {PG_TEMPOS_LIB.filter(([a])=>a.toLowerCase().includes(buscaTempo.toLowerCase())).map(([atv,dur,n])=>{
+                      const chave = slug(atv);
+                      const aj = tempoAjuste[chave];
+                      const efetiva = aj ? aj.dur : dur;
+                      const editando = editTempo===chave;
+                      return (
+                        <div key={chave} style={{display:"flex",alignItems:"center",gap:9,padding:"6px 2px",
+                          borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:11.5,color:"#E6EEF6",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{atv}</div>
+                            {aj && <div style={{fontFamily:"monospace",fontSize:8,color:C.cyan,marginTop:1}}>
+                              ajustado · {aj.op} · {hm(aj.ts)} {aj.dur!==dur && `(histórico ${dur})`}
+                            </div>}
+                          </div>
+                          <span style={{fontFamily:"monospace",fontSize:9,color:C.textDim}}>×{n}</span>
+                          {editando ? (
+                            <span style={{display:"flex",gap:5,alignItems:"center"}}>
+                              <input autoFocus value={valTempo} onChange={e=>setValTempo(e.target.value)}
+                                onKeyDown={e=>{ if(e.key==="Enter") gravaTempo(chave); if(e.key==="Escape") setEditTempo(null); }}
+                                placeholder="hh:mm" style={{width:56,padding:"4px 6px",borderRadius:7,
+                                  background:"rgba(0,240,255,.07)",border:`1px solid ${C.cyan}`,color:"#FFFFFF",
+                                  fontFamily:"monospace",fontSize:11.5,outline:"none",textAlign:"center"}}/>
+                              <button onClick={()=>gravaTempo(chave)} style={{background:C.cyan,border:"none",
+                                borderRadius:7,padding:"4px 9px",fontWeight:800,fontSize:11,color:"#04111D",cursor:"pointer"}}>OK</button>
+                              <button onClick={()=>setEditTempo(null)} style={{background:"none",
+                                border:`1px solid rgba(255,255,255,.18)`,borderRadius:7,padding:"4px 8px",
+                                color:C.textMuted,fontSize:11,cursor:"pointer"}}>×</button>
+                            </span>
+                          ) : (
+                            <button onClick={()=>{setEditTempo(chave); setValTempo(efetiva);}} style={{
+                              fontFamily:"monospace",fontSize:12,fontWeight:800,cursor:"pointer",
+                              color:aj?C.cyan:"#FFFFFF",background:"rgba(255,255,255,.03)",
+                              border:`1px solid ${aj?C.cyan+"88":"rgba(255,255,255,.14)"}`,
+                              borderRadius:7,padding:"4px 10px"}}>{efetiva}</button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <div style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,letterSpacing:".14em",margin:"2px 0 6px"}}>
+                    CENÁRIOS HISTÓRICOS · {PG_CENARIOS.length} PARADAS REGISTRADAS
+                  </div>
+                  <div style={{maxHeight:372,overflowY:"auto",display:"flex",flexDirection:"column",gap:6}}>
+                    {PG_CENARIOS.map(cn=>{
+                      const aberto = cenAberto===cn.id;
+                      return (
+                        <div key={cn.id} style={{border:`1px solid ${aberto?C.cyan+"66":C.borderPG}`,borderRadius:10,overflow:"hidden"}}>
+                          <div onClick={()=>setCenAberto(aberto?null:cn.id)} style={{display:"flex",alignItems:"center",
+                            gap:9,padding:"8px 11px",cursor:"pointer",background:aberto?"rgba(0,240,255,.05)":"transparent"}}>
+                            <span style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim}}>{cn.id}</span>
+                            <span style={{flex:1,fontSize:11.5,fontWeight:700,color:"#FFFFFF",overflow:"hidden",
+                              textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cn.nome}</span>
+                            {cn.data && <span style={{fontFamily:"monospace",fontSize:9,color:C.textDim}}>{cn.data}</span>}
+                            <span style={{fontFamily:"monospace",fontSize:11,fontWeight:800,color:C.accent}}>{cn.total||"—"}</span>
+                            <span style={{color:C.textDim,fontSize:11}}>{aberto?"▾":"▸"}</span>
+                          </div>
+                          {aberto && (
+                            <div style={{padding:"4px 11px 9px",borderTop:"1px solid rgba(255,255,255,.05)"}}>
+                              {cn.itens.map((it,i)=>{
+                                const [seq,atv,dur,resp,ponte,bloco] = it;
+                                const novoBloco = bloco && (i===0 || cn.itens[i-1][5]!==bloco);
+                                return (
+                                  <div key={i}>
+                                    {novoBloco && <div style={{fontFamily:"monospace",fontSize:8.5,color:C.blue,
+                                      letterSpacing:".12em",margin:"7px 0 3px"}}>{bloco.toUpperCase()}</div>}
+                                    <div style={{display:"flex",gap:8,alignItems:"center",padding:"3px 0",fontSize:11}}>
+                                      <span style={{fontFamily:"monospace",fontSize:9,color:C.textDim,minWidth:16}}>{String(seq).padStart(2,"0")}</span>
+                                      <span style={{flex:1,color:"#C7D6E6",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{atv}</span>
+                                      {ponte===1 && <span style={{fontFamily:"monospace",fontSize:8,fontWeight:800,color:C.warning,
+                                        border:`1px solid ${C.warning}66`,borderRadius:4,padding:"0 4px"}}>PONTE</span>}
+                                      {resp && <span style={{fontFamily:"monospace",fontSize:9,color:C.textDim}}>{resp}</span>}
+                                      <span style={{fontFamily:"monospace",fontSize:10.5,fontWeight:700,color:C.cyan}}>{dur}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </Sec>
+          </div>
         </div>
       )}
 
