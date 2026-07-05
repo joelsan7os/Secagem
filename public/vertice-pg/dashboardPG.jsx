@@ -89,19 +89,34 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
   const [tocado, setTocado] = useState(null);
   const T0 = new Date("2026-04-15T12:00").getTime();
   const T1 = new Date("2026-05-04T12:00").getTime();
-  const W = 1000, H = 252, RY = 140;
-  const X = t => 42 + (Math.min(Math.max(t,T0),T1) - T0) / (T1 - T0) * (W - 84);
-  const xNow = X(agora);
-  const laneY = { MQ3:112, MQ2:176, GERAL:RY };
-  const curto = t => t.length > 24 ? t.slice(0,23)+"…" : t;
-  const nivel = {};
-  PG_MARCOS.filter(m=>m[3]!=="MQ2").forEach((m,i)=>{ nivel[m[0]] = 54 + (i%3)*20; });
-  PG_MARCOS.filter(m=>m[3]==="MQ2").forEach((m,i)=>{ nivel[m[0]] = 200 + (i%3)*20; });
+  const W = 1000, H = 300;
+  const VX = W - 60, VY = 150;            // ponto de fuga (futuro afunda aqui)
+  const X0 = 60, Y0 = 214;                // presente (perto, base)
+  const prog = t => (Math.min(Math.max(t,T0),T1) - T0) / (T1 - T0);
+  const dep = t => Math.pow(prog(t), 0.72);            // profundidade 0..1
+  const esc = d => 1 - d * 0.82;                        // escala por profundidade
+  const pt = (t, alt=0) => {
+    const d = dep(t), k = esc(d);
+    const bx = X0 + (VX - X0) * d;
+    const by = Y0 + (VY - Y0) * d;
+    const serp = Math.sin(prog(t) * Math.PI * 3.2) * 26 * k;
+    return [bx, by + serp - alt * 44 * k, k, d];
+  };
+  const xNow = pt(agora)[0];
+  const curto = t => t.length > 22 ? t.slice(0,21)+"…" : t;
+  const altBase = { MQ3:1, GERAL:0.35, MQ2:-0.35 };
+  const alt3 = [1, 0, -1];
   const prox = PG_MARCOS.find(m => new Date(m[2]||m[1]).getTime() >= agora);
   const proxIni = prox ? new Date(prox[1]).getTime() : null;
   const proxFim = prox ? new Date(prox[2]||prox[1]).getTime() : null;
   const dias = []; for(let t = new Date("2026-04-16T00:00").getTime(); t <= T1; t += 2*86400000) dias.push(t);
-  const flip = xNow > W - 190;
+  const via = [];
+  for(let i=0;i<=60;i++){ const t = T0 + (T1-T0)*i/60; const [x,y,k] = pt(t); via.push([x,y,k]); }
+  const bordaSup = via.map(([x,y,k])=>`${x.toFixed(1)},${(y-10*k).toFixed(1)}`).join(" ");
+  const bordaInf = via.slice().reverse().map(([x,y,k])=>`${x.toFixed(1)},${(y+10*k).toFixed(1)}`).join(" ");
+  const eixo = via.map(([x,y],i)=>`${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const dNow = dep(agora);
+  const flip = dNow > 0.7;
   return (
     <div style={{background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",border:`1px solid ${C.borderPG}`,
       borderRadius:14,padding:"13px 16px 11px",marginBottom:16,position:"relative",overflow:"hidden"}}>
@@ -113,71 +128,101 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
         <span style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.MQ2,letterSpacing:".1em"}}>▼ MQ2</span>
         <span style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.GERAL,letterSpacing:".1em"}}>● GERAL</span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:218,display:"block"}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:236,display:"block"}}>
         <defs>
-          <linearGradient id="pgtg" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor={C.accent}/><stop offset=".55" stopColor={C.cyan}/><stop offset="1" stopColor={C.blue}/>
+          <linearGradient id="pgroad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor={C.accent} stopOpacity=".5"/>
+            <stop offset=".55" stopColor={C.cyan} stopOpacity=".28"/>
+            <stop offset="1" stopColor={C.blue} stopOpacity=".05"/>
           </linearGradient>
+          <linearGradient id="pgedge" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor={C.cyan} stopOpacity=".7"/>
+            <stop offset="1" stopColor={C.blue} stopOpacity=".08"/>
+          </linearGradient>
+          <radialGradient id="pgvanish" cx={VX/W} cy={VY/H} r=".5">
+            <stop offset="0" stopColor={C.blue} stopOpacity=".28"/>
+            <stop offset="1" stopColor={C.blue} stopOpacity="0"/>
+          </radialGradient>
         </defs>
-        {/* janelas (marcos com duração) */}
-        {PG_MARCOS.filter(m=>m[2]).map(m=>{
-          const x1 = X(new Date(m[1]).getTime()), x2 = X(new Date(m[2]).getTime());
-          const y = laneY[m[3]];
-          const passado = agora > new Date(m[2]).getTime();
-          return <rect key={"w"+m[0]} x={x1} y={y-8} width={Math.max(x2-x1,3)} height={16} rx={8}
-            fill={CORMAQ[m[3]]} opacity={passado?0.07:0.14}/>;
-        })}
-        {/* trilho */}
-        <line x1={42} y1={RY} x2={W-42} y2={RY} stroke="rgba(255,255,255,.09)" strokeWidth={4} strokeLinecap="round"/>
-        <line x1={42} y1={RY} x2={xNow} y2={RY} stroke="url(#pgtg)" strokeWidth={4} strokeLinecap="round"/>
-        {/* eixo de dias */}
-        {dias.map(t=>(
-          <g key={t}>
-            <line x1={X(t)} y1={238} x2={X(t)} y2={243} stroke="rgba(255,255,255,.18)" strokeWidth={1}/>
-            <text x={X(t)} y={250} textAnchor="middle" fill="#3A5880" fontFamily="monospace" fontSize={9}>{dh(t).slice(0,5)}</text>
-          </g>
-        ))}
-        {/* marcos */}
-        {PG_MARCOS.map(m=>{
-          const [id,ini,fim,maqM,titulo] = m;
-          const tIni = new Date(ini).getTime(), tFim = new Date(fim||ini).getTime();
-          const x = X(tIni), y = laneY[maqM];
-          const atual = agora>=tIni && agora<=tFim;
-          const passado = agora>tFim;
-          const ehProx = prox && prox[0]===id;
-          const yl = nivel[id];
-          const acima = maqM!=="MQ2";
-          const ta = x<110 ? "start" : x>W-110 ? "end" : "middle";
-          const mostrar = atual || ehProx || tocado===id;
-          const txt = curto(titulo);
-          const largura = Math.min(txt.length*5.1+10, 150);
-          const cx0 = ta==="start" ? x : ta==="end" ? x-largura : x-largura/2;
+
+        {/* brilho no ponto de fuga */}
+        <rect x="0" y="0" width={W} height={H} fill="url(#pgvanish)"/>
+
+        {/* pista com volume (2.5D) */}
+        <polygon points={`${bordaSup} ${bordaInf}`} fill="url(#pgroad)"/>
+        <path d={eixo} fill="none" stroke="url(#pgedge)" strokeWidth="2" strokeDasharray="1 9" strokeLinecap="round" opacity=".5"/>
+        {/* trecho já percorrido (presente→agora), aceso */}
+        {(()=>{
+          const perc = via.filter((_,i)=> (T0+(T1-T0)*i/60) <= agora);
+          if(perc.length<2) return null;
+          const dpath = perc.map(([x,y],i)=>`${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+          return <path d={dpath} fill="none" stroke="url(#pgedge)" strokeWidth="3.5" strokeLinecap="round"/>;
+        })()}
+
+        {/* travessas de dia (perspectiva) */}
+        {dias.map(t=>{
+          const [x,y,k] = pt(t);
           return (
-            <g key={id} onClick={()=>setTocado(t=>t===id?null:id)} style={{cursor:"pointer"}}>
-              <line x1={x} y1={acima? yl+3 : y} x2={x} y2={acima? y : yl-9}
-                stroke={CORMAQ[maqM]} strokeWidth={1} opacity={mostrar?0.4:0.12}/>
-              {mostrar && <rect x={cx0} y={acima?yl-10:yl-2} width={largura} height={14} rx={4}
-                fill="#04111D" opacity={0.85}/>}
-              {mostrar && <text x={x} y={yl} textAnchor={ta} fontFamily="monospace" fontSize={8.5}
-                fill={ehProx?C.warning:atual?C.cyan:"#B5C6DA"}
-                fontWeight={ehProx||atual?"800":"600"}
-                style={atual?{animation:"pgblink 1.8s ease-in-out infinite"}:undefined}>{txt}</text>}
-              {(atual||ehProx) && <circle cx={x} cy={y} r={11} fill="none" strokeWidth={1.5}
-                stroke={atual?C.cyan:C.warning} style={{animation:"trava 1.4s ease-in-out infinite"}}/>}
-              <circle cx={x} cy={y} r={ehProx?6:tocado===id?6:4.5}
-                fill={passado?CORMAQ[maqM]:"#0A1929"}
-                stroke={CORMAQ[maqM]} strokeWidth={1.5} opacity={passado?0.95:ehProx?1:0.6}/>
+            <g key={t}>
+              <line x1={x} y1={y-10*k} x2={x} y2={y+10*k} stroke="rgba(255,255,255,.14)" strokeWidth={k*1.2}/>
+              {k>0.45 && <text x={x} y={y+10*k+11*k+3} textAnchor="middle" fill="#3A5880"
+                fontFamily="monospace" fontSize={9*k}>{dh(t).slice(0,5)}</text>}
             </g>
           );
         })}
-        {/* AGORA */}
-        <line x1={xNow} y1={16} x2={xNow} y2={H-30} stroke={C.cyan} strokeWidth={1.5}
-          style={{animation:"pgblink 1.8s ease-in-out infinite"}}/>
-        <text x={flip?xNow-9:xNow+9} y={22} textAnchor={flip?"end":"start"} fill={C.cyan}
-          fontFamily="monospace" fontSize={9.5} letterSpacing=".16em">AGORA</text>
-        <text x={flip?xNow-9:xNow+9} y={44} textAnchor={flip?"end":"start"} fill={C.cyan}
-          fontFamily="monospace" fontSize={24} fontWeight="800"
-          style={{animation:"pgblink 1.8s ease-in-out infinite"}}>{pctExec}%</text>
+
+        {/* marcos com profundidade e altura alternada */}
+        {PG_MARCOS.map((m,idx)=>{
+          const [id,ini,fim,maqM,titulo] = m;
+          const tIni = new Date(ini).getTime(), tFim = new Date(fim||ini).getTime();
+          const alt = altBase[maqM] + alt3[idx%3]*0.5;
+          const [x,y,k,d] = pt(tIni, alt);
+          const [bx,by] = pt(tIni, 0);          // base na estrada (para a haste)
+          const atual = agora>=tIni && agora<=tFim;
+          const passado = agora>tFim;
+          const ehProx = prox && prox[0]===id;
+          const mostrar = atual || ehProx || tocado===id;
+          const r = (ehProx?7:5.5) * (0.55+0.45*k);
+          const op = passado?0.9:ehProx?1:0.4+0.5*k;
+          const txt = curto(titulo);
+          const ta = x < 90 ? "start" : x > W-120 ? "end" : "middle";
+          const fs = 9*k+1;
+          const largura = Math.min(txt.length*fs*0.62+8, 160);
+          const cx0 = ta==="start"?x:ta==="end"?x-largura:x-largura/2;
+          const acima = alt>=0;
+          const yl = acima ? y-11*k : y+16*k;
+          return (
+            <g key={id} onClick={()=>setTocado(tt=>tt===id?null:id)} style={{cursor:"pointer"}}>
+              {/* haste ligando estrada ao nó */}
+              <line x1={bx} y1={by} x2={x} y2={y} stroke={CORMAQ[maqM]} strokeWidth={k*1.1}
+                opacity={mostrar?0.5:0.16}/>
+              <circle cx={bx} cy={by} r={1.6*k} fill={CORMAQ[maqM]} opacity={0.5}/>
+              {mostrar && <rect x={cx0} y={yl-fs} width={largura} height={fs+5} rx={4} fill="#04111D" opacity={0.9}/>}
+              {mostrar && <text x={x} y={yl} textAnchor={ta} fontFamily="monospace" fontSize={fs}
+                fill={ehProx?C.warning:atual?C.cyan:"#C7D6E6"} fontWeight={ehProx||atual?"800":"600"}
+                style={atual?{animation:"pgblink 1.8s ease-in-out infinite"}:undefined}>{txt}</text>}
+              {(atual||ehProx) && <circle cx={x} cy={y} r={r+5} fill="none" strokeWidth={1.5}
+                stroke={atual?C.cyan:C.warning} style={{animation:"trava 1.4s ease-in-out infinite"}}/>}
+              <circle cx={x} cy={y} r={r} fill={passado?CORMAQ[maqM]:"#0A1929"}
+                stroke={CORMAQ[maqM]} strokeWidth={1.5} opacity={op}
+                style={{filter: ehProx||atual?`drop-shadow(0 0 5px ${CORMAQ[maqM]})`:"none"}}/>
+            </g>
+          );
+        })}
+
+        {/* plano AGORA */}
+        {(()=>{ const [nx,ny,nk] = pt(agora); return (
+          <g>
+            <line x1={nx} y1={ny-58*nk} x2={nx} y2={ny+30*nk} stroke={C.cyan} strokeWidth={1.6}
+              style={{animation:"pgblink 1.8s ease-in-out infinite"}}/>
+            <circle cx={nx} cy={ny} r={4} fill={C.cyan} style={{filter:`drop-shadow(0 0 6px ${C.cyan})`}}/>
+            <text x={flip?nx-10:nx+10} y={ny-42*nk} textAnchor={flip?"end":"start"} fill={C.cyan}
+              fontFamily="monospace" fontSize={9.5} letterSpacing=".16em">AGORA</text>
+            <text x={flip?nx-10:nx+10} y={ny-20*nk} textAnchor={flip?"end":"start"} fill={C.cyan}
+              fontFamily="monospace" fontSize={26} fontWeight="800"
+              style={{animation:"pgblink 1.8s ease-in-out infinite"}}>{pctExec}%</text>
+          </g>
+        ); })()}
       </svg>
       <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginTop:2}}>
         <span style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,letterSpacing:".16em"}}>PRÓXIMA META</span>
