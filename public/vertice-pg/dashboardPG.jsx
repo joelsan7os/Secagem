@@ -144,6 +144,7 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
       <div style={{position:"absolute",top:0,left:0,right:0,height:2,
         background:`linear-gradient(90deg,${C.accent},${C.cyan},${C.blue})`,opacity:.8}}/>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+        <span style={{fontFamily:"monospace",fontSize:10.5,fontWeight:700,color:C.textDim}}>02</span>
         <span style={{fontWeight:800,fontSize:13.5,letterSpacing:".05em"}}>TRILHO DA PG</span>
         <span style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.MQ3,letterSpacing:".1em"}}>▲ MQ3</span>
         <span style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.MQ2,letterSpacing:".1em"}}>▼ MQ2</span>
@@ -389,7 +390,14 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
   const emRisco = PG_ATIVIDADES.filter(a=>statusAtiv(a)==="risco");
   const criticasAndamento = PG_ATIVIDADES.filter(a=>a[7]===1 && statusAtiv(a)==="andamento");
   const concluidas = PG_ATIVIDADES.filter(a=>statusAtiv(a)==="concluida").length;
-  const zonaAcao = [...atrasadas, ...emRisco, ...criticasAndamento].slice(0,8);
+
+  const cfgPG = estados["pg_config"] || {};
+  const prioAuto = (PG_MARCOS.find(m=>m[3]!=="GERAL" && agora <= new Date(m[2]||m[1]).getTime())||[])[3] || null;
+  const prioridade = (cfgPG.prioridade && cfgPG.prioridade!=="auto") ? cfgPG.prioridade : prioAuto;
+  const gravaPrio = v => setDoc(doc(db,"pg_checklist_h2","pg_config"),
+    { prioridade:v, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
+  const zonaAcao = [...atrasadas, ...emRisco, ...criticasAndamento]
+    .sort((a,b)=>(b[1]===prioridade?1:0)-(a[1]===prioridade?1:0)).slice(0,8);
 
   const frentes = PG_AREAS_ATIV.map(ar=>{
     const acts = PG_ATIVIDADES.filter(a=>a[2]===ar);
@@ -464,93 +472,224 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
       </div>
 
       {modoExec==="tv" ? <CarrosselExec frentes={frentes}/> : (<>
-      <TrilhoPG agora={agora} pctExec={pct(concluidas, PG_ATIVIDADES.length)} pctCheck={pct(feitosGeral, TOTAIS.__geral)}/>
-      {/* ── Termômetro geral ── */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
-        {[["Máquina 2","MQ2"],["Máquina 3","MQ3"],["Geral","GERAL"]].map(([lab,m])=>{
-          const f = m==="GERAL" ? feitosGeral : feitosMaq(m);
-          const t = m==="GERAL" ? TOTAIS.__geral : TOTAIS[m].__total;
+
+      {/* ── 01 Resumo Executivo ── */}
+      <Sec num="01" titulo="RESUMO EXECUTIVO">
+        <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:10,marginBottom:10}}>
+          {[
+            ["EXECUÇÃO", pct(concluidas, PG_ATIVIDADES.length)+"%", C.cyan, "das atividades"],
+            ["CONCLUÍDAS", concluidas+"/"+PG_ATIVIDADES.length, C.accent, "atividades"],
+            ["EM ANDAMENTO", frentes.reduce((n,f)=>n+f.andamento,0), C.cyan, "agora"],
+            ["ATRASADAS", atrasadas.length, atrasadas.length?C.danger:C.textDim, "exigem ação"],
+            ["EM RISCO", emRisco.length, emRisco.length?C.warning:C.textDim, "janela >70%"],
+            ["CHECKLIST", pct(feitosGeral, TOTAIS.__geral)+"%", C.accent, feitosGeral+"/"+TOTAIS.__geral],
+          ].map(([lab,v,cor,sub])=>(
+            <div key={lab} style={{textAlign:"center",border:`1px solid ${cor}33`,borderRadius:11,padding:"10px 4px"}}>
+              <div style={{fontFamily:"monospace",fontSize:24,fontWeight:800,color:cor,lineHeight:1,
+                animation: lab==="ATRASADAS"&&atrasadas.length?"trava 1.4s ease-in-out infinite":"none"}}>{v}</div>
+              <div style={{fontFamily:"monospace",fontSize:8.5,color:C.textDim,letterSpacing:".14em",marginTop:5}}>{lab}</div>
+              <div style={{fontFamily:"monospace",fontSize:8,color:C.textDim,opacity:.7,marginTop:1}}>{sub}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:9,fontFamily:"monospace"}}>
+          <span style={{fontSize:9.5,color:C.textDim,letterSpacing:".16em"}}>MÁQUINA PRIORITÁRIA</span>
+          {["auto","MQ2","MQ3"].map(v=>{
+            const ativo = (cfgPG.prioridade||"auto")===v;
+            return <button key={v} onClick={()=>gravaPrio(v)} style={{
+              padding:"3px 10px",borderRadius:7,cursor:"pointer",fontFamily:"monospace",fontSize:9.5,fontWeight:800,
+              border:`1.5px solid ${ativo?(CORMAQ[v]||C.cyan):"rgba(255,255,255,.12)"}`,
+              background:ativo?`${CORMAQ[v]||C.cyan}18`:"rgba(255,255,255,.02)",
+              color:ativo?"#FFFFFF":C.textDim,letterSpacing:".08em"}}>{v.toUpperCase()}</button>;
+          })}
+          {prioridade && <span style={{marginLeft:6,fontSize:10.5,fontWeight:800,color:CORMAQ[prioridade],
+            border:`1px solid ${CORMAQ[prioridade]}66`,borderRadius:6,padding:"2px 8px",
+            boxShadow:`0 0 10px ${CORMAQ[prioridade]}33`}}>▸ {prioridade}</span>}
+          {cfgPG.prioridade && cfgPG.prioridade!=="auto" && cfgPG.op &&
+            <span style={{fontSize:8,color:C.textDim}}>definida por {cfgPG.op} · {hm(cfgPG.ts)}</span>}
+        </div>
+        {(()=>{ const pm = PG_MARCOS.find(m=>new Date(m[2]||m[1]).getTime()>=agora);
+          const pi = pm?new Date(pm[1]).getTime():0, pf = pm?new Date(pm[2]||pm[1]).getTime():0;
           return (
-            <div key={m} style={{background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",
-              border:`1px solid ${CORMAQ[m]}44`,borderRadius:14,padding:"14px 16px",position:"relative",overflow:"hidden"}}>
-              <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:CORMAQ[m],opacity:.8}}/>
-              <div style={{fontFamily:"monospace",fontSize:10,color:C.textDim,letterSpacing:".18em"}}>{lab.toUpperCase()}</div>
-              <div style={{display:"flex",alignItems:"baseline",gap:8,margin:"6px 0"}}>
-                <span style={{fontFamily:"monospace",fontSize:28,fontWeight:800,color:CORMAQ[m]}}>{pct(f,t)}%</span>
-                <span style={{fontFamily:"monospace",fontSize:11,color:C.textMuted}}>{f}/{t} itens</span>
+          <div style={{display:"flex",alignItems:"center",gap:9,flexWrap:"wrap",fontFamily:"monospace"}}>
+            <span style={{fontSize:9.5,color:C.textDim,letterSpacing:".16em"}}>PRÓXIMA META</span>
+            <span style={{width:7,height:7,borderRadius:"50%",background:C.warning,boxShadow:`0 0 8px ${C.warning}`,
+              animation:"trava 1.4s ease-in-out infinite"}}/>
+            <span style={{fontSize:12,fontWeight:800,color:"#FFFFFF",fontFamily:"system-ui"}}>{pm?pm[4]:"PG concluída"}</span>
+            {pm && <span style={{fontSize:9,fontWeight:700,color:CORMAQ[pm[3]],border:`1px solid ${CORMAQ[pm[3]]}55`,
+              borderRadius:4,padding:"1px 5px"}}>{pm[3]}</span>}
+            {pm && <span style={{fontSize:10.5,color:C.cyan}}>{agora<pi?`faltam ${falta(pi-agora)}`:`termina em ${falta(pf-agora)}`}</span>}
+            <span style={{marginLeft:"auto",fontSize:10,color:C.textDim}}>
+              TURNO ATUAL {turnoAtual?`· entrada ${turnoAtual[0]} · ${turnoAtual[1].length} pessoas`:"· sem escala agora"}
+            </span>
+          </div>
+        ); })()}
+      </Sec>
+
+      {/* ── 02 Trilho ── */}
+      <div style={{margin:"14px 0"}}>
+        <TrilhoPG agora={agora} pctExec={pct(concluidas, PG_ATIVIDADES.length)} pctCheck={pct(feitosGeral, TOTAIS.__geral)}/>
+      </div>
+
+      {/* ── 03 Zona de Ação ── */}
+      <div style={{background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",border:`1px solid ${C.danger}44`,
+        borderRadius:14,overflow:"hidden",marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",gap:9,padding:"11px 15px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+          <span style={{fontFamily:"monospace",fontSize:10.5,fontWeight:700,color:C.textDim}}>03</span>
+          <span style={{width:8,height:8,borderRadius:"50%",background:C.danger,boxShadow:`0 0 8px ${C.danger}`,
+            animation:"trava 1.4s ease-in-out infinite"}}/>
+          <span style={{fontWeight:800,fontSize:13,letterSpacing:".05em"}}>ZONA DE AÇÃO</span>
+          <span style={{marginLeft:"auto",fontFamily:"monospace",fontSize:11,color:C.textDim}}>{zonaAcao.length} itens</span>
+        </div>
+        {zonaAcao.length===0 && (
+          <div style={{padding:"16px 15px",fontSize:12.5,color:C.textMuted,fontFamily:"monospace"}}>Nenhuma pendência crítica no momento.</div>
+        )}
+        {zonaAcao.map((a,i)=>{
+          const [id,maqA,areaA,titulo,ini,fim,resp] = a;
+          const st = statusAtiv(a);
+          return (
+            <div key={id} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"10px 15px",
+              borderBottom: i<zonaAcao.length-1?"1px solid rgba(255,255,255,.05)":"none"}}>
+              <div style={{width:3,alignSelf:"stretch",borderRadius:2,background:COR_ST[st],flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12.5,fontWeight:700,color:C.text,lineHeight:1.3}}>{titulo}</div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4,fontFamily:"monospace",fontSize:9}}>
+                  <span style={{fontWeight:800,color:COR_ST[st]}}>{LABEL_ST[st]}</span>
+                  <span style={{color:CORMAQ[maqA]}}>{maqA}</span>
+                  <span style={{color:C.textDim}}>{areaA}</span>
+                  {ini && <span style={{color:C.textDim}}>janela {hm(ini)}→{hm(fim||ini)}</span>}
+                  {resp && <span style={{color:C.textDim}}>{resp}</span>}
+                </div>
               </div>
-              <Barra f={f} t={t} h={7} cor={CORMAQ[m]}/>
             </div>
           );
         })}
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:14}}>
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {/* ── Zona de Ação ── */}
-          <div style={{background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",border:`1px solid ${C.danger}44`,
-            borderRadius:14,overflow:"hidden"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,padding:"11px 15px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
-              <span style={{width:8,height:8,borderRadius:"50%",background:C.danger,boxShadow:`0 0 8px ${C.danger}`,
-                animation:"trava 1.4s ease-in-out infinite"}}/>
-              <span style={{fontWeight:800,fontSize:13.5,letterSpacing:".05em"}}>ZONA DE AÇÃO</span>
-              <span style={{marginLeft:"auto",fontFamily:"monospace",fontSize:11,color:C.textDim}}>{zonaAcao.length} itens</span>
+      {/* ── 04 Atividades Críticas ── */}
+      <div style={{marginBottom:14}}>
+      <Sec num="04" titulo="ATIVIDADES CRÍTICAS · CAMINHO CRÍTICO">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"2px 18px"}}>
+          {PG_ATIVIDADES.filter(a=>a[7]===1).map(a=>{
+            const st = statusAtiv(a);
+            const cor = st==="concluida"?C.accent:COR_ST[st]||C.textDim;
+            return (
+              <div key={a[0]} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",
+                borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                <span style={{width:7,height:7,borderRadius:"50%",background:cor,flexShrink:0,
+                  boxShadow:st==="atrasada"?`0 0 6px ${cor}`:"none"}}/>
+                <span style={{flex:1,fontSize:11.5,color:st==="concluida"?C.textMuted:"#E6EEF6",
+                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a[3]}</span>
+                <span style={{fontFamily:"monospace",fontSize:9,fontWeight:700,color:CORMAQ[a[1]]}}>{a[1]}</span>
+                <span style={{fontFamily:"monospace",fontSize:8.5,color:cor}}>
+                  {st==="concluida"?"OK":st==="andamento"?"ANDAMENTO":st==="atrasada"?"ATRASADA":st==="risco"?"RISCO":"PENDENTE"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </Sec>
+      </div>
+
+      {/* ── 05 Indicadores por Máquina ── */}
+      <div style={{marginBottom:14}}>
+      <Sec num="05" titulo="INDICADORES POR MÁQUINA · CHECKLIST">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+          {[["Máquina 2","MQ2"],["Máquina 3","MQ3"],["Geral","GERAL"]].map(([lab,m])=>{
+            const f = m==="GERAL" ? feitosGeral : feitosMaq(m);
+            const t = m==="GERAL" ? TOTAIS.__geral : TOTAIS[m].__total;
+            const prio = m===prioridade;
+            return (
+              <div key={m} style={{border:`${prio?1.5:1}px solid ${CORMAQ[m]}${prio?"":"44"}`,borderRadius:12,padding:"12px 14px",
+                position:"relative",overflow:"hidden",boxShadow:prio?`0 0 18px ${CORMAQ[m]}33`:"none"}}>
+                <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:CORMAQ[m],opacity:.8}}/>
+                <div style={{display:"flex",alignItems:"center",gap:7}}>
+                  <span style={{fontFamily:"monospace",fontSize:10,color:C.textDim,letterSpacing:".18em"}}>{lab.toUpperCase()}</span>
+                  {prio && <span style={{fontFamily:"monospace",fontSize:7.5,fontWeight:800,color:"#04111D",
+                    background:CORMAQ[m],borderRadius:4,padding:"1px 5px",letterSpacing:".1em",
+                    animation:"pgblink 1.8s ease-in-out infinite"}}>PRIORIDADE</span>}
+                </div>
+                <div style={{display:"flex",alignItems:"baseline",gap:8,margin:"6px 0"}}>
+                  <span style={{fontFamily:"monospace",fontSize:26,fontWeight:800,color:CORMAQ[m]}}>{pct(f,t)}%</span>
+                  <span style={{fontFamily:"monospace",fontSize:11,color:C.textMuted}}>{f}/{t} itens</span>
+                </div>
+                <Barra f={f} t={t} h={7} cor={CORMAQ[m]}/>
+              </div>
+            );
+          })}
+        </div>
+      </Sec>
+      </div>
+
+      {/* ── 06 Indicadores por Área ── */}
+      <div style={{marginBottom:14}}>
+      <Sec num="06" titulo="INDICADORES POR ÁREA · ATIVIDADES">
+        {frentes.map(f=>(
+          <div key={f.ar} style={{marginBottom:9}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11.5,marginBottom:3}}>
+              <span style={{fontWeight:700,color:"#FFFFFF",flex:1}}>{f.ar}</span>
+              {f.atrasadas.length>0 && <span style={{fontFamily:"monospace",fontSize:9,fontWeight:800,color:C.danger,
+                animation:"trava 1.4s ease-in-out infinite"}}>{f.atrasadas.length} ATRASADA{f.atrasadas.length>1?"S":""}</span>}
+              {f.andamento>0 && <span style={{fontFamily:"monospace",fontSize:9,color:C.cyan}}>{f.andamento} EM ANDAMENTO</span>}
+              <span style={{fontFamily:"monospace",fontSize:10.5,color:C.textMuted}}>{f.feitas}/{f.total}</span>
             </div>
-            {zonaAcao.length===0 && (
-              <div style={{padding:"18px 15px",fontSize:12.5,color:C.textMuted,fontFamily:"monospace"}}>Nenhuma pendência crítica no momento.</div>
-            )}
-            {zonaAcao.map((a,i)=>{
-              const [id,maqA,areaA,titulo,ini,fim,resp,cc] = a;
+            <Barra f={f.feitas} t={f.total} h={6}/>
+          </div>
+        ))}
+      </Sec>
+      </div>
+
+      {/* ── 07 Liberações ── */}
+      <div style={{marginBottom:14}}>
+      <Sec num="07" titulo="LIBERAÇÕES DE TRABALHO">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1.2fr",gap:16}}>
+          <div>
+            <div style={{fontFamily:"monospace",fontSize:9,color:C.textDim,letterSpacing:".14em",marginBottom:4}}>RESPONSÁVEIS (BOOK)</div>
+            {PG_LTS.map(([l,r])=><Linha key={l} l={l} r={r}/>)}
+          </div>
+          <div>
+            <div style={{fontFamily:"monospace",fontSize:9,color:C.textDim,letterSpacing:".14em",marginBottom:4}}>FRENTES DE LIBERAÇÃO</div>
+            {PG_ATIVIDADES.filter(a=>/^Liberar/i.test(a[3])).map(a=>{
               const st = statusAtiv(a);
+              const cor = st==="concluida"?C.accent:COR_ST[st]||C.textDim;
               return (
-                <div key={id} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"10px 15px",
-                  borderBottom: i<zonaAcao.length-1?"1px solid rgba(255,255,255,.05)":"none"}}>
-                  <div style={{width:3,alignSelf:"stretch",borderRadius:2,background:COR_ST[st],flexShrink:0}}/>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:12.5,fontWeight:700,color:C.white,lineHeight:1.3}}>{titulo}</div>
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4,fontFamily:"monospace",fontSize:9}}>
-                      <span style={{fontWeight:800,color:COR_ST[st]}}>{LABEL_ST[st]}</span>
-                      <span style={{color:CORMAQ[maqA]}}>{maqA}</span>
-                      <span style={{color:C.textDim}}>{areaA}</span>
-                      {ini && <span style={{color:C.textDim}}>janela {hm(ini)}→{hm(fim||ini)}</span>}
-                      {resp && <span style={{color:C.textDim}}>{resp}</span>}
-                    </div>
-                  </div>
+                <div key={a[0]} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",
+                  borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                  <span style={{width:7,height:7,borderRadius:"50%",background:cor,flexShrink:0}}/>
+                  <span style={{flex:1,fontSize:11.5,color:"#E6EEF6"}}>{a[2]}</span>
+                  <span style={{fontFamily:"monospace",fontSize:9,fontWeight:700,color:CORMAQ[a[1]]}}>{a[1]}</span>
+                  <span style={{fontFamily:"monospace",fontSize:8.5,color:cor}}>
+                    {st==="concluida"?"LIBERADA":st==="andamento"?"EM CURSO":"PENDENTE"}
+                  </span>
                 </div>
               );
             })}
           </div>
         </div>
-
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {/* ── Escala do turno atual ── */}
-          <div style={{background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",border:`1px solid ${C.borderPG}`,
-            borderRadius:14,overflow:"hidden"}}>
-            <div style={{padding:"11px 15px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
-              <span style={{fontWeight:800,fontSize:13.5}}>ESCALA · TURNO ATUAL</span>
-              {turnoAtual && <span style={{marginLeft:8,fontFamily:"monospace",fontSize:10,color:C.cyan}}>entrada {turnoAtual[0]}</span>}
-            </div>
-            <div style={{padding:"12px 15px",display:"flex",gap:6,flexWrap:"wrap"}}>
-              {!turnoAtual && <span style={{fontSize:11.5,color:C.textDim,fontFamily:"monospace"}}>Sem escala para agora.</span>}
-              {turnoAtual && turnoAtual[1].map((p,i)=>(
-                <div key={i} style={{background:"rgba(255,255,255,.03)",border:`1px solid ${p[2]?`${C.blue}66`:"rgba(255,255,255,.09)"}`,
-                  borderRadius:8,padding:"4px 8px",display:"flex",alignItems:"center",gap:5}}>
-                  <span style={{fontSize:11,fontWeight:700}}>{p[0]}</span>
-                  {p[1] && <span style={{fontFamily:"monospace",fontSize:8,color:C.textDim}}>{p[1]}</span>}
-                  {p[2] && <span style={{fontFamily:"monospace",fontSize:7.5,fontWeight:800,color:C.blue,
-                    border:`1px solid ${C.blue}66`,borderRadius:4,padding:"0 3px"}}>HE</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* ── Concluídas ── */}
-          <div style={{background:"rgba(0,230,118,.06)",border:`1px solid ${C.accent}44`,borderRadius:14,padding:"12px 15px",
-            display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <span style={{fontSize:12,fontWeight:700,color:C.textMuted}}>ATIVIDADES CONCLUÍDAS</span>
-            <span style={{fontFamily:"monospace",fontSize:18,fontWeight:800,color:C.accent}}>{concluidas}/{PG_ATIVIDADES.length}</span>
-          </div>
-        </div>
+      </Sec>
       </div>
+
+      {/* ── 08 Checklist de Retomada (resumo) ── */}
+      <Sec num="08" titulo="CHECKLIST DE RETOMADA · RESUMO">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:14,alignItems:"center"}}>
+          {[["MQ2","MQ2"],["MQ3","MQ3"],["GERAL","GERAL"]].map(([lab,m])=>{
+            const f = m==="GERAL" ? feitosGeral : feitosMaq(m);
+            const t = m==="GERAL" ? TOTAIS.__geral : TOTAIS[m].__total;
+            return (
+              <div key={m}>
+                <div style={{display:"flex",justifyContent:"space-between",fontFamily:"monospace",fontSize:10,marginBottom:3}}>
+                  <span style={{color:CORMAQ[m],fontWeight:700}}>{lab}</span>
+                  <span style={{color:C.textMuted}}>{pct(f,t)}%</span>
+                </div>
+                <Barra f={f} t={t} h={6} cor={CORMAQ[m]}/>
+              </div>
+            );
+          })}
+          <button onClick={()=>setAba("pos")} style={{padding:"9px 16px",borderRadius:9,cursor:"pointer",
+            fontFamily:"monospace",fontSize:10.5,fontWeight:800,letterSpacing:".08em",
+            border:`1.5px solid ${C.cyan}`,background:"rgba(0,240,255,.07)",color:"#FFFFFF"}}>VER RETOMADA ›</button>
+        </div>
+      </Sec>
       </>)}
       </>)}
 
