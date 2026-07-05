@@ -88,10 +88,14 @@ const Topico = ({ children }) => (
 function TrilhoPG({ agora, pctExec, pctCheck }) {
   const T0 = new Date("2026-04-15T12:00").getTime();
   const T1 = new Date("2026-05-04T12:00").getTime();
-  const W = 1000, H = 176, RY = 96;
+  const W = 1000, H = 252, RY = 140;
   const X = t => 42 + (Math.min(Math.max(t,T0),T1) - T0) / (T1 - T0) * (W - 84);
   const xNow = X(agora);
-  const laneY = { MQ3:46, MQ2:146, GERAL:RY };
+  const laneY = { MQ3:112, MQ2:176, GERAL:RY };
+  const curto = t => t.length > 24 ? t.slice(0,23)+"…" : t;
+  const nivel = {};
+  PG_MARCOS.filter(m=>m[3]!=="MQ2").forEach((m,i)=>{ nivel[m[0]] = 60 + (i%3)*14; });
+  PG_MARCOS.filter(m=>m[3]==="MQ2").forEach((m,i)=>{ nivel[m[0]] = 204 + (i%3)*14; });
   const prox = PG_MARCOS.find(m => new Date(m[2]||m[1]).getTime() >= agora);
   const proxIni = prox ? new Date(prox[1]).getTime() : null;
   const proxFim = prox ? new Date(prox[2]||prox[1]).getTime() : null;
@@ -108,7 +112,7 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
         <span style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.MQ2,letterSpacing:".1em"}}>▼ MQ2</span>
         <span style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.GERAL,letterSpacing:".1em"}}>● GERAL</span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:158,display:"block"}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:218,display:"block"}}>
         <defs>
           <linearGradient id="pgtg" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stopColor={C.accent}/><stop offset=".55" stopColor={C.cyan}/><stop offset="1" stopColor={C.blue}/>
@@ -128,21 +132,29 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
         {/* eixo de dias */}
         {dias.map(t=>(
           <g key={t}>
-            <line x1={X(t)} y1={RY+38} x2={X(t)} y2={RY+44} stroke="rgba(255,255,255,.18)" strokeWidth={1}/>
-            <text x={X(t)} y={RY+56} textAnchor="middle" fill="#3A5880" fontFamily="monospace" fontSize={9}>{dh(t).slice(0,5)}</text>
+            <line x1={X(t)} y1={238} x2={X(t)} y2={243} stroke="rgba(255,255,255,.18)" strokeWidth={1}/>
+            <text x={X(t)} y={250} textAnchor="middle" fill="#3A5880" fontFamily="monospace" fontSize={9}>{dh(t).slice(0,5)}</text>
           </g>
         ))}
         {/* marcos */}
         {PG_MARCOS.map(m=>{
-          const [id,ini,fim,maqM] = m;
+          const [id,ini,fim,maqM,titulo] = m;
           const tIni = new Date(ini).getTime(), tFim = new Date(fim||ini).getTime();
           const x = X(tIni), y = laneY[maqM];
           const atual = agora>=tIni && agora<=tFim;
           const passado = agora>tFim;
           const ehProx = prox && prox[0]===id;
+          const yl = nivel[id];
+          const acima = maqM!=="MQ2";
+          const ta = x<110 ? "start" : x>W-110 ? "end" : "middle";
           return (
             <g key={id}>
-              {y!==RY && <line x1={x} y1={y} x2={x} y2={RY} stroke={CORMAQ[maqM]} strokeWidth={1} opacity={.22}/>}
+              <line x1={x} y1={acima? yl+3 : y} x2={x} y2={acima? y : yl-9}
+                stroke={CORMAQ[maqM]} strokeWidth={1} opacity={passado?0.16:0.32}/>
+              <text x={x} y={yl} textAnchor={ta} fontFamily="monospace" fontSize={8.5}
+                fill={ehProx?C.warning:atual?C.cyan:passado?"#3A5880":"#B5C6DA"}
+                fontWeight={ehProx||atual?"800":"400"}
+                style={atual?{animation:"pgblink 1.8s ease-in-out infinite"}:undefined}>{curto(titulo)}</text>
               {(atual||ehProx) && <circle cx={x} cy={y} r={11} fill="none" strokeWidth={1.5}
                 stroke={atual?C.cyan:C.warning} style={{animation:"trava 1.4s ease-in-out infinite"}}/>}
               <circle cx={x} cy={y} r={ehProx?6:4.5}
