@@ -177,7 +177,6 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
           const tIni = new Date(ini).getTime(), tFim = new Date(fim||ini).getTime();
           const alt = altBase[maqM] + alt3[idx%3]*0.5;
           const [x,y,k,d] = pt(tIni, alt);
-          const [bx,by] = pt(tIni, 0);          // base na estrada (para a haste)
           const atual = agora>=tIni && agora<=tFim;
           const passado = agora>tFim;
           const ehProx = prox && prox[0]===id;
@@ -185,44 +184,58 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
           const r = (ehProx?7:5.5) * (0.55+0.45*k);
           const op = passado?0.9:ehProx?1:0.4+0.5*k;
           const txt = curto(titulo);
-          const ta = x < 90 ? "start" : x > W-120 ? "end" : "middle";
-          const fs = 9*k+1;
-          const largura = Math.min(txt.length*fs*0.62+8, 160);
-          const cx0 = ta==="start"?x:ta==="end"?x-largura:x-largura/2;
+          const cor = CORMAQ[maqM];
+          const corTxt = ehProx?C.warning:atual?C.cyan:"#C7D6E6";
           const acima = alt>=0;
-          const yl = acima ? y-11*k : y+16*k;
+          // chip ancorado
+          const fs = 8.6;
+          const larg = Math.min(txt.length*fs*0.6+16, 172);
+          const chipH = 22;
+          const gap = 16*k+8;
+          const chipY = acima ? y-gap-chipH : y+gap;
+          const ta = x < 90 ? "start" : x > W-larg ? "end" : "middle";
+          const chipX = ta==="start"?x:ta==="end"?x-larg:x-larg/2;
+          const hAncora = acima ? chipY+chipH : chipY;
           return (
             <g key={id} onClick={()=>setTocado(tt=>tt===id?null:id)} style={{cursor:"pointer"}}>
-              {/* haste ligando estrada ao nó */}
-              <line x1={bx} y1={by} x2={x} y2={y} stroke={CORMAQ[maqM]} strokeWidth={k*1.1}
-                opacity={mostrar?0.5:0.16}/>
-              <circle cx={bx} cy={by} r={1.6*k} fill={CORMAQ[maqM]} opacity={0.5}/>
-              {mostrar && <rect x={cx0} y={yl-fs} width={largura} height={fs+5} rx={4} fill="#04111D" opacity={0.9}/>}
-              {mostrar && <text x={x} y={yl} textAnchor={ta} fontFamily="monospace" fontSize={fs}
-                fill={ehProx?C.warning:atual?C.cyan:"#C7D6E6"} fontWeight={ehProx||atual?"800":"600"}
-                style={atual?{animation:"pgblink 1.8s ease-in-out infinite"}:undefined}>{txt}</text>}
+              {mostrar && <line x1={x} y1={y} x2={x} y2={hAncora} stroke={cor} strokeWidth={1} opacity={0.55}/>}
+              {mostrar && (
+                <g style={ehProx?{filter:`drop-shadow(0 0 5px ${cor}66)`}:undefined}>
+                  <rect x={chipX} y={chipY} width={larg} height={chipH} rx={5}
+                    fill="#061523" stroke={cor} strokeWidth={1} opacity={0.96}/>
+                  <rect x={chipX} y={chipY} width={3} height={chipH} rx={1.5} fill={cor}/>
+                  <text x={chipX+10} y={chipY+9.5} fill={corTxt} fontFamily="monospace" fontSize={fs}
+                    fontWeight={ehProx||atual?"800":"600"}
+                    style={atual?{animation:"pgblink 1.8s ease-in-out infinite"}:undefined}>{txt}</text>
+                  <text x={chipX+10} y={chipY+18.5} fill="#5E7A99" fontFamily="monospace" fontSize={7.5}>
+                    {maqM} · {dh(tIni)}
+                  </text>
+                </g>
+              )}
               {(atual||ehProx) && <circle cx={x} cy={y} r={r+5} fill="none" strokeWidth={1.5}
                 stroke={atual?C.cyan:C.warning} style={{animation:"trava 1.4s ease-in-out infinite"}}/>}
-              <circle cx={x} cy={y} r={r} fill={passado?CORMAQ[maqM]:"#0A1929"}
-                stroke={CORMAQ[maqM]} strokeWidth={1.5} opacity={op}
-                style={{filter: ehProx||atual?`drop-shadow(0 0 5px ${CORMAQ[maqM]})`:"none"}}/>
+              <circle cx={x} cy={y} r={r} fill={passado?cor:"#0A1929"}
+                stroke={cor} strokeWidth={1.5} opacity={op}
+                style={{filter: ehProx||atual?`drop-shadow(0 0 5px ${cor})`:"none"}}/>
             </g>
           );
         })}
 
-        {/* plano AGORA */}
+        {/* plano AGORA (só a linha vertical na pista) */}
         {(()=>{ const [nx,ny,nk] = pt(agora); return (
           <g>
             <line x1={nx} y1={ny-58*nk} x2={nx} y2={ny+30*nk} stroke={C.cyan} strokeWidth={1.6}
               style={{animation:"pgblink 1.8s ease-in-out infinite"}}/>
             <circle cx={nx} cy={ny} r={4} fill={C.cyan} style={{filter:`drop-shadow(0 0 6px ${C.cyan})`}}/>
-            <text x={flip?nx-10:nx+10} y={ny-42*nk} textAnchor={flip?"end":"start"} fill={C.cyan}
-              fontFamily="monospace" fontSize={9.5} letterSpacing=".16em">AGORA</text>
-            <text x={flip?nx-10:nx+10} y={ny-20*nk} textAnchor={flip?"end":"start"} fill={C.cyan}
-              fontFamily="monospace" fontSize={26} fontWeight="800"
-              style={{animation:"pgblink 1.8s ease-in-out infinite"}}>{pctExec}%</text>
           </g>
         ); })()}
+
+        {/* indicador AGORA % fixo, canto superior-esquerdo, fora da pista */}
+        <g>
+          <text x={16} y={26} fill={C.textDim} fontFamily="monospace" fontSize={9.5} letterSpacing=".22em">AGORA</text>
+          <text x={16} y={54} fill={C.cyan} fontFamily="monospace" fontSize={30} fontWeight="800"
+            style={{animation:"pgblink 1.8s ease-in-out infinite"}}>{pctExec}%</text>
+        </g>
       </svg>
       <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginTop:2}}>
         <span style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,letterSpacing:".16em"}}>PRÓXIMA META</span>
