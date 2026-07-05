@@ -19,6 +19,11 @@ const pct = (f,t) => t ? Math.round((f/t)*100) : 0;
 const slug = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-");
 const docIdDe = (maq, area) => `${maq}__${slug(area)}`;
 const CORMAQ = { MQ2:"#00F0FF", MQ3:"#00E676", GERAL:"#5090FF" };
+const falta = ms => {
+  const m = Math.max(0, ms);
+  const d = Math.floor(m/86400000), h = Math.floor(m%86400000/3600000), mi = Math.floor(m%3600000/60000);
+  return d ? `${d}d ${p2(h)}h` : h ? `${h}h ${p2(mi)}min` : `${mi}min`;
+};
 
 const TOTAIS = (()=>{
   const t = { __geral:0 };
@@ -79,6 +84,99 @@ const Topico = ({ children }) => (
     <span style={{color:"#00F0FF"}}>·</span><span>{children}</span>
   </div>
 );
+
+function TrilhoPG({ agora, pctExec, pctCheck }) {
+  const T0 = new Date("2026-04-15T12:00").getTime();
+  const T1 = new Date("2026-05-04T12:00").getTime();
+  const W = 1000, H = 176, RY = 96;
+  const X = t => 42 + (Math.min(Math.max(t,T0),T1) - T0) / (T1 - T0) * (W - 84);
+  const xNow = X(agora);
+  const laneY = { MQ3:46, MQ2:146, GERAL:RY };
+  const prox = PG_MARCOS.find(m => new Date(m[2]||m[1]).getTime() >= agora);
+  const proxIni = prox ? new Date(prox[1]).getTime() : null;
+  const proxFim = prox ? new Date(prox[2]||prox[1]).getTime() : null;
+  const dias = []; for(let t = new Date("2026-04-16T00:00").getTime(); t <= T1; t += 2*86400000) dias.push(t);
+  const flip = xNow > W - 190;
+  return (
+    <div style={{background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",border:`1px solid ${C.borderPG}`,
+      borderRadius:14,padding:"13px 16px 11px",marginBottom:16,position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",top:0,left:0,right:0,height:2,
+        background:`linear-gradient(90deg,${C.accent},${C.cyan},${C.blue})`,opacity:.8}}/>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+        <span style={{fontWeight:800,fontSize:13.5,letterSpacing:".05em"}}>TRILHO DA PG</span>
+        <span style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.MQ3,letterSpacing:".1em"}}>▲ MQ3</span>
+        <span style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.MQ2,letterSpacing:".1em"}}>▼ MQ2</span>
+        <span style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.GERAL,letterSpacing:".1em"}}>● GERAL</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:158,display:"block"}}>
+        <defs>
+          <linearGradient id="pgtg" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor={C.accent}/><stop offset=".55" stopColor={C.cyan}/><stop offset="1" stopColor={C.blue}/>
+          </linearGradient>
+        </defs>
+        {/* janelas (marcos com duração) */}
+        {PG_MARCOS.filter(m=>m[2]).map(m=>{
+          const x1 = X(new Date(m[1]).getTime()), x2 = X(new Date(m[2]).getTime());
+          const y = laneY[m[3]];
+          const passado = agora > new Date(m[2]).getTime();
+          return <rect key={"w"+m[0]} x={x1} y={y-8} width={Math.max(x2-x1,3)} height={16} rx={8}
+            fill={CORMAQ[m[3]]} opacity={passado?0.07:0.14}/>;
+        })}
+        {/* trilho */}
+        <line x1={42} y1={RY} x2={W-42} y2={RY} stroke="rgba(255,255,255,.09)" strokeWidth={4} strokeLinecap="round"/>
+        <line x1={42} y1={RY} x2={xNow} y2={RY} stroke="url(#pgtg)" strokeWidth={4} strokeLinecap="round"/>
+        {/* eixo de dias */}
+        {dias.map(t=>(
+          <g key={t}>
+            <line x1={X(t)} y1={RY+38} x2={X(t)} y2={RY+44} stroke="rgba(255,255,255,.18)" strokeWidth={1}/>
+            <text x={X(t)} y={RY+56} textAnchor="middle" fill="#3A5880" fontFamily="monospace" fontSize={9}>{dh(t).slice(0,5)}</text>
+          </g>
+        ))}
+        {/* marcos */}
+        {PG_MARCOS.map(m=>{
+          const [id,ini,fim,maqM] = m;
+          const tIni = new Date(ini).getTime(), tFim = new Date(fim||ini).getTime();
+          const x = X(tIni), y = laneY[maqM];
+          const atual = agora>=tIni && agora<=tFim;
+          const passado = agora>tFim;
+          const ehProx = prox && prox[0]===id;
+          return (
+            <g key={id}>
+              {y!==RY && <line x1={x} y1={y} x2={x} y2={RY} stroke={CORMAQ[maqM]} strokeWidth={1} opacity={.22}/>}
+              {(atual||ehProx) && <circle cx={x} cy={y} r={11} fill="none" strokeWidth={1.5}
+                stroke={atual?C.cyan:C.warning} style={{animation:"trava 1.4s ease-in-out infinite"}}/>}
+              <circle cx={x} cy={y} r={ehProx?6:4.5}
+                fill={passado?CORMAQ[maqM]:"#0A1929"}
+                stroke={CORMAQ[maqM]} strokeWidth={1.5} opacity={passado?0.95:ehProx?1:0.55}/>
+            </g>
+          );
+        })}
+        {/* AGORA */}
+        <line x1={xNow} y1={16} x2={xNow} y2={H-30} stroke={C.cyan} strokeWidth={1.5}
+          style={{animation:"pgblink 1.8s ease-in-out infinite"}}/>
+        <text x={flip?xNow-9:xNow+9} y={22} textAnchor={flip?"end":"start"} fill={C.cyan}
+          fontFamily="monospace" fontSize={9.5} letterSpacing=".16em">AGORA</text>
+        <text x={flip?xNow-9:xNow+9} y={44} textAnchor={flip?"end":"start"} fill={C.cyan}
+          fontFamily="monospace" fontSize={24} fontWeight="800"
+          style={{animation:"pgblink 1.8s ease-in-out infinite"}}>{pctExec}%</text>
+      </svg>
+      <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginTop:2}}>
+        <span style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,letterSpacing:".16em"}}>PRÓXIMA META</span>
+        <span style={{width:8,height:8,borderRadius:"50%",background:C.warning,boxShadow:`0 0 8px ${C.warning}`,
+          animation:"trava 1.4s ease-in-out infinite",flexShrink:0}}/>
+        <span style={{fontSize:12.5,fontWeight:800,color:"#FFFFFF"}}>{prox?prox[4]:"PG concluída"}</span>
+        {prox && <span style={{fontFamily:"monospace",fontSize:9,fontWeight:700,color:CORMAQ[prox[3]],
+          border:`1px solid ${CORMAQ[prox[3]]}55`,borderRadius:4,padding:"1px 5px"}}>{prox[3]}</span>}
+        {prox && <span style={{fontFamily:"monospace",fontSize:11,color:C.cyan}}>
+          {agora < proxIni ? `faltam ${falta(proxIni-agora)}` : `em andamento · termina em ${falta(proxFim-agora)}`}
+        </span>}
+        <span style={{marginLeft:"auto",fontFamily:"monospace",fontSize:10,color:C.textDim}}>
+          EXECUÇÃO <b style={{color:C.cyan}}>{pctExec}%</b> · CHECKLIST <b style={{color:C.accent}}>{pctCheck}%</b>
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function CarrosselExec({ frentes }) {
   const [idx, setIdx] = useState(0);
@@ -199,9 +297,6 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
     };
   });
 
-  // Marcos: passados / agora / próximos
-  const idxAgora = PG_MARCOS.findIndex(m => agora <= new Date(m[2]||m[1]).getTime());
-  const janela = PG_MARCOS.slice(Math.max(0,idxAgora-1), idxAgora+4);
 
   // Escala do turno atual
   const hojeISO = new Date(agora).toISOString().slice(0,10);
@@ -215,7 +310,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
   return (
     <div style={{minHeight:"100vh",background:"radial-gradient(80% 60% at 50% 0%,#0a1622,#04080e 70%,#01040a)",
       color:C.text,fontFamily:"system-ui,sans-serif",padding:"20px 24px 40px"}}>
-      <style>{`@keyframes trava{0%,100%{opacity:1}50%{opacity:.4}}@keyframes slideIn{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:translateX(0)}}`}</style>
+      <style>{`@keyframes trava{0%,100%{opacity:1}50%{opacity:.4}}@keyframes slideIn{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:translateX(0)}}@keyframes pgblink{0%,100%{opacity:1}50%{opacity:.3}}`}</style>
 
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18,flexWrap:"wrap"}}>
         <span style={{fontWeight:800,fontSize:20,letterSpacing:".24em"}}>VÉRTICE</span>
@@ -260,6 +355,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
       </div>
 
       {modoExec==="tv" ? <CarrosselExec frentes={frentes}/> : (<>
+      <TrilhoPG agora={agora} pctExec={pct(concluidas, PG_ATIVIDADES.length)} pctCheck={pct(feitosGeral, TOTAIS.__geral)}/>
       {/* ── Termômetro geral ── */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
         {[["Máquina 2","MQ2"],["Máquina 3","MQ3"],["Geral","GERAL"]].map(([lab,m])=>{
@@ -314,33 +410,6 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
                 </div>
               );
             })}
-          </div>
-
-          {/* ── Linha do Tempo ── */}
-          <div style={{background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",border:`1px solid ${C.borderPG}`,
-            borderRadius:14,overflow:"hidden"}}>
-            <div style={{padding:"11px 15px",borderBottom:"1px solid rgba(255,255,255,.06)",fontWeight:800,fontSize:13.5}}>LINHA DO TEMPO</div>
-            <div style={{display:"flex",overflowX:"auto",gap:0,padding:"14px 15px"}}>
-              {janela.map((m,i)=>{
-                const [id,ini,fim,maqM,titulo] = m;
-                const tIni = new Date(ini).getTime(), tFim = fim?new Date(fim).getTime():tIni;
-                const atual = agora>=tIni && agora<=tFim;
-                const passado = agora>tFim;
-                return (
-                  <div key={id} style={{minWidth:150,flexShrink:0,padding:"0 12px",borderLeft: i>0?"1px solid rgba(255,255,255,.08)":"none"}}>
-                    <div style={{width:10,height:10,borderRadius:"50%",margin:"0 auto 6px",
-                      background: atual?C.cyan:passado?C.accent:"rgba(255,255,255,.18)",
-                      boxShadow: atual?`0 0 10px ${C.cyan}`:"none"}}/>
-                    <div style={{fontFamily:"monospace",fontSize:9.5,color:atual?C.cyan:C.textDim,textAlign:"center"}}>{dh(ini)}</div>
-                    <div style={{fontSize:11,fontWeight:700,textAlign:"center",marginTop:3,color:passado?C.textMuted:C.white,lineHeight:1.25}}>{titulo}</div>
-                    <div style={{textAlign:"center",marginTop:4}}>
-                      <span style={{fontFamily:"monospace",fontSize:8,fontWeight:700,color:CORMAQ[maqM],
-                        border:`1px solid ${CORMAQ[maqM]}55`,borderRadius:4,padding:"0 4px"}}>{maqM}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
         </div>
 
