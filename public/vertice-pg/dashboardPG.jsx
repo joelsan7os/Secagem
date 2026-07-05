@@ -271,6 +271,96 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
   );
 }
 
+function PainelTV({ agora, frentes, maqs, resumo, alertas, liber, pctExec, pctCheck }) {
+  const T0 = new Date(PG_MARCOS[0][1]).getTime();
+  const TF = new Date(PG_MARCOS[PG_MARCOS.length-1][2]||PG_MARCOS[PG_MARCOS.length-1][1]).getTime();
+  const pctTempo = Math.round(Math.min(Math.max((agora-T0)/(TF-T0),0),1)*100);
+  const dif = pctExec - pctTempo;
+  const tend = dif>=5 ? ["▲ ADIANTADA",C.accent] : dif<=-5 ? ["▼ ATRASADA",C.danger] : ["▶ EM DIA",C.cyan];
+  return (
+    <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:14}}>
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        {/* hero geral + tendência */}
+        <div style={{background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",border:`1px solid ${C.borderPG}`,
+          borderRadius:16,padding:"20px 26px",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:3,
+            background:`linear-gradient(90deg,${C.accent},${C.cyan},${C.blue})`,opacity:.85}}/>
+          <div style={{fontFamily:"monospace",fontSize:11,color:C.textDim,letterSpacing:".22em"}}>PROGRESSO GERAL DA PG</div>
+          <div style={{display:"flex",alignItems:"baseline",gap:18,margin:"8px 0 12px",flexWrap:"wrap"}}>
+            <span style={{fontFamily:"monospace",fontSize:64,fontWeight:800,color:C.cyan,lineHeight:1}}>{pctExec}%</span>
+            <span style={{fontFamily:"monospace",fontSize:20,fontWeight:800,color:tend[1],
+              animation:dif<=-5?"trava 1.4s ease-in-out infinite":"none"}}>{tend[0]}</span>
+            <span style={{fontFamily:"monospace",fontSize:12,color:C.textDim}}>tempo decorrido {pctTempo}% · checklist {pctCheck}%</span>
+          </div>
+          <Barra f={pctExec} t={100} h={12}/>
+        </div>
+        {/* contadores gigantes */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+          {[["CONCLUÍDAS",resumo.concl,C.accent],["EM ANDAMENTO",resumo.emAnd,C.cyan],
+            ["CRÍTICAS PENDENTES",resumo.critPend,C.warning],["ATRASADAS",resumo.atr,resumo.atr?C.danger:C.textDim]].map(([lab,v,cor])=>(
+            <div key={lab} style={{background:"rgba(10,25,41,0.55)",border:`1px solid ${cor}33`,borderRadius:14,
+              padding:"16px 8px",textAlign:"center"}}>
+              <div style={{fontFamily:"monospace",fontSize:44,fontWeight:800,color:cor,lineHeight:1,
+                animation: lab==="ATRASADAS"&&v?"trava 1.4s ease-in-out infinite":"none"}}>{v}</div>
+              <div style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,letterSpacing:".16em",marginTop:8}}>{lab}</div>
+            </div>
+          ))}
+        </div>
+        {/* carrossel de frentes */}
+        <CarrosselExec frentes={frentes}/>
+      </div>
+
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        {/* máquinas */}
+        {maqs.map(([lab,m,f,t])=>(
+          <div key={m} style={{background:"rgba(10,25,41,0.55)",border:`1px solid ${CORMAQ[m]}44`,borderRadius:14,
+            padding:"13px 16px",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:CORMAQ[m],opacity:.8}}/>
+            <div style={{display:"flex",alignItems:"baseline",gap:10}}>
+              <span style={{fontFamily:"monospace",fontSize:11,color:C.textDim,letterSpacing:".16em"}}>{lab}</span>
+              <span style={{marginLeft:"auto",fontFamily:"monospace",fontSize:30,fontWeight:800,color:CORMAQ[m]}}>{pct(f,t)}%</span>
+            </div>
+            <div style={{marginTop:8}}><Barra f={f} t={t} h={8} cor={CORMAQ[m]}/></div>
+          </div>
+        ))}
+        {/* alertas */}
+        <div style={{background:"rgba(10,25,41,0.55)",border:`1px solid ${C.danger}44`,borderRadius:14,overflow:"hidden",flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+            <span style={{width:8,height:8,borderRadius:"50%",background:C.danger,boxShadow:`0 0 8px ${C.danger}`,
+              animation:"trava 1.4s ease-in-out infinite"}}/>
+            <span style={{fontWeight:800,fontSize:13}}>ALERTAS</span>
+          </div>
+          <div style={{padding:"8px 14px"}}>
+            {alertas.length===0 && <div style={{fontFamily:"monospace",fontSize:11.5,color:C.textMuted,padding:"6px 0"}}>Sem alertas ativos.</div>}
+            {alertas.map(([id,titulo,maqA,st])=>(
+              <div key={id} style={{display:"flex",gap:8,alignItems:"center",padding:"5px 0"}}>
+                <span style={{width:6,height:6,borderRadius:"50%",background:st==="atrasada"?C.danger:C.warning,flexShrink:0,
+                  boxShadow:`0 0 5px ${st==="atrasada"?C.danger:C.warning}`}}/>
+                <span style={{flex:1,fontSize:12.5,color:"#E6EEF6",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{titulo}</span>
+                <span style={{fontFamily:"monospace",fontSize:9.5,fontWeight:700,color:CORMAQ[maqA]}}>{maqA}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* próximas liberações */}
+        <div style={{background:"rgba(10,25,41,0.55)",border:`1px solid ${C.borderPG}`,borderRadius:14,overflow:"hidden"}}>
+          <div style={{padding:"10px 14px",borderBottom:"1px solid rgba(255,255,255,.06)",fontWeight:800,fontSize:13}}>PRÓXIMAS LIBERAÇÕES</div>
+          <div style={{padding:"8px 14px"}}>
+            {liber.length===0 && <div style={{fontFamily:"monospace",fontSize:11.5,color:C.textMuted,padding:"6px 0"}}>Todas as frentes liberadas.</div>}
+            {liber.map(a=>(
+              <div key={a[0]} style={{display:"flex",gap:8,alignItems:"center",padding:"5px 0"}}>
+                <span style={{width:6,height:6,borderRadius:"50%",border:`1.5px solid ${CORMAQ[a[1]]}`,flexShrink:0}}/>
+                <span style={{flex:1,fontSize:12.5,color:"#E6EEF6"}}>{a[2]}</span>
+                <span style={{fontFamily:"monospace",fontSize:9.5,fontWeight:700,color:CORMAQ[a[1]]}}>{a[1]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CarrosselExec({ frentes }) {
   const [idx, setIdx] = useState(0);
   const [pausa, setPausa] = useState(false);
@@ -471,7 +561,16 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
         ))}
       </div>
 
-      {modoExec==="tv" ? <CarrosselExec frentes={frentes}/> : (<>
+      {modoExec==="tv" ? (
+        <PainelTV agora={agora} frentes={frentes}
+          pctExec={pct(concluidas, PG_ATIVIDADES.length)} pctCheck={pct(feitosGeral, TOTAIS.__geral)}
+          maqs={[["MÁQUINA 2","MQ2",feitosMaq("MQ2"),TOTAIS.MQ2.__total],["MÁQUINA 3","MQ3",feitosMaq("MQ3"),TOTAIS.MQ3.__total]]}
+          resumo={{ concl:concluidas, emAnd:frentes.reduce((n,f)=>n+f.andamento,0),
+            critPend:PG_ATIVIDADES.filter(a=>a[7]===1 && statusAtiv(a)!=="concluida").length, atr:atrasadas.length }}
+          alertas={[...atrasadas,...emRisco].slice(0,6).map(a=>[a[0],a[3],a[1],statusAtiv(a)])}
+          liber={PG_ATIVIDADES.filter(a=>/^Liberar/i.test(a[3]) && statusAtiv(a)!=="concluida").slice(0,5)}
+        />
+      ) : (<>
 
       {/* ── 01 Resumo Executivo ── */}
       <Sec num="01" titulo="RESUMO EXECUTIVO">
