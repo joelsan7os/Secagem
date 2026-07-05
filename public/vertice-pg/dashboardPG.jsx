@@ -89,9 +89,9 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
   const [tocado, setTocado] = useState(null);
   const T0 = new Date("2026-04-15T12:00").getTime();
   const T1 = new Date("2026-05-04T12:00").getTime();
-  const W = 1000, H = 300;
-  const VX = W - 60, VY = 150;            // ponto de fuga (futuro afunda aqui)
-  const X0 = 60, Y0 = 214;                // presente (perto, base)
+  const W = 1000, H = 340;
+  const VX = W - 60, VY = 190;            // ponto de fuga (futuro afunda aqui)
+  const X0 = 60, Y0 = 250;                // presente (perto, base)
   const prog = t => (Math.min(Math.max(t,T0),T1) - T0) / (T1 - T0);
   const dep = t => Math.pow(prog(t), 0.72);            // profundidade 0..1
   const esc = d => 1 - d * 0.82;                        // escala por profundidade
@@ -128,7 +128,7 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
         <span style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.MQ2,letterSpacing:".1em"}}>▼ MQ2</span>
         <span style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ.GERAL,letterSpacing:".1em"}}>● GERAL</span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:236,display:"block"}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:270,display:"block"}}>
         <defs>
           <linearGradient id="pgroad" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stopColor={C.accent} stopOpacity=".5"/>
@@ -180,38 +180,36 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
           const atual = agora>=tIni && agora<=tFim;
           const passado = agora>tFim;
           const ehProx = prox && prox[0]===id;
-          const mostrar = atual || ehProx || tocado===id;
           const r = (ehProx?7:5.5) * (0.55+0.45*k);
           const op = passado?0.9:ehProx?1:0.4+0.5*k;
           const txt = curto(titulo);
           const cor = CORMAQ[maqM];
           const corTxt = ehProx?C.warning:atual?C.cyan:"#C7D6E6";
-          const acima = alt>=0;
-          // chip ancorado
-          const fs = 8.6;
+          const acima = maqM!=="MQ2";
+          // haste em comprimentos alternados (curta/média/longa) para escalonar chips
+          const fs = 8.6, chipH = 22;
           const larg = Math.min(txt.length*fs*0.6+16, 172);
-          const chipH = 22;
-          const gap = 16*k+8;
-          const chipY = acima ? y-gap-chipH : y+gap;
+          const passo = [0, 30, 60][idx%3];
+          const hasteLen = (acima ? 20 : 16) + passo;
+          const chipY = acima ? y - hasteLen - chipH : y + hasteLen;
           const ta = x < 90 ? "start" : x > W-larg ? "end" : "middle";
           const chipX = ta==="start"?x:ta==="end"?x-larg:x-larg/2;
           const hAncora = acima ? chipY+chipH : chipY;
+          const dim = passado && !atual && !ehProx;
           return (
-            <g key={id} onClick={()=>setTocado(tt=>tt===id?null:id)} style={{cursor:"pointer"}}>
-              {mostrar && <line x1={x} y1={y} x2={x} y2={hAncora} stroke={cor} strokeWidth={1} opacity={0.55}/>}
-              {mostrar && (
-                <g style={ehProx?{filter:`drop-shadow(0 0 5px ${cor}66)`}:undefined}>
-                  <rect x={chipX} y={chipY} width={larg} height={chipH} rx={5}
-                    fill="#061523" stroke={cor} strokeWidth={1} opacity={0.96}/>
-                  <rect x={chipX} y={chipY} width={3} height={chipH} rx={1.5} fill={cor}/>
-                  <text x={chipX+10} y={chipY+9.5} fill={corTxt} fontFamily="monospace" fontSize={fs}
-                    fontWeight={ehProx||atual?"800":"600"}
-                    style={atual?{animation:"pgblink 1.8s ease-in-out infinite"}:undefined}>{txt}</text>
-                  <text x={chipX+10} y={chipY+18.5} fill="#5E7A99" fontFamily="monospace" fontSize={7.5}>
-                    {maqM} · {dh(tIni)}
-                  </text>
-                </g>
-              )}
+            <g key={id} onClick={()=>setTocado(tt=>tt===id?null:id)} style={{cursor:"pointer",opacity:dim?0.6:1}}>
+              <line x1={x} y1={y} x2={x} y2={hAncora} stroke={cor} strokeWidth={1} opacity={0.5}/>
+              <g style={ehProx?{filter:`drop-shadow(0 0 5px ${cor}66)`}:undefined}>
+                <rect x={chipX} y={chipY} width={larg} height={chipH} rx={5}
+                  fill="#061523" stroke={cor} strokeWidth={ehProx||atual?1.4:1} opacity={0.96}/>
+                <rect x={chipX} y={chipY} width={3} height={chipH} rx={1.5} fill={cor}/>
+                <text x={chipX+10} y={chipY+9.5} fill={corTxt} fontFamily="monospace" fontSize={fs}
+                  fontWeight={ehProx||atual?"800":"600"}
+                  style={atual?{animation:"pgblink 1.8s ease-in-out infinite"}:undefined}>{txt}</text>
+                <text x={chipX+10} y={chipY+18.5} fill="#5E7A99" fontFamily="monospace" fontSize={7.5}>
+                  {maqM} · {dh(tIni)}
+                </text>
+              </g>
               {(atual||ehProx) && <circle cx={x} cy={y} r={r+5} fill="none" strokeWidth={1.5}
                 stroke={atual?C.cyan:C.warning} style={{animation:"trava 1.4s ease-in-out infinite"}}/>}
               <circle cx={x} cy={y} r={r} fill={passado?cor:"#0A1929"}
