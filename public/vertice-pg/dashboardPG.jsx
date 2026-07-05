@@ -86,6 +86,7 @@ const Topico = ({ children }) => (
 );
 
 function TrilhoPG({ agora, pctExec, pctCheck }) {
+  const [tocado, setTocado] = useState(null);
   const T0 = new Date("2026-04-15T12:00").getTime();
   const T1 = new Date("2026-05-04T12:00").getTime();
   const W = 1000, H = 252, RY = 140;
@@ -94,8 +95,8 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
   const laneY = { MQ3:112, MQ2:176, GERAL:RY };
   const curto = t => t.length > 24 ? t.slice(0,23)+"…" : t;
   const nivel = {};
-  PG_MARCOS.filter(m=>m[3]!=="MQ2").forEach((m,i)=>{ nivel[m[0]] = 60 + (i%3)*14; });
-  PG_MARCOS.filter(m=>m[3]==="MQ2").forEach((m,i)=>{ nivel[m[0]] = 204 + (i%3)*14; });
+  PG_MARCOS.filter(m=>m[3]!=="MQ2").forEach((m,i)=>{ nivel[m[0]] = 54 + (i%3)*20; });
+  PG_MARCOS.filter(m=>m[3]==="MQ2").forEach((m,i)=>{ nivel[m[0]] = 200 + (i%3)*20; });
   const prox = PG_MARCOS.find(m => new Date(m[2]||m[1]).getTime() >= agora);
   const proxIni = prox ? new Date(prox[1]).getTime() : null;
   const proxFim = prox ? new Date(prox[2]||prox[1]).getTime() : null;
@@ -147,19 +148,25 @@ function TrilhoPG({ agora, pctExec, pctCheck }) {
           const yl = nivel[id];
           const acima = maqM!=="MQ2";
           const ta = x<110 ? "start" : x>W-110 ? "end" : "middle";
+          const mostrar = atual || ehProx || tocado===id;
+          const txt = curto(titulo);
+          const largura = Math.min(txt.length*5.1+10, 150);
+          const cx0 = ta==="start" ? x : ta==="end" ? x-largura : x-largura/2;
           return (
-            <g key={id}>
+            <g key={id} onClick={()=>setTocado(t=>t===id?null:id)} style={{cursor:"pointer"}}>
               <line x1={x} y1={acima? yl+3 : y} x2={x} y2={acima? y : yl-9}
-                stroke={CORMAQ[maqM]} strokeWidth={1} opacity={passado?0.16:0.32}/>
-              <text x={x} y={yl} textAnchor={ta} fontFamily="monospace" fontSize={8.5}
-                fill={ehProx?C.warning:atual?C.cyan:passado?"#3A5880":"#B5C6DA"}
-                fontWeight={ehProx||atual?"800":"400"}
-                style={atual?{animation:"pgblink 1.8s ease-in-out infinite"}:undefined}>{curto(titulo)}</text>
+                stroke={CORMAQ[maqM]} strokeWidth={1} opacity={mostrar?0.4:0.12}/>
+              {mostrar && <rect x={cx0} y={acima?yl-10:yl-2} width={largura} height={14} rx={4}
+                fill="#04111D" opacity={0.85}/>}
+              {mostrar && <text x={x} y={yl} textAnchor={ta} fontFamily="monospace" fontSize={8.5}
+                fill={ehProx?C.warning:atual?C.cyan:"#B5C6DA"}
+                fontWeight={ehProx||atual?"800":"600"}
+                style={atual?{animation:"pgblink 1.8s ease-in-out infinite"}:undefined}>{txt}</text>}
               {(atual||ehProx) && <circle cx={x} cy={y} r={11} fill="none" strokeWidth={1.5}
                 stroke={atual?C.cyan:C.warning} style={{animation:"trava 1.4s ease-in-out infinite"}}/>}
-              <circle cx={x} cy={y} r={ehProx?6:4.5}
+              <circle cx={x} cy={y} r={ehProx?6:tocado===id?6:4.5}
                 fill={passado?CORMAQ[maqM]:"#0A1929"}
-                stroke={CORMAQ[maqM]} strokeWidth={1.5} opacity={passado?0.95:ehProx?1:0.55}/>
+                stroke={CORMAQ[maqM]} strokeWidth={1.5} opacity={passado?0.95:ehProx?1:0.6}/>
             </g>
           );
         })}
@@ -338,7 +345,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
 
       {/* ── Abas ── */}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[["plan","01","PLANEJAMENTO"],["exec","02","EXECUÇÃO"],["pos","03","PÓS-EXECUÇÃO"]].map(([id,num,lab])=>(
+        {[["plan","01","PLANEJAMENTO"],["exec","02","EXECUÇÃO"],["pos","03","RETOMADA"]].map(([id,num,lab])=>(
           <button key={id} onClick={()=>setAba(id)} style={{
             flex:1, padding:"9px 6px", borderRadius:10, cursor:"pointer",
             display:"flex", alignItems:"center", justifyContent:"center", gap:8,
@@ -446,28 +453,6 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
               ))}
             </div>
           </div>
-
-          {/* ── Progresso do Checklist por área ── */}
-          <div style={{background:"rgba(10,25,41,0.55)",backdropFilter:"blur(12px)",border:`1px solid ${C.borderPG}`,
-            borderRadius:14,overflow:"hidden",flex:1}}>
-            <div style={{padding:"11px 15px",borderBottom:"1px solid rgba(255,255,255,.06)",fontWeight:800,fontSize:13.5}}>CHECKLIST POR ÁREA</div>
-            <div style={{padding:"10px 15px",display:"flex",flexDirection:"column",gap:9,maxHeight:340,overflowY:"auto"}}>
-              {["MQ2","MQ3","COMUM"].filter(m=>PG_DATA[m]).flatMap(m=>areasDe(m).map(a=>{
-                const f = feitosNoDoc(estados[docIdDe(m,a)]);
-                const t = TOTAIS[m][a];
-                return (
-                  <div key={m+a}>
-                    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
-                      <span style={{color:C.white,fontWeight:600}}>{a} <span style={{color:CORMAQ[m],fontFamily:"monospace",fontSize:9}}>{m}</span></span>
-                      <span style={{fontFamily:"monospace",color:C.textMuted}}>{f}/{t}</span>
-                    </div>
-                    <Barra f={f} t={t} h={5}/>
-                  </div>
-                );
-              }))}
-            </div>
-          </div>
-
           {/* ── Concluídas ── */}
           <div style={{background:"rgba(0,230,118,.06)",border:`1px solid ${C.accent}44`,borderRadius:14,padding:"12px 15px",
             display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -544,7 +529,23 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
                 </div>
               );
             })}
-            <div style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,margin:"6px 0 10px",lineHeight:1.5}}>
+            <div style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,margin:"10px 0 6px",letterSpacing:".1em"}}>POR ÁREA</div>
+            <div style={{display:"flex",flexDirection:"column",gap:9,maxHeight:280,overflowY:"auto"}}>
+              {["MQ2","MQ3","COMUM"].filter(m=>PG_DATA[m]).flatMap(m=>areasDe(m).map(a=>{
+                const f2 = feitosNoDoc(estados[docIdDe(m,a)]);
+                const t2 = TOTAIS[m][a];
+                return (
+                  <div key={m+a}>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                      <span style={{color:C.white,fontWeight:600}}>{a} <span style={{color:CORMAQ[m],fontFamily:"monospace",fontSize:9}}>{m}</span></span>
+                      <span style={{fontFamily:"monospace",color:C.textMuted}}>{f2}/{t2}</span>
+                    </div>
+                    <Barra f={f2} t={t2} h={5}/>
+                  </div>
+                );
+              }))}
+            </div>
+            <div style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,margin:"14px 0 10px",lineHeight:1.5}}>
               Alimentado pelos operadores de área conforme os equipamentos são liberados na retomada.
             </div>
             {onChecklist && (
