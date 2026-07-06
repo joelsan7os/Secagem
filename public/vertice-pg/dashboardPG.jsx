@@ -943,7 +943,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
 
       {/* ── Aba Pós-execução ── */}
       {aba==="pos" && (
-        <div style={{display:"flex",flexDirection:"column",gap:14,maxWidth:760}}>
+        <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:14}}>
           <Sec num="01" titulo="CHECKLIST DE RETOMADA · PROGRESSO">
             {[["Máquina 2","MQ2"],["Máquina 3","MQ3"],["Geral","GERAL"]].map(([lab,m])=>{
               const f = m==="GERAL" ? feitosGeral : feitosMaq(m);
@@ -985,6 +985,71 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
               }}>ABRIR CHECKLIST DE RETOMADA</button>
             )}
           </Sec>
+
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <Sec num="02" titulo="SITUAÇÃO DA PARTIDA">
+              {PG_MARCOS.filter(m=>/instala|teste|passagem|produzindo/i.test(m[4])).map(m=>{
+                const [id,ini,fim,maqM,titulo] = m;
+                const tFim = new Date(fim||ini).getTime();
+                const done = agora > tFim;
+                const atual = agora>=new Date(ini).getTime() && agora<=tFim;
+                return (
+                  <div key={id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",
+                    borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                    <span style={{width:7,height:7,borderRadius:"50%",flexShrink:0,
+                      background:done?C.accent:atual?C.cyan:"rgba(255,255,255,.18)",
+                      boxShadow:atual?`0 0 6px ${C.cyan}`:"none"}}/>
+                    <span style={{flex:1,fontSize:11.5,color:done?C.textMuted:"#E6EEF6"}}>{titulo}</span>
+                    <span style={{fontFamily:"monospace",fontSize:9,fontWeight:700,color:CORMAQ[maqM]}}>{maqM}</span>
+                    <span style={{fontFamily:"monospace",fontSize:9,color:C.textDim}}>{dh(ini)}</span>
+                  </div>
+                );
+              })}
+            </Sec>
+
+            <Sec num="03" titulo="PENDÊNCIAS · EQUIPAMENTOS EM ABERTO">
+              {(()=>{
+                const pend = [];
+                for(const m of ["MQ2","MQ3","COMUM"]) for(const a of areasDe(m)) {
+                  const dDoc = estados[docIdDe(m,a)];
+                  for(const eq of PG_DATA[m][a]) {
+                    const f = eq.itens.filter(([id])=>dDoc&&dDoc.itens&&dDoc.itens[id]&&dDoc.itens[id].ok).length;
+                    if(f>0 && f<eq.itens.length) pend.push({m,a,eq,f,t:eq.itens.length});
+                  }
+                }
+                if(!pend.length) return <div style={{fontFamily:"monospace",fontSize:11,color:C.textMuted}}>Nenhum equipamento parcialmente concluído.</div>;
+                return pend.slice(0,10).map((p,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",
+                    borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                    <span style={{flex:1,fontSize:11.5,color:"#E6EEF6",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      {p.eq.local||p.eq.tag}</span>
+                    <span style={{fontFamily:"monospace",fontSize:9,color:C.textDim}}>{p.a}</span>
+                    <span style={{fontFamily:"monospace",fontSize:9,fontWeight:700,color:CORMAQ[p.m]}}>{p.m}</span>
+                    <span style={{fontFamily:"monospace",fontSize:10.5,fontWeight:700,color:C.warning}}>{p.f}/{p.t}</span>
+                  </div>
+                ));
+              })()}
+            </Sec>
+
+            <Sec num="04" titulo="LIBERAÇÕES POR ÁREA">
+              {["MQ2","MQ3","COMUM"].filter(m=>PG_DATA[m]).flatMap(m=>areasDe(m).map(a=>{
+                const f = feitosNoDoc(estados[docIdDe(m,a)]);
+                const t = TOTAIS[m][a];
+                const liberada = f===t;
+                return (
+                  <div key={m+a} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",
+                    borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                    <span style={{width:7,height:7,borderRadius:"50%",flexShrink:0,
+                      background:liberada?C.accent:"rgba(255,255,255,.18)"}}/>
+                    <span style={{flex:1,fontSize:11.5,color:liberada?C.textMuted:"#E6EEF6"}}>{a}</span>
+                    <span style={{fontFamily:"monospace",fontSize:9,fontWeight:700,color:CORMAQ[m]}}>{m}</span>
+                    <span style={{fontFamily:"monospace",fontSize:9,fontWeight:800,
+                      color:liberada?C.accent:C.textDim}}>{liberada?"LIBERADA":`${f}/${t}`}</span>
+                  </div>
+                );
+              }))}
+            </Sec>
+          </div>
         </div>
       )}
     </div>
