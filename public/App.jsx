@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import MVPSecagem from './MVPSecagem';
 
-const PG = lazy(() => import('./vertice-pg/pg'));
+const PG = lazy(() => import('./pg'));
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -31,8 +31,15 @@ function lerModoPG() {
   } catch { return false; }
 }
 
+function lerTV() {
+  try {
+    return location.hash.replace("#","").toLowerCase() === "tv" && !!localStorage.getItem("perfil_ativo_h2");
+  } catch { return false; }
+}
+
 export default function App() {
-  const modoPG = lerModoPG();
+  const tvPG = lerTV();
+  const modoPG = lerModoPG() || tvPG;
   return (
     <ErrorBoundary>
       {modoPG ? (
@@ -41,7 +48,7 @@ export default function App() {
             CARREGANDO PG…
           </div>
         }>
-          <PG/>
+          <PG tv={tvPG}/>
         </Suspense>
       ) : <MVPSecagem/>}
     </ErrorBoundary>
