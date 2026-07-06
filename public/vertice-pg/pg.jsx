@@ -142,6 +142,7 @@ function CardNav({ num, titulo, sub, f, t, extra, onClick }) {
 export default function PGApp({ tv }) {
   const { perfil, logout } = usePerfilAtivo();
   const [estados, setEstados] = useState({});
+  const [fotos, setFotos] = useState({});
   const [maq, setMaq] = useState(null);
   const [area, setArea] = useState(null);
   const [eqI, setEqI] = useState(null);
@@ -158,6 +159,14 @@ export default function PGApp({ tv }) {
     const unsub = onSnapshot(collection(db,"pg_checklist_h2"), snap=>{
       const m = {}; snap.forEach(d=>{ m[d.id] = d.data(); });
       setEstados(m);
+    }, ()=>{});
+    return ()=>unsub();
+  },[]);
+
+  useEffect(()=>{
+    const unsub = onSnapshot(collection(db,"pg_fotos_h2"), snap=>{
+      const m = {}; snap.forEach(d=>{ m[d.id] = d.data(); });
+      setFotos(m);
     }, ()=>{});
     return ()=>unsub();
   },[]);
@@ -189,6 +198,25 @@ export default function PGApp({ tv }) {
   };
   const liberar = ()=>{
     setDoc(doc(db,"pg_checklist_h2",dId),{ resp:null },{merge:true}).catch(()=>{});
+  };
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const fotoKeyOf = e => `${maq}__${slug(area)}__${slug(e.tag)}`;
+  const enviarFoto = (file, e) => {
+    if(!file) return;
+    setEnviandoFoto(true);
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = ev => { img.onload = () => {
+      const MAX = 900, r = Math.min(1, MAX/Math.max(img.width,img.height));
+      const cv = document.createElement("canvas");
+      cv.width = img.width*r; cv.height = img.height*r;
+      cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
+      const b64 = cv.toDataURL("image/jpeg", 0.6);
+      setDoc(doc(db,"pg_fotos_h2",fotoKeyOf(e)),{
+        b64, op:perfil.nome, m:perfil.matricula, ts:Date.now(), tag:e.tag, local:e.local||"",
+      }).then(()=>setEnviandoFoto(false)).catch(()=>setEnviandoFoto(false));
+    }; img.src = ev.target.result; };
+    reader.readAsDataURL(file);
   };
 
   const ativEstado = (estados["plano_atividades"] && estados["plano_atividades"].ativ) || {};
@@ -465,7 +493,7 @@ export default function PGApp({ tv }) {
           {eqs.map((e,i)=>{
             const f = feitosEq(dDoc, e);
             return <CardNav key={e.tag+i} num={p2(i+1)} titulo={e.local||e.tag}
-              sub={e.tag} f={f} t={e.itens.length} onClick={()=>setEqI(i)}/>;
+              sub={fotos[fotoKeyOf(e)] ? `${e.tag} · 📷` : e.tag} f={f} t={e.itens.length} onClick={()=>setEqI(i)}/>;
           })}
         </>)}
 
@@ -479,6 +507,26 @@ export default function PGApp({ tv }) {
               {eq.tag} · {feitosEq(dDoc,eq)}/{eq.itens.length} ITENS
             </div>
             <Barra f={feitosEq(dDoc,eq)} t={eq.itens.length} h={7}/>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginTop:11}}>
+              <label style={{
+                display:"flex",alignItems:"center",gap:6,padding:"8px 13px",borderRadius:9,cursor:"pointer",
+                border:`1.5px solid ${C.cyan}`,background:"rgba(0,240,255,.07)",color:"#FFFFFF",
+                fontSize:12,fontWeight:700,opacity:enviandoFoto?.6:1,
+              }}>
+                📷 {enviandoFoto?"Enviando…":fotos[fotoKeyOf(eq)]?"Trocar foto":"Foto do equipamento"}
+                <input type="file" accept="image/*" capture="environment" style={{display:"none"}}
+                  disabled={enviandoFoto} onChange={e=>enviarFoto(e.target.files[0], eq)}/>
+              </label>
+              {fotos[fotoKeyOf(eq)] && (
+                <img src={fotos[fotoKeyOf(eq)].b64} style={{width:46,height:46,borderRadius:8,objectFit:"cover",
+                  border:`1px solid ${C.accent}66`}}/>
+              )}
+            </div>
+            {fotos[fotoKeyOf(eq)] && (
+              <div style={{fontFamily:"monospace",fontSize:9,color:C.textDim,marginTop:5}}>
+                {fotos[fotoKeyOf(eq)].op} · {hora(fotos[fotoKeyOf(eq)].ts)}
+              </div>
+            )}
           </div>
           <div style={{background:"rgba(10,25,41,0.45)",border:`1px solid ${C.borderPG}`,borderRadius:14,overflow:"hidden"}}>
             {eq.itens.map(([id,texto],i)=>{
