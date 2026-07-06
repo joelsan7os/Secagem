@@ -423,11 +423,11 @@ function CarrosselExec({ frentes }) {
   );
 }
 
-export default function DashboardPG({ onChecklist, onOperacao, onSair }) {
+export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
   const [estados, setEstados] = useState({});
   const [agora, setAgora] = useState(Date.now());
-  const [aba, setAba] = useState(()=> Date.now() < new Date(PG_MARCOS[0][1]).getTime() ? "plan" : "exec");
-  const [modoExec, setModoExec] = useState("comando");
+  const [aba, setAba] = useState(()=> tv ? "exec" : (Date.now() < new Date(PG_MARCOS[0][1]).getTime() ? "plan" : "exec"));
+  const [modoExec, setModoExec] = useState(tv ? "tv" : "comando");
   const { perfil } = usePerfilAtivo();
   const [buscaTempo, setBuscaTempo] = useState("");
   const [cenAberto, setCenAberto] = useState(null);
