@@ -22,6 +22,13 @@ const slug = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase(
 const docIdDe = (maq, area) => `${maq}__${slug(area)}`;
 const LIB_MAP = Object.fromEntries(PG_TEMPOS_LIB.map(([nome,dur])=>[slug(nome), dur]));
 const CORMAQ = { MQ2:"#00F0FF", MQ3:"#00E676", GERAL:"#5090FF" };
+const campoS = { width:"100%",boxSizing:"border-box",padding:"6px 9px",borderRadius:7,
+  background:"rgba(255,255,255,.04)",border:"1px solid rgba(80,144,255,.3)",
+  color:"#FFFFFF",fontSize:11,fontFamily:"monospace",outline:"none" };
+const btnOk = { fontFamily:"monospace",fontSize:10,fontWeight:800,color:"#04111D",background:"#00E676",
+  border:"none",borderRadius:7,padding:"4px 10px",cursor:"pointer" };
+const btnX = { fontFamily:"monospace",fontSize:10,color:"#B5C6DA",background:"none",
+  border:"1px solid rgba(255,255,255,.18)",borderRadius:7,padding:"4px 10px",cursor:"pointer" };
 const durMin = hhmm => { const [h,m] = hhmm.split(":").map(Number); return h*60+m; };
 const sugestaoDur = titulo => {
   const chave = slug(titulo);
@@ -96,7 +103,8 @@ const Topico = ({ children }) => (
   </div>
 );
 
-function TrilhoPG({ agora, pctExec, pctCheck }) {
+function TrilhoPG({ agora, pctExec, pctCheck, marcos }) {
+  const PG_MARCOS = marcos;
   const [tocado, setTocado] = useState(null);
   const T0 = new Date("2026-04-15T12:00").getTime();
   const T1 = new Date("2026-05-04T12:00").getTime();
@@ -432,6 +440,60 @@ function CarrosselExec({ frentes }) {
   );
 }
 
+function FormMarcoEdit({ v, set, onSalvar, onCancelar }) {
+  const [id,ini,fim,maqM,titulo] = v;
+  const upd = (i,val) => { const n=[...v]; n[i]=val; set(n); };
+  return (
+    <div style={{background:"rgba(0,240,255,.05)",border:`1px solid ${C.cyan}66`,borderRadius:9,padding:"8px 10px",marginBottom:6}}>
+      <input value={titulo} onChange={e=>upd(4,e.target.value)} placeholder="Título do marco" style={campoS}/>
+      <div style={{display:"flex",gap:6,marginTop:5}}>
+        <input value={ini||""} onChange={e=>upd(1,e.target.value)} placeholder="AAAA-MM-DDTHH:MM" style={{...campoS,flex:1}}/>
+        <input value={fim||""} onChange={e=>upd(2,e.target.value||null)} placeholder="fim (opcional)" style={{...campoS,flex:1}}/>
+      </div>
+      <div style={{display:"flex",gap:6,marginTop:5,alignItems:"center"}}>
+        <select value={maqM} onChange={e=>upd(3,e.target.value)} style={campoS}>
+          {["MQ2","MQ3","GERAL"].map(m=><option key={m} value={m}>{m}</option>)}
+        </select>
+        <div style={{marginLeft:"auto",display:"flex",gap:6}}>
+          <button onClick={onSalvar} style={btnOk}>Salvar</button>
+          <button onClick={onCancelar} style={btnX}>Cancelar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+function FormAtivEdit({ v, set, onSalvar, onCancelar }) {
+  const [id,maqA,areaA,titulo,ini,fim,resp,cc] = v;
+  const upd = (i,val) => { const n=[...v]; n[i]=val; set(n); };
+  return (
+    <div style={{background:"rgba(0,240,255,.05)",border:`1px solid ${C.cyan}66`,borderRadius:9,padding:"8px 10px",marginBottom:6}}>
+      <input value={titulo} onChange={e=>upd(3,e.target.value)} placeholder="Título da atividade" style={campoS}/>
+      <div style={{display:"flex",gap:6,marginTop:5}}>
+        <select value={maqA} onChange={e=>upd(1,e.target.value)} style={campoS}>
+          {["MQ2","MQ3","GERAL"].map(m=><option key={m} value={m}>{m}</option>)}
+        </select>
+        <select value={areaA} onChange={e=>upd(2,e.target.value)} style={{...campoS,flex:1}}>
+          {PG_AREAS_ATIV.map(a=><option key={a} value={a}>{a}</option>)}
+        </select>
+      </div>
+      <div style={{display:"flex",gap:6,marginTop:5}}>
+        <input value={ini||""} onChange={e=>upd(4,e.target.value||null)} placeholder="início (opcional)" style={{...campoS,flex:1}}/>
+        <input value={fim||""} onChange={e=>upd(5,e.target.value||null)} placeholder="fim (opcional)" style={{...campoS,flex:1}}/>
+      </div>
+      <div style={{display:"flex",gap:6,marginTop:5,alignItems:"center"}}>
+        <input value={resp||""} onChange={e=>upd(6,e.target.value||null)} placeholder="responsável" style={{...campoS,flex:1}}/>
+        <label style={{display:"flex",alignItems:"center",gap:4,fontSize:9.5,color:C.textDim,fontFamily:"monospace"}}>
+          <input type="checkbox" checked={cc===1} onChange={e=>upd(7,e.target.checked?1:0)}/> crítico
+        </label>
+        <div style={{marginLeft:"auto",display:"flex",gap:6}}>
+          <button onClick={onSalvar} style={btnOk}>Salvar</button>
+          <button onClick={onCancelar} style={btnX}>Cancelar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
   const [estados, setEstados] = useState({});
   const [agora, setAgora] = useState(Date.now());
@@ -442,6 +504,10 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
   const [cenAberto, setCenAberto] = useState(null);
   const [editTempo, setEditTempo] = useState(null);
   const [valTempo, setValTempo] = useState("");
+  const [editMarco, setEditMarco] = useState(null);
+  const [formMarco, setFormMarco] = useState(null);
+  const [editAtiv, setEditAtiv] = useState(null);
+  const [formAtiv, setFormAtiv] = useState(null);
 
   useEffect(()=>{
     const unsub = onSnapshot(collection(db,"pg_checklist_h2"), snap=>{
@@ -485,13 +551,25 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
     return reg.st===1 ? "andamento" : "pendente";
   };
 
-  const atrasadas = PG_ATIVIDADES.filter(a=>statusAtiv(a)==="atrasada");
-  const emRisco = PG_ATIVIDADES.filter(a=>statusAtiv(a)==="risco");
-  const criticasAndamento = PG_ATIVIDADES.filter(a=>a[7]===1 && statusAtiv(a)==="andamento");
-  const concluidas = PG_ATIVIDADES.filter(a=>statusAtiv(a)==="concluida").length;
+  const planoEdits = estados["pg_plano_edits"] || {};
+  const MARCOS = PG_MARCOS
+    .filter(m=>!(planoEdits.marcosDel||[]).includes(m[0]))
+    .map(m=> (planoEdits.marcosEdit||{})[m[0]] || m)
+    .concat(planoEdits.marcosAdd||[]);
+  const ATIV = PG_ATIVIDADES
+    .filter(a=>!(planoEdits.ativDel||[]).includes(a[0]))
+    .map(a=> (planoEdits.ativEdit||{})[a[0]] || a)
+    .concat(planoEdits.ativAdd||[]);
+  const salvarPlano = (campo, valor) => setDoc(doc(db,"pg_checklist_h2","pg_plano_edits"),
+    { [campo]: valor, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
+
+  const atrasadas = ATIV.filter(a=>statusAtiv(a)==="atrasada");
+  const emRisco = ATIV.filter(a=>statusAtiv(a)==="risco");
+  const criticasAndamento = ATIV.filter(a=>a[7]===1 && statusAtiv(a)==="andamento");
+  const concluidas = ATIV.filter(a=>statusAtiv(a)==="concluida").length;
 
   const cfgPG = estados["pg_config"] || {};
-  const prioAuto = (PG_MARCOS.find(m=>m[3]!=="GERAL" && agora <= new Date(m[2]||m[1]).getTime())||[])[3] || null;
+  const prioAuto = (MARCOS.find(m=>m[3]!=="GERAL" && agora <= new Date(m[2]||m[1]).getTime())||[])[3] || null;
   const prioridade = (cfgPG.prioridade && cfgPG.prioridade!=="auto") ? cfgPG.prioridade : prioAuto;
   const gravaPrio = v => setDoc(doc(db,"pg_checklist_h2","pg_config"),
     { prioridade:v, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
@@ -499,7 +577,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
     .sort((a,b)=>(b[1]===prioridade?1:0)-(a[1]===prioridade?1:0)).slice(0,8);
 
   const frentes = PG_AREAS_ATIV.map(ar=>{
-    const acts = PG_ATIVIDADES.filter(a=>a[2]===ar);
+    const acts = ATIV.filter(a=>a[2]===ar);
     const st = acts.map(statusAtiv);
     return {
       ar, total: acts.length,
@@ -572,12 +650,12 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
 
       {modoExec==="tv" ? (
         <PainelTV agora={agora} frentes={frentes}
-          pctExec={pct(concluidas, PG_ATIVIDADES.length)} pctCheck={pct(feitosGeral, TOTAIS.__geral)}
+          pctExec={pct(concluidas, ATIV.length)} pctCheck={pct(feitosGeral, TOTAIS.__geral)}
           maqs={[["MÁQUINA 2","MQ2",feitosMaq("MQ2"),TOTAIS.MQ2.__total],["MÁQUINA 3","MQ3",feitosMaq("MQ3"),TOTAIS.MQ3.__total]]}
           resumo={{ concl:concluidas, emAnd:frentes.reduce((n,f)=>n+f.andamento,0),
-            critPend:PG_ATIVIDADES.filter(a=>a[7]===1 && statusAtiv(a)!=="concluida").length, atr:atrasadas.length }}
+            critPend:ATIV.filter(a=>a[7]===1 && statusAtiv(a)!=="concluida").length, atr:atrasadas.length }}
           alertas={[...atrasadas,...emRisco].slice(0,6).map(a=>[a[0],a[3],a[1],statusAtiv(a)])}
-          liber={PG_ATIVIDADES.filter(a=>/^Liberar/i.test(a[3]) && statusAtiv(a)!=="concluida").slice(0,5)}
+          liber={ATIV.filter(a=>/^Liberar/i.test(a[3]) && statusAtiv(a)!=="concluida").slice(0,5)}
         />
       ) : (<>
 
@@ -585,8 +663,8 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
       <Sec num="01" titulo="RESUMO EXECUTIVO">
         <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:10,marginBottom:10}}>
           {[
-            ["EXECUÇÃO", pct(concluidas, PG_ATIVIDADES.length)+"%", C.cyan, "das atividades"],
-            ["CONCLUÍDAS", concluidas+"/"+PG_ATIVIDADES.length, C.accent, "atividades"],
+            ["EXECUÇÃO", pct(concluidas, ATIV.length)+"%", C.cyan, "das atividades"],
+            ["CONCLUÍDAS", concluidas+"/"+ATIV.length, C.accent, "atividades"],
             ["EM ANDAMENTO", frentes.reduce((n,f)=>n+f.andamento,0), C.cyan, "agora"],
             ["ATRASADAS", atrasadas.length, atrasadas.length?C.danger:C.textDim, "exigem ação"],
             ["EM RISCO", emRisco.length, emRisco.length?C.warning:C.textDim, "janela >70%"],
@@ -616,7 +694,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
           {cfgPG.prioridade && cfgPG.prioridade!=="auto" && cfgPG.op &&
             <span style={{fontSize:8,color:C.textDim}}>definida por {cfgPG.op} · {hm(cfgPG.ts)}</span>}
         </div>
-        {(()=>{ const pm = PG_MARCOS.find(m=>new Date(m[2]||m[1]).getTime()>=agora);
+        {(()=>{ const pm = MARCOS.find(m=>new Date(m[2]||m[1]).getTime()>=agora);
           const pi = pm?new Date(pm[1]).getTime():0, pf = pm?new Date(pm[2]||pm[1]).getTime():0;
           return (
           <div style={{display:"flex",alignItems:"center",gap:9,flexWrap:"wrap",fontFamily:"monospace"}}>
@@ -636,7 +714,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
 
       {/* ── 02 Trilho ── */}
       <div style={{margin:"14px 0"}}>
-        <TrilhoPG agora={agora} pctExec={pct(concluidas, PG_ATIVIDADES.length)} pctCheck={pct(feitosGeral, TOTAIS.__geral)}/>
+        <TrilhoPG agora={agora} marcos={MARCOS} pctExec={pct(concluidas, ATIV.length)} pctCheck={pct(feitosGeral, TOTAIS.__geral)}/>
       </div>
 
       {/* ── 03 Zona de Ação ── */}
@@ -686,7 +764,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
       <div style={{marginBottom:14}}>
       <Sec num="04" titulo="ATIVIDADES CRÍTICAS · CAMINHO CRÍTICO">
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"2px 18px"}}>
-          {PG_ATIVIDADES.filter(a=>a[7]===1).map(a=>{
+          {ATIV.filter(a=>a[7]===1).map(a=>{
             const st = statusAtiv(a);
             const cor = st==="concluida"?C.accent:COR_ST[st]||C.textDim;
             return (
@@ -765,7 +843,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
           </div>
           <div>
             <div style={{fontFamily:"monospace",fontSize:9,color:C.textDim,letterSpacing:".14em",marginBottom:4}}>FRENTES DE LIBERAÇÃO</div>
-            {PG_ATIVIDADES.filter(a=>/^Liberar/i.test(a[3])).map(a=>{
+            {ATIV.filter(a=>/^Liberar/i.test(a[3])).map(a=>{
               const st = statusAtiv(a);
               const cor = st==="concluida"?C.accent:COR_ST[st]||C.textDim;
               return (
@@ -881,7 +959,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
                               ajustado · {aj.op} · {hm(aj.ts)} {aj.dur!==dur && `(histórico ${dur})`}
                             </div>}
                             {(()=>{
-                              const usada = PG_ATIVIDADES.find(a=>slug(a[3])===chave);
+                              const usada = ATIV.find(a=>slug(a[3])===chave);
                               if(!usada || !usada[4] || !usada[5]) return null;
                               const planej = Math.round((new Date(usada[5])-new Date(usada[4]))/60000);
                               const apertado = planej < durMin(efetiva);
@@ -964,6 +1042,88 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
               </div>
             </Sec>
           </div>
+
+          <div style={{gridColumn:"1 / -1"}}>
+            <Sec num="08" titulo="EDITOR DO PLANO · MARCOS E ATIVIDADES">
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+                <div>
+                  <div style={{display:"flex",alignItems:"center",marginBottom:6}}>
+                    <span style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,letterSpacing:".14em",flex:1}}>MARCOS ({MARCOS.length})</span>
+                    <button onClick={()=>{setEditMarco("__novo"); setFormMarco(["M"+Date.now(), "", "", "GERAL", ""]);}} style={{
+                      fontFamily:"monospace",fontSize:10,fontWeight:800,color:C.accent,background:"rgba(0,230,118,.08)",
+                      border:`1px solid ${C.accent}66`,borderRadius:7,padding:"3px 9px",cursor:"pointer"}}>+ NOVO</button>
+                  </div>
+                  <div style={{maxHeight:300,overflowY:"auto"}}>
+                    {MARCOS.map(m=>{
+                      const [id,ini,fim,maqM,titulo] = m;
+                      if(editMarco===id) return (
+                        <FormMarcoEdit key={id} v={formMarco} set={setFormMarco}
+                          onSalvar={()=>{
+                            salvarPlano("marcosEdit", {...(planoEdits.marcosEdit||{}), [id]:formMarco});
+                            setEditMarco(null);
+                          }} onCancelar={()=>setEditMarco(null)}/>
+                      );
+                      return (
+                        <div key={id} style={{display:"flex",alignItems:"center",gap:7,padding:"5px 0",
+                          borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                          <span style={{fontFamily:"monospace",fontSize:9,fontWeight:700,color:CORMAQ[maqM]}}>{maqM}</span>
+                          <span style={{flex:1,fontSize:11,color:"#E6EEF6",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{titulo}</span>
+                          <span style={{fontFamily:"monospace",fontSize:9,color:C.textDim}}>{dh(ini)}</span>
+                          <button onClick={()=>{setEditMarco(id); setFormMarco(m);}} style={{
+                            background:"none",border:"none",color:C.cyan,cursor:"pointer",fontSize:12}}>✎</button>
+                          <button onClick={()=>salvarPlano("marcosDel",[...(planoEdits.marcosDel||[]),id])} style={{
+                            background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:12}}>×</button>
+                        </div>
+                      );
+                    })}
+                    {editMarco==="__novo" && (
+                      <FormMarcoEdit v={formMarco} set={setFormMarco}
+                        onSalvar={()=>{ salvarPlano("marcosAdd",[...(planoEdits.marcosAdd||[]),formMarco]); setEditMarco(null); }}
+                        onCancelar={()=>setEditMarco(null)}/>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div style={{display:"flex",alignItems:"center",marginBottom:6}}>
+                    <span style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim,letterSpacing:".14em",flex:1}}>ATIVIDADES ({ATIV.length})</span>
+                    <button onClick={()=>{setEditAtiv("__novo"); setFormAtiv(["A"+Date.now(), "GERAL", PG_AREAS_ATIV[0], "", "", "", "", 0]);}} style={{
+                      fontFamily:"monospace",fontSize:10,fontWeight:800,color:C.accent,background:"rgba(0,230,118,.08)",
+                      border:`1px solid ${C.accent}66`,borderRadius:7,padding:"3px 9px",cursor:"pointer"}}>+ NOVA</button>
+                  </div>
+                  <div style={{maxHeight:300,overflowY:"auto"}}>
+                    {ATIV.map(a=>{
+                      const [id,maqA,areaA,titulo,ini,fim] = a;
+                      if(editAtiv===id) return (
+                        <FormAtivEdit key={id} v={formAtiv} set={setFormAtiv}
+                          onSalvar={()=>{ salvarPlano("ativEdit", {...(planoEdits.ativEdit||{}), [id]:formAtiv}); setEditAtiv(null); }}
+                          onCancelar={()=>setEditAtiv(null)}/>
+                      );
+                      return (
+                        <div key={id} style={{display:"flex",alignItems:"center",gap:7,padding:"5px 0",
+                          borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                          <span style={{fontFamily:"monospace",fontSize:9,fontWeight:700,color:CORMAQ[maqA]}}>{maqA}</span>
+                          <span style={{flex:1,fontSize:11,color:"#E6EEF6",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{titulo}</span>
+                          <span style={{fontFamily:"monospace",fontSize:9,color:C.textDim}}>{areaA}</span>
+                          <button onClick={()=>{setEditAtiv(id); setFormAtiv(a);}} style={{
+                            background:"none",border:"none",color:C.cyan,cursor:"pointer",fontSize:12}}>✎</button>
+                          <button onClick={()=>salvarPlano("ativDel",[...(planoEdits.ativDel||[]),id])} style={{
+                            background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:12}}>×</button>
+                        </div>
+                      );
+                    })}
+                    {editAtiv==="__novo" && (
+                      <FormAtivEdit v={formAtiv} set={setFormAtiv}
+                        onSalvar={()=>{ salvarPlano("ativAdd",[...(planoEdits.ativAdd||[]),formAtiv]); setEditAtiv(null); }}
+                        onCancelar={()=>setEditAtiv(null)}/>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {(planoEdits.op) && <div style={{fontFamily:"monospace",fontSize:8.5,color:C.textDim,marginTop:10}}>
+                última edição · {planoEdits.op} · {hm(planoEdits.ts)}
+              </div>}
+            </Sec>
+          </div>
         </div>
       )}
 
@@ -1014,7 +1174,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
 
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
             <Sec num="02" titulo="SITUAÇÃO DA PARTIDA">
-              {PG_MARCOS.filter(m=>/instala|teste|passagem|produzindo/i.test(m[4])).map(m=>{
+              {MARCOS.filter(m=>/instala|teste|passagem|produzindo/i.test(m[4])).map(m=>{
                 const [id,ini,fim,maqM,titulo] = m;
                 const tFim = new Date(fim||ini).getTime();
                 const done = agora > tFim;
