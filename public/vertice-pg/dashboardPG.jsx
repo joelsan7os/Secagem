@@ -20,7 +20,16 @@ const hm = s => { const d = new Date(s); return `${p2(d.getHours())}:${p2(d.getM
 const pct = (f,t) => t ? Math.round((f/t)*100) : 0;
 const slug = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-");
 const docIdDe = (maq, area) => `${maq}__${slug(area)}`;
+const LIB_MAP = Object.fromEntries(PG_TEMPOS_LIB.map(([nome,dur])=>[slug(nome), dur]));
 const CORMAQ = { MQ2:"#00F0FF", MQ3:"#00E676", GERAL:"#5090FF" };
+const durMin = hhmm => { const [h,m] = hhmm.split(":").map(Number); return h*60+m; };
+const sugestaoDur = titulo => {
+  const chave = slug(titulo);
+  const exata = LIB_MAP[chave];
+  if(exata) return exata;
+  const achado = PG_TEMPOS_LIB.find(([nome])=> slug(nome).includes(chave) || chave.includes(slug(nome)));
+  return achado ? achado[1] : null;
+};
 const falta = ms => {
   const m = Math.max(0, ms);
   const d = Math.floor(m/86400000), h = Math.floor(m%86400000/3600000), mi = Math.floor(m%3600000/60000);
@@ -658,6 +667,14 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
                   <span style={{color:C.textDim}}>{areaA}</span>
                   {ini && <span style={{color:C.textDim}}>janela {hm(ini)}→{hm(fim||ini)}</span>}
                   {resp && <span style={{color:C.textDim}}>{resp}</span>}
+                  {(()=>{
+                    if(!ini || !fim) return null;
+                    const sug = sugestaoDur(titulo);
+                    if(!sug) return null;
+                    const planej = Math.round((new Date(fim)-new Date(ini))/60000);
+                    if(planej >= durMin(sug)) return null;
+                    return <span style={{color:C.warning,fontWeight:800}}>⚑ histórico sugere {sug}</span>;
+                  })()}
                 </div>
               </div>
             </div>
@@ -863,6 +880,15 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
                             {aj && <div style={{fontFamily:"monospace",fontSize:8,color:C.cyan,marginTop:1}}>
                               ajustado · {aj.op} · {hm(aj.ts)} {aj.dur!==dur && `(histórico ${dur})`}
                             </div>}
+                            {(()=>{
+                              const usada = PG_ATIVIDADES.find(a=>slug(a[3])===chave);
+                              if(!usada || !usada[4] || !usada[5]) return null;
+                              const planej = Math.round((new Date(usada[5])-new Date(usada[4]))/60000);
+                              const apertado = planej < durMin(efetiva);
+                              return <div style={{fontFamily:"monospace",fontSize:8,color:apertado?C.warning:C.accent,marginTop:1}}>
+                                no plano: {planej}min {apertado?"⚑ abaixo do histórico":"✓"}
+                              </div>;
+                            })()}
                           </div>
                           <span style={{fontFamily:"monospace",fontSize:9,color:C.textDim}}>×{n}</span>
                           {editando ? (
