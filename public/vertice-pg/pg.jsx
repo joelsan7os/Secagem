@@ -139,7 +139,7 @@ function CardNav({ num, titulo, sub, f, t, extra, onClick }) {
 }
 
 // ─── App PG ───────────────────────────────────────────────────────────────────
-export default function PGApp() {
+export default function PGApp({ tv }) {
   const { perfil, logout } = usePerfilAtivo();
   const [estados, setEstados] = useState({});
   const [maq, setMaq] = useState(null);
@@ -172,7 +172,7 @@ export default function PGApp() {
   );
 
   if(tela==="dash") return (
-    <DashboardPG onChecklist={()=>setTela("checklist")} onOperacao={irOperacao} onSair={sair}/>
+    <DashboardPG tv={tv} onChecklist={()=>setTela("checklist")} onOperacao={irOperacao} onSair={sair}/>
   );
 
   const dId = maq && area ? docIdDe(maq,area) : null;
