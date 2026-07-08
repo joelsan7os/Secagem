@@ -156,6 +156,7 @@ export default function PGApp({ tv }) {
     const i = PG_ESCALA.findIndex(e=>e.d===h);
     return i>=0 ? i : 0;
   });
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
 
   useEffect(()=>{
     const unsub = onSnapshot(collection(db,"pg_checklist_h2"), snap=>{
@@ -201,7 +202,6 @@ export default function PGApp({ tv }) {
   const liberar = ()=>{
     setDoc(doc(db,"pg_checklist_h2",dId),{ resp:null },{merge:true}).catch(()=>{});
   };
-  const [enviandoFoto, setEnviandoFoto] = useState(false);
   const fotoKeyOf = e => `${maq}__${slug(area)}__${slug(e.tag)}`;
   const enviarFoto = (file, e) => {
     if(!file) return;
