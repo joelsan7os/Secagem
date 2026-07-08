@@ -7,6 +7,7 @@ import { PG_AREAS, PG_MAQUINAS, PG_DATA } from "./pgData";
 import { PG_MARCOS, PG_ATIVIDADES, PG_AREAS_ATIV, PG_ESCALA } from "./pgPlano";
 import { PG_CENARIOS, PG_TEMPOS_LIB } from "./pgTempos";
 import { PG_PERIODO, PG_FACILITADORES, PG_LTS, PG_PREMISSAS, PG_MATERIAIS, PG_MAT_SEGURANCA, PG_RADIOS, PG_INSPECAO_TANQUES, PG_LIMPEZA } from "./pgBook";
+import EquipeTela from "./equipeTela";
 
 const C = {
   bg:"#04111D", accent:"#00E676", cyan:"#00F0FF", blue:"#5090FF",
@@ -890,6 +891,11 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
       {/* ── Aba Planejamento ── */}
       {aba==="plan" && (
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+          <div style={{gridColumn:"1 / -1"}}>
+            <Sec num="00" titulo="GESTÃO DE TIME">
+              <EquipeTela/>
+            </Sec>
+          </div>
           <Sec num="01" titulo="PERÍODO E FACILITADORES">
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
               {[["MQ3",PG_PERIODO.MQ3],["MQ2",PG_PERIODO.MQ2]].map(([m,p])=>(
