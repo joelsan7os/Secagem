@@ -8,6 +8,7 @@ import { PG_MARCOS, PG_ATIVIDADES, PG_AREAS_ATIV, PG_ESCALA } from "./pgPlano";
 import { PG_CENARIOS, PG_TEMPOS_LIB } from "./pgTempos";
 import { PG_PERIODO, PG_FACILITADORES, PG_LTS, PG_PREMISSAS, PG_MATERIAIS, PG_MAT_SEGURANCA, PG_RADIOS, PG_INSPECAO_TANQUES, PG_LIMPEZA } from "./pgBook";
 import EquipeTela from "./equipeTela";
+import EscalaTela from "./escalaTela";
 
 const C = {
   bg:"#04111D", accent:"#00E676", cyan:"#00F0FF", blue:"#5090FF",
@@ -894,6 +895,11 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
           <div style={{gridColumn:"1 / -1"}}>
             <Sec num="00" titulo="GESTÃO DE TIME">
               <EquipeTela/>
+            </Sec>
+          </div>
+          <div style={{gridColumn:"1 / -1"}}>
+            <Sec num="00b" titulo="ESCALA DA PG">
+              <EscalaTela/>
             </Sec>
           </div>
           <Sec num="01" titulo="PERÍODO E FACILITADORES">
