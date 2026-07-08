@@ -55,7 +55,7 @@ export default function EquipeTela({ onVoltar }){
 
   return (
     <>
-      <button onClick={onVoltar} style={{background:"none",border:"none",color:C.cyan,fontSize:13,cursor:"pointer",padding:"4px 0",marginBottom:6}}>‹ Início</button>
+      {onVoltar && <button onClick={onVoltar} style={{background:"none",border:"none",color:C.cyan,fontSize:13,cursor:"pointer",padding:"4px 0",marginBottom:6}}>‹ Início</button>}
 
       {/* contagem por letra */}
       <div style={{display:"flex",gap:6,marginBottom:8}}>
