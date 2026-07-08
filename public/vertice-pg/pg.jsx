@@ -5,6 +5,8 @@ import { collection } from "firebase/firestore";
 import { usePerfilAtivo } from "../auth";
 import { PG_AREAS, PG_MAQUINAS, PG_DATA } from "./pgData";
 import { PG_MARCOS, PG_ATIVIDADES, PG_AREAS_ATIV, PG_ESCALA } from "./pgPlano";
+import { anotarPessoa } from "./pgEquipe";
+import { letraNoTurno } from "./pgRotacao";
 import DashboardPG from "./dashboardPG";
 
 // ─── Paleta (mesmos tokens do app) ───────────────────────────────────────────
@@ -434,26 +436,37 @@ export default function PGApp({ tv }) {
               background:"rgba(255,255,255,.03)",border:`1px solid ${C.borderPG}`,color:idxEsc===PG_ESCALA.length-1?C.textDim:C.cyan,
               borderRadius:9,padding:"6px 14px",fontSize:15,cursor:"pointer"}}>›</button>
           </div>
-          {dia.t.map(([h,pessoas])=>(
+          {dia.t.map(([h,pessoas])=>{
+            const letraRot = letraNoTurno(dia.d, h);
+            const LCOR = { A:"#00F0FF", B:"#5090FF", C:"#00E676", D:"#B388FF", E:"#FFC107" };
+            return (
             <div key={h} style={{background:"rgba(10,25,41,0.45)",border:`1px solid ${C.borderPG}`,borderRadius:14,padding:"11px 13px"}}>
-              <div style={{fontFamily:"monospace",fontSize:10,color:C.cyan,letterSpacing:".18em",marginBottom:9}}>
-                ENTRADA {h} · {pessoas.length}
+              <div style={{fontFamily:"monospace",fontSize:10,color:C.cyan,letterSpacing:".18em",marginBottom:9,display:"flex",alignItems:"center",gap:8}}>
+                <span>ENTRADA {h} · {pessoas.length}</span>
+                {letraRot && <span style={{color:C.textDim}}>· rotação <span style={{color:LCOR[letraRot],fontWeight:800}}>{letraRot}</span></span>}
               </div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {pessoas.map((p,i)=>(
+                {pessoas.map((p,i)=>{
+                  const a = anotarPessoa(p, dia.d, h);
+                  return (
                   <div key={i} style={{
-                    background:"rgba(255,255,255,.03)",border:`1px solid ${p[2]?`${C.blue}66`:"rgba(255,255,255,.09)"}`,
+                    background:"rgba(255,255,255,.03)",border:`1px solid ${a.deslocado?`${C.warning}88`:p[2]?`${C.blue}66`:"rgba(255,255,255,.09)"}`,
                     borderRadius:8,padding:"5px 9px",display:"flex",alignItems:"center",gap:6,
                   }}>
-                    <span style={{fontSize:11.5,fontWeight:700,color:C.white}}>{p[0]}</span>
+                    {a.letra && <span style={{fontFamily:"monospace",fontSize:8.5,fontWeight:800,color:C.bg,background:LCOR[a.letra],borderRadius:4,padding:"0 4px"}}>{a.letra}</span>}
+                    <span style={{fontSize:11.5,fontWeight:700,color:a.resolvido?C.white:C.textDim}}>{p[0]}</span>
                     {p[1] && <span style={{fontFamily:"monospace",fontSize:8.5,color:C.textDim}}>{p[1]}</span>}
                     {p[2] ? <span style={{fontFamily:"monospace",fontSize:8,fontWeight:800,color:C.blue,
                       border:`1px solid ${C.blue}66`,borderRadius:4,padding:"0 4px"}}>HE</span> : null}
+                    {a.deslocado ? <span style={{fontFamily:"monospace",fontSize:8,fontWeight:800,color:C.warning,
+                      border:`1px solid ${C.warning}88`,borderRadius:4,padding:"0 4px"}}>DESLOC</span> : null}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </>); })()}
 
         {/* ── Nível 2: áreas ── */}
