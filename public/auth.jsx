@@ -261,7 +261,6 @@ function LogoVertice({ animated }) {
 // ─── Tela principal de autenticação ───────────────────────────────────────────
 export function TelaAuth({ onEntrar }) {
   const [modo, setModo] = useState("login");
-  const [destino, setDestino] = useState("operacao");
   const [animated, setAnimated] = useState(false);
 
   // semáforo em tempo real
@@ -298,6 +297,7 @@ export function TelaAuth({ onEntrar }) {
         .vx-rise{animation:vxRise .7s cubic-bezier(.2,.7,.2,1) forwards}
         .vx-wordmark-anim{opacity:0;animation:vxRise .7s cubic-bezier(.2,.7,.2,1) 1.7s forwards}
         .vx-tagline-anim{opacity:0;animation:vxRise .6s ease 2.0s forwards}
+        .vx-ctx-anim{opacity:0;animation:vxRise .6s ease 2.2s forwards}
         .vx-auth-anim{opacity:0;animation:vxRise .6s ease 2.55s forwards}
       `}</style>
 
@@ -349,28 +349,17 @@ export function TelaAuth({ onEntrar }) {
           Decida melhor.
         </div>
 
+        <div className="vx-ctx-anim" style={{
+          marginTop:8, display:"flex", alignItems:"center", gap:9,
+          fontFamily:"monospace", fontSize:9.5, color:"#5E7A99", letterSpacing:".22em",
+        }}>
+          <span style={{display:"block",width:26,height:1,background:"linear-gradient(90deg,transparent,#5E7A99)"}}/>
+          POR QUEM OPERA
+          <span style={{display:"block",width:26,height:1,background:"linear-gradient(90deg,#5E7A99,transparent)"}}/>
+        </div>
+
         {/* Formulários */}
         <div className="vx-auth-anim" style={{width:"100%",marginTop:32}}>
-          {/* Destino */}
-          {modo==="login" && (
-            <div style={{marginBottom:14}}>
-              <div style={{fontFamily:"monospace",fontSize:9.5,color:"#5E7A99",letterSpacing:".22em",marginBottom:7,textAlign:"center"}}>DESTINO</div>
-              <div style={{display:"flex",gap:8}}>
-                {[{id:"operacao",l:"Operação",cor:C.accent},{id:"pg",l:"PG · Parada Geral",cor:"#5090FF"}].map(d=>(
-                  <button key={d.id} onClick={()=>setDestino(d.id)} style={{
-                    flex:1, padding:"9px", borderRadius:10, cursor:"pointer",
-                    fontWeight:700, fontSize:12.5,
-                    border:`2px solid ${destino===d.id?d.cor:C.border}`,
-                    background:destino===d.id?`${d.cor}1f`:"rgba(255,255,255,.02)",
-                    color:destino===d.id?C.white:C.textMuted,
-                    boxShadow:destino===d.id?`0 0 12px ${d.cor}44`:"none",
-                    transition:"all .15s",
-                  }}>{d.l}</button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Abas */}
           <div style={{display:"flex",gap:8,marginBottom:16}}>
             {[{id:"login",l:"Entrar"},{id:"cadastro",l:"Primeiro acesso"}].map(t=>(
@@ -392,7 +381,7 @@ export function TelaAuth({ onEntrar }) {
             WebkitBackdropFilter:"blur(12px)", border:`1px solid ${C.border}`,
             borderRadius:16, padding:22, boxShadow:"0 8px 32px rgba(0,0,0,.4)",
           }}>
-            {modo==="login" ? <FormLogin onEntrar={onEntrar} destino={destino}/> : <FormCadastro onPronto={()=>setModo("login")}/>}
+            {modo==="login" ? <FormLogin onEntrar={onEntrar}/> : <FormCadastro onPronto={()=>setModo("login")}/>}
           </div>
         </div>
 
@@ -402,7 +391,7 @@ export function TelaAuth({ onEntrar }) {
 }
 
 // ─── Formulário de Login ──────────────────────────────────────────────────────
-function FormLogin({ onEntrar, destino }) {
+function FormLogin({ onEntrar }) {
   const [matricula, setMatricula] = useState("");
   const [pin, setPin] = useState("");
   const [erro, setErro] = useState("");
@@ -422,8 +411,6 @@ function FormLogin({ onEntrar, destino }) {
       if(h!==u.pinHash){ setErro("PIN incorreto."); setCarregando(false); return; }
       const perfil = { matricula:matricula.trim(), nome:u.nomeCompleto, area:u.area, funcao:u.funcao };
       localStorage.setItem("perfil_ativo_h2", JSON.stringify(perfil));
-      localStorage.setItem("vertice_modo", destino==="pg" ? "pg" : "operacao");
-      if(destino==="pg"){ location.reload(); return; }
       onEntrar(perfil);
     } catch(e) {
       setErro("Falha de conexão. Tente novamente.");
