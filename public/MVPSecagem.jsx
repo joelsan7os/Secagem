@@ -3292,6 +3292,9 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
   const [opPainelLocal,setOpPainelLocal]=useState(()=>storageGet("op_config")?.operadorPainel||opPainel||"");
   const matricula=storageGet("op_config")?.matricula||"";
   const [respostas,setRespostas]=useState({});
+  const [fotos,setFotos]=useState({});
+  const addFoto=(id,src)=>{setFotos(p=>({...p,[id]:[...(p[id]||[]),src]}));setSalvo(false);};
+  const remFoto=(id,idx)=>{setFotos(p=>({...p,[id]:(p[id]||[]).filter((_,i)=>i!==idx)}));setSalvo(false);};
   const [obs,setObs]=useState("");
   const [salvo,setSalvo]=useState(false);
   const items=checklistRotinaH2;
@@ -3306,11 +3309,11 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
       id:Date.now(), tipoId:"rotina_h2", tipoLabel:"Check List Rotina H2",
       maquina:linhaInfo?.maquina||maquina, linha, turno:getAutoTurno(), hora, letra, data:hoje,
       opPU:opArea, matricula, opPainel:opPainelLocal, noks, total:items.length, obs,
-      items:items.map(i=>({id:i.id,item:i.item,resp:respostas[i.id]||""})),
+      items:items.map(i=>({id:i.id,item:i.item,resp:respostas[i.id]||"",fotos:fotos[i.id]||[]})),
     };
     onSalvar(registro);
     setSalvo(true);
-    setRespostas({}); setObs("");
+    setRespostas({}); setFotos({}); setObs("");
   };
 
   return (
@@ -3403,6 +3406,7 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
                   <div style={{display:"flex",gap:4,flexShrink:0}}>
                     <button onClick={()=>setResp(item.id,"ok")} style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${r==="ok"?C.accentLight:C.border}`,background:r==="ok"?C.success:C.tagBg,color:"#fff",fontWeight:800,fontSize:10,cursor:"pointer"}}>OK</button>
                     <button onClick={()=>setResp(item.id,"nok")} style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${r==="nok"?C.dangerLight:C.border}`,background:r==="nok"?C.danger:C.tagBg,color:"#fff",fontWeight:800,fontSize:10,cursor:"pointer"}}>NOK</button>
+                    <BotaoFoto compact fotos={fotos[item.id]||[]} onAdd={src=>addFoto(item.id,src)} onRemove={idx=>remFoto(item.id,idx)}/>
                   </div>
                 </div>
               </div>
