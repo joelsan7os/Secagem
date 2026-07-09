@@ -493,8 +493,7 @@ const LINHAS = [
   { id:"L8", label:"Linha 8", maquina:"M3" },
 ];
 
-// ─── Check-list Rotina H2 — Amarradeiras / Unitizadora (grade por linha) ──────
-const HORARIOS_ROTINA_H2 = ["00:00","08:00","16:00"];
+// ─── Check-list Rotina H2 — Amarradeiras / Unitizadora (por linha) ───────────
 const checklistRotinaH2 = [
   { id:"rh2_01", item:"Realizar limpeza do cabeçote - 1ª Amarradeira" },
   { id:"rh2_02", item:"Completar óleo da 1ª Amarradeira" },
@@ -2422,7 +2421,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
       {tipo?.tipo==="rota_enf"?(
         <RotaEnfardamentoTela onSalvar={onSalvar} maquina={maquina} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):tipo?.tipo==="rotina_h2"?(
-        <RotinaH2Tela onSalvar={onSalvar} data={data}/>
+        <RotinaH2Tela onSalvar={onSalvar} opPU={opPU} opPainel={opPainel} data={data}/>
       ):tipo?.tipo==="enf"?(
         <EnfardamentoTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):tipo?.tipo==="barcode_enf"?(
@@ -3279,113 +3278,142 @@ function GraficoEficiencia({ historico }) {
   );
 }
 
-// ─── RotinaH2Tela — grade Amarradeiras/Unitizadora (00h/08h/16h × L4-L8) ──────
-function RotinaH2Tela({ onSalvar, data }) {
+// ─── RotinaH2Tela — Amarradeiras/Unitizadora, por linha (histórico individual) ──
+function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
   const agora=new Date();
-  const horaAtual=`${String(agora.getHours()).padStart(2,"0")}:00`;
-  const horarioIni=HORARIOS_ROTINA_H2.includes(horaAtual)?horaAtual:(agora.getHours()<8?"00:00":agora.getHours()<16?"08:00":"16:00");
+  const horaAtual=`${String(agora.getHours()).padStart(2,"0")}:${String(agora.getMinutes()).padStart(2,"0")}`;
   const hoje=data||new Date().toISOString().slice(0,10);
   const letra=calcularLetra();
-  const [horario,setHorario]=useState(horarioIni);
-  const [opArea,setOpArea]=useState(()=>storageGet("op_config")?.nomeOperador||"");
+  const [maquina,setMaquina]=useState("M2");
+  const linhasFiltradas=LINHAS.filter(l=>maquina==="M2"?["L4","L5"].includes(l.id):["L6","L7","L8"].includes(l.id));
+  const [linha,setLinha]=useState("L4");
+  const [hora,setHora]=useState(horaAtual);
+  const [opArea,setOpArea]=useState(()=>storageGet("op_config")?.nomeOperador||opPU||"");
+  const [opPainelLocal,setOpPainelLocal]=useState(()=>storageGet("op_config")?.operadorPainel||opPainel||"");
   const matricula=storageGet("op_config")?.matricula||"";
-  const [grade,setGrade]=useState({});
+  const [respostas,setRespostas]=useState({});
   const [obs,setObs]=useState("");
   const [salvo,setSalvo]=useState(false);
+  const items=checklistRotinaH2;
+  const linhaInfo=LINHAS.find(l=>l.id===linha);
 
-  const setCel=(itemId,linhaId)=>{
-    setGrade(prev=>{
-      const atual=prev[itemId]?.[linhaId]||"";
-      const prox=atual===""?"ok":atual==="ok"?"nok":"";
-      return {...prev,[itemId]:{...(prev[itemId]||{}),[linhaId]:prox}};
-    });
-    setSalvo(false);
-  };
-
-  const totalCelulas=checklistRotinaH2.length*LINHAS.length;
-  const preenchidas=checklistRotinaH2.reduce((acc,it)=>acc+LINHAS.filter(l=>!!grade[it.id]?.[l.id]).length,0);
-  const noks=checklistRotinaH2.reduce((acc,it)=>acc+LINHAS.filter(l=>grade[it.id]?.[l.id]==="nok").length,0);
+  const setResp=(id,val)=>{setRespostas(p=>({...p,[id]:val}));setSalvo(false);};
+  const respondidos=items.filter(i=>respostas[i.id]).length;
+  const noks=items.filter(i=>respostas[i.id]==="nok").length;
 
   const handleSalvar=()=>{
     const registro={
       id:Date.now(), tipoId:"rotina_h2", tipoLabel:"Check List Rotina H2",
-      horario, letra, turno:letra, data:hoje, opPU:opArea, matricula,
-      noks, total:totalCelulas, obs,
-      items:checklistRotinaH2.map(it=>({
-        id:it.id, item:it.item,
-        linhas:LINHAS.reduce((acc,l)=>({...acc,[l.id]:grade[it.id]?.[l.id]||""}),{})
-      })),
+      maquina:linhaInfo?.maquina||maquina, linha, turno:getAutoTurno(), hora, letra, data:hoje,
+      opPU:opArea, matricula, opPainel:opPainelLocal, noks, total:items.length, obs,
+      items:items.map(i=>({id:i.id,item:i.item,resp:respostas[i.id]||""})),
     };
-    onSalvar(registro); setSalvo(true);
+    onSalvar(registro);
+    setSalvo(true);
+    setRespostas({}); setObs("");
   };
-
-  const celStyle=(v)=>({
-    width:"100%", height:34, borderRadius:7, border:`1px solid ${v==="nok"?C.dangerLight:v==="ok"?C.accentLight:C.border}`,
-    background:v==="nok"?C.danger:v==="ok"?C.success:C.tagBg, color:"#fff", fontWeight:800, fontSize:10,
-    cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all .15s",
-  });
 
   return (
     <div>
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:14,marginBottom:14}}>
+        {/* Seletor M2/M3 */}
+        <div style={{display:"flex",gap:6,marginBottom:12}}>
+          {["M2","M3"].map(m=>(
+            <button key={m} onClick={()=>{setMaquina(m);setLinha(m==="M2"?"L4":"L6");setRespostas({});setSalvo(false);}}
+              style={{flex:1,padding:"7px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",
+                background:maquina===m?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${maquina===m?"rgba(255,255,255,0.55)":C.border}`,
+                color:maquina===m?"#fff":C.textMuted,
+                boxShadow:maquina===m?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4),0 0 40px rgba(80,144,255,0.2)":"none"}}>
+              M{m.replace("M","")}<span style={{fontSize:9,fontWeight:400,opacity:.7,marginLeft:4}}>{m==="M2"?"L4·L5":"L6·L7·L8"}</span>
+            </button>
+          ))}
+        </div>
+        {/* Chips automáticos */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",background:"rgba(4,17,29,0.88)",border:"1px solid rgba(80,144,255,0.18)",borderRadius:10,padding:"7px 12px",marginBottom:12,boxShadow:"inset 0 0 20px rgba(0,0,0,0.45),0 0 8px rgba(80,144,255,0.07)"}}>
+          {[
+            {label:"TURNO", value:getAutoTurno(), bg:"rgba(14,40,71,0.9)",  border:"rgba(26,92,204,0.4)",  color:"#5090FF"},
+            {label:"LETRA", value:letra,           bg:"rgba(0,40,20,0.9)",   border:"rgba(0,230,118,0.35)", color:"#00E676"},
+            {label:"HORA",  value:hora,             bg:"rgba(20,30,45,0.9)", border:"rgba(255,255,255,0.12)", color:"#B5C6DA"},
+          ].map(({label,value,bg,border,color},idx,arr)=>(
+            <React.Fragment key={label}>
+              <div style={{textAlign:"center",flex:1}}>
+                <div style={{color:"rgba(255,255,255,0.22)",fontSize:7,letterSpacing:"0.18em",textTransform:"uppercase",fontFamily:"monospace",marginBottom:2}}>{label}</div>
+                <div style={{color,fontSize:15,fontWeight:900,letterSpacing:"0.05em",fontFamily:"monospace",whiteSpace:"nowrap"}}>{value}</div>
+              </div>
+              {idx<arr.length-1&&<div style={{width:1,height:26,background:"rgba(80,144,255,0.2)",flexShrink:0,margin:"0 6px"}}/>}
+            </React.Fragment>
+          ))}
+        </div>
+        {/* Seletor de linha filtrado */}
         <div style={{marginBottom:12}}>
-          <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:6}}>Horário</label>
+          <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:6}}>Linha</label>
           <div style={{display:"flex",gap:6}}>
-            {HORARIOS_ROTINA_H2.map(h=>{const ativo=horario===h;return(
-              <button key={h} onClick={()=>{setHorario(h);setSalvo(false);}} style={{flex:1,padding:"9px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:ativo?C.blue:C.tagBg,border:`2px solid ${ativo?"rgba(255,255,255,0.55)":C.border}`,color:ativo?"#fff":C.textMuted,boxShadow:ativo?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>
-                {h}
-              </button>);})}
+            {linhasFiltradas.map(l=>{
+              const ativo=linha===l.id;
+              return <button key={l.id} onClick={()=>{setLinha(l.id);setRespostas({});setSalvo(false);}} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:ativo?C.blue:C.tagBg,border:`2px solid ${ativo?"rgba(255,255,255,0.55)":C.border}`,color:ativo?"#fff":C.textMuted,boxShadow:ativo?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4),0 0 40px rgba(80,144,255,0.2)":"none"}}>
+                {l.id}
+              </button>;
+            })}
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
           <div>
-            <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:4}}>Operador</label>
-            <input value={opArea} onChange={e=>setOpArea(e.target.value)} placeholder="Nome..." style={inputStyle}/>
+            <label style={{color:C.textDim,fontSize:9,textTransform:"uppercase",display:"block",marginBottom:3,letterSpacing:"0.08em"}}>Operador</label>
+            <input value={opArea||""} onChange={e=>setOpArea(e.target.value)} placeholder="Nome..." style={{...inputStyle,fontSize:12,padding:"6px 10px"}}/>
           </div>
           <div>
-            <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:4}}>Turma</label>
-            <div style={{background:C.blue,border:`2px solid ${C.accentLight}`,borderRadius:8,padding:"6px 0",textAlign:"center",fontWeight:900,fontSize:20,color:C.accentLight,letterSpacing:"0.1em",boxShadow:"0 0 10px rgba(0,230,118,0.5),0 0 30px rgba(0,230,118,0.3)"}}>{letra}</div>
+            <label style={{color:C.textDim,fontSize:9,textTransform:"uppercase",display:"block",marginBottom:3,letterSpacing:"0.08em"}}>Op. Painel</label>
+            <input value={opPainelLocal||""} onChange={e=>setOpPainelLocal(e.target.value)} placeholder="Nome..." style={{...inputStyle,fontSize:12,padding:"6px 10px"}}/>
           </div>
         </div>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-          <span style={{color:C.textMuted,fontSize:10,textTransform:"uppercase"}}>Progresso</span>
-          <span style={{display:"flex",gap:10,alignItems:"center"}}>
-            {noks>0&&<span style={{color:C.dangerLight,fontSize:10,fontWeight:700}}>⚠ {noks} NÃO OK</span>}
-            <span style={{color:C.white,fontSize:11,fontWeight:700}}>{preenchidas}/{totalCelulas}</span>
-          </span>
-        </div>
-        <div style={{background:C.tagBg,borderRadius:4,height:6,overflow:"hidden"}}>
-          <div style={{height:"100%",borderRadius:4,transition:"width .3s",width:`${(preenchidas/totalCelulas)*100}%`,background:noks>0?C.dangerLight:preenchidas===totalCelulas?C.accentLight:C.accent}}/>
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+            <span style={{color:C.textMuted,fontSize:10,textTransform:"uppercase"}}>Progresso</span>
+            <span style={{display:"flex",gap:10,alignItems:"center"}}>
+              {noks>0&&<span style={{color:C.dangerLight,fontSize:10,fontWeight:700}}>⚠ {noks} NÃO OK</span>}
+              <span style={{color:C.white,fontSize:11,fontWeight:700}}>{respondidos}/{items.length}</span>
+            </span>
+          </div>
+          <div style={{background:C.tagBg,borderRadius:4,height:6,overflow:"hidden"}}>
+            <div style={{height:"100%",borderRadius:4,transition:"width .3s",width:`${(respondidos/items.length)*100}%`,background:noks>0?C.dangerLight:respondidos===items.length?C.accentLight:C.accent}}/>
+          </div>
         </div>
       </div>
 
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:10,marginBottom:14,overflowX:"auto"}}>
-        <div style={{minWidth:520}}>
-          <div style={{display:"grid",gridTemplateColumns:"2fr repeat(5,1fr)",gap:6,marginBottom:6}}>
-            <div/>
-            {LINHAS.map(l=>(
-              <div key={l.id} style={{textAlign:"center",color:C.textMuted,fontSize:10,fontWeight:800,textTransform:"uppercase"}}>{l.label.replace("Linha ","L")}</div>
-            ))}
-          </div>
-          {checklistRotinaH2.map((it,idx)=>(
-            <div key={it.id} style={{display:"grid",gridTemplateColumns:"2fr repeat(5,1fr)",gap:6,alignItems:"center",padding:"7px 0",borderTop:idx===0?"none":`1px solid ${C.border}`}}>
-              <div style={{color:C.text,fontSize:11,lineHeight:1.25,paddingRight:6}}>{it.item}</div>
-              {LINHAS.map(l=>{
-                const v=grade[it.id]?.[l.id]||"";
-                return (
-                  <button key={l.id} onClick={()=>setCel(it.id,l.id)} style={celStyle(v)}>
-                    {v==="ok"?"OK":v==="nok"?"NOK":"—"}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+      <div style={{marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:7,padding:"0 2px"}}>
+          <span style={{color:C.text,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em"}}>🛢 Amarradeiras / Unitizadora</span>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:7}}>
+          {items.map((item,idx)=>{
+            const r=respostas[item.id];
+            const isNok=r==="nok";
+            const preen=!!r;
+            const corBorda=isNok?C.dangerLight+"66":preen?C.accentLight+"33":C.border;
+            const corLeft=isNok?C.dangerLight:preen?C.accentLight:"transparent";
+            return (
+              <div key={item.id} style={{background:C.card,borderRadius:10,padding:"11px 14px",border:`1px solid ${corBorda}`,borderLeft:`3px solid ${corLeft}`}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                  <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,background:isNok?C.danger:preen?C.success:C.tagBg,border:`2px solid ${isNok?C.dangerLight:preen?C.accentLight:C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:800,marginTop:2}}>
+                    {isNok?"⚠":preen?"✓":idx+1}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{color:C.white,fontSize:12,fontWeight:500,lineHeight:1.3}}>{item.item}</div>
+                  </div>
+                  <div style={{display:"flex",gap:4,flexShrink:0}}>
+                    <button onClick={()=>setResp(item.id,"ok")} style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${r==="ok"?C.accentLight:C.border}`,background:r==="ok"?C.success:C.tagBg,color:"#fff",fontWeight:800,fontSize:10,cursor:"pointer"}}>OK</button>
+                    <button onClick={()=>setResp(item.id,"nok")} style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${r==="nok"?C.dangerLight:C.border}`,background:r==="nok"?C.danger:C.tagBg,color:"#fff",fontWeight:800,fontSize:10,cursor:"pointer"}}>NOK</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:14,marginBottom:14}}>
         <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:6}}>Observações</label>
-        <textarea value={obs} onChange={e=>setObs(e.target.value)} placeholder="Observações do horário..." rows={3} style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/>
+        <textarea value={obs} onChange={e=>setObs(e.target.value)} placeholder="Observações..." rows={3} style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/>
       </div>
 
       <button onClick={handleSalvar} style={{width:"100%",padding:"14px",borderRadius:12,border:"none",cursor:"pointer",fontWeight:800,fontSize:14,background:salvo?C.success:C.accent,color:"#04111D",boxShadow:"0 4px 14px rgba(0,230,118,0.3)"}}>
@@ -3394,7 +3422,6 @@ function RotinaH2Tela({ onSalvar, data }) {
     </div>
   );
 }
-
 
 function RotaEnfardamentoTela({ onSalvar }) {
   const agora=new Date();
