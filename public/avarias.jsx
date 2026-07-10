@@ -12,6 +12,22 @@ const C = {
   border:"rgba(60,255,140,0.15)", tagBg:"rgba(255,255,255,0.04)",
 };
 
+const cardStyle = {
+  position:"relative", borderRadius:20, overflow:"hidden", isolation:"isolate",
+  background:"rgba(10,24,18,0.42)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.04) 20%, transparent 44%),radial-gradient(120px 120px at 0% 0%, rgba(210,255,235,0.14), transparent 70%)",
+  backdropFilter:"blur(22px) saturate(1.4)", WebkitBackdropFilter:"blur(22px) saturate(1.4)",
+  border:"1px solid rgba(255,255,255,0.12)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.30),inset 0 0 30px rgba(255,255,255,0.03),0 10px 30px -10px rgba(0,0,0,0.7)",
+};
+const glassMini = {
+  position:"relative", overflow:"hidden",
+  background:"rgba(255,255,255,0.05)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.10), transparent 50%)",
+  border:"1px solid rgba(255,255,255,0.08)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.14)",
+};
+
 const storageGet = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const storageSet = (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch {} };
 const hoje = () => new Date().toISOString().slice(0,10);
@@ -153,7 +169,7 @@ function FormTipo({ tipo, inicial, onOk, onCancelar }) {
             border:`1px solid ${fotos.length>0?tipo.cor+"55":C.border}`,
             background:fotos.length>0?tipo.cor+"1A":C.tagBg,
             color:fotos.length>0?tipo.cor:C.textDim,fontSize:15}}>
-          {fotoProc?"…":"📷"}
+          {fotoProc?"…":""}
         </button>
       </div>
 
@@ -264,7 +280,7 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
 
   // ── Salvo ──────────────────────────────────────────────────────────────────
   if(salvo) return (
-    <div style={{background:C.card,border:`1px solid ${C.accentLight}44`,borderTop:`3px solid ${C.accentLight}`,borderRadius:12,padding:24,textAlign:"center"}}>
+    <div style={{ ...cardStyle,border:`1px solid ${C.accentLight}44`,borderTop:`3px solid ${C.accentLight}`,borderRadius:12,padding:24,textAlign:"center"}}>
       <div style={{color:C.accentLight,fontWeight:800,fontSize:18,marginBottom:6}}>Inspeção salva</div>
       <div style={{color:C.textMuted,fontSize:13,marginBottom:4}}>Turno {letraProp||letra}</div>
       <div style={{fontFamily:"monospace",fontSize:28,fontWeight:900,
@@ -276,7 +292,7 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
 
   // ── Passo 1 — pergunta ─────────────────────────────────────────────────────
   if(passo===1) return (
-    <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.warningLight}`,borderRadius:12,padding:20,textAlign:"center"}}>
+    <div style={{ ...cardStyle,borderTop:`3px solid ${C.warningLight}`,borderRadius:12,padding:20,textAlign:"center"}}>
       <div style={{color:C.text,fontWeight:800,fontSize:16,marginBottom:6}}>Inspeção de Avarias</div>
       <div style={{color:C.textMuted,fontSize:13,marginBottom:24}}>Houve avaria neste turno?</div>
       <div style={{display:"flex",gap:12}}>
@@ -298,7 +314,7 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
   if(passo===2) return (
     <div>
       {/* Cabeçalho */}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.dangerLight}`,
+      <div style={{ ...cardStyle,borderTop:`3px solid ${C.dangerLight}`,
         borderRadius:12,padding:"12px 14px",marginBottom:12,
         display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{color:C.text,fontWeight:800,fontSize:14}}>Lançamento</div>
@@ -348,7 +364,7 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
           onCancelar={()=>setAberto(null)}/>
       ):(
         /* Grid de tipos */
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:14,marginBottom:12}}>
+        <div style={{ ...cardStyle,borderRadius:12,padding:14,marginBottom:12}}>
           <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Selecione o tipo de avaria</div>
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
             {TIPOS_AVARIA.map(tipo=>(
@@ -394,7 +410,7 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
   // ── Passo 3 — revisão ─────────────────────────────────────────────────────
   return (
     <div>
-      <div style={{background:C.card,border:`1px solid ${C.dangerLight}44`,borderTop:`3px solid ${C.dangerLight}`,
+      <div style={{ ...cardStyle,border:`1px solid ${C.dangerLight}44`,borderTop:`3px solid ${C.dangerLight}`,
         borderRadius:12,padding:16,marginBottom:12}}>
         <div style={{color:C.text,fontWeight:800,fontSize:15,marginBottom:4}}>Revisão</div>
         <div style={{color:C.textMuted,fontSize:12,marginBottom:14}}>Turno {letraProp||letra}</div>
@@ -434,7 +450,7 @@ export function AvariasTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, 
                 <div style={{display:"flex",gap:6,flexShrink:0}}>
                   <button onClick={()=>setEditando({uid:r.uid,tipoId:r.tipoId})}
                     style={{width:30,height:30,borderRadius:8,border:`1px solid ${C.border}`,
-                      background:C.tagBg,color:C.textMuted,cursor:"pointer",fontSize:14}}>✏️</button>
+                      background:C.tagBg,color:C.textMuted,cursor:"pointer",fontSize:14}}>️</button>
                   <button onClick={()=>remover(r.uid)}
                     style={{width:30,height:30,borderRadius:8,border:`1px solid ${C.border}`,
                       background:C.tagBg,color:C.textDim,cursor:"pointer",fontSize:15,fontWeight:900}}>×</button>
@@ -524,7 +540,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
   return (
     <div>
       {podeVerLetra&&(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginBottom:10}}>
+        <div style={{ ...cardStyle,borderRadius:10,padding:12,marginBottom:10}}>
           <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Turno</div>
           <div style={{display:"flex",gap:6}}>
             {LETRAS.map(l=>{
@@ -540,7 +556,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
         </div>
       )}
 
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:12,marginBottom:12}}>
+      <div style={{ ...cardStyle,borderRadius:10,padding:12,marginBottom:12}}>
         <div style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Linha</div>
         <div style={{display:"flex",gap:6}}>
           {["TODAS",...LINHAS].map(l=>{
@@ -555,7 +571,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
         </div>
       </div>
 
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.dangerLight}`,borderRadius:12,padding:14,marginBottom:12}}>
+      <div style={{ ...cardStyle,borderTop:`3px solid ${C.dangerLight}`,borderRadius:12,padding:14,marginBottom:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
           <span style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.08em"}}>Tendência</span>
           <span style={{fontSize:9,color:C.textDim}}>{ultimos.length} registros</span>
@@ -595,7 +611,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
       </div>
 
       {aba==="tipos"&&(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.warningLight}`,borderRadius:12,padding:14,marginBottom:12}}>
+        <div style={{ ...cardStyle,borderTop:`3px solid ${C.warningLight}`,borderRadius:12,padding:14,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:14}}>Avarias por motivo</div>
           {rankTipos.map((t,i)=>(
             <div key={t.id} style={{marginBottom:i<rankTipos.length-1?12:0}}>
@@ -617,7 +633,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
       )}
 
       {aba==="linhas"&&(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.blueLight}`,borderRadius:12,padding:14,marginBottom:12}}>
+        <div style={{ ...cardStyle,borderTop:`3px solid ${C.blueLight}`,borderRadius:12,padding:14,marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:14}}>Avarias por linha</div>
           {rankLinhas.map((l,i)=>(
             <div key={l.linha} style={{marginBottom:i<rankLinhas.length-1?14:0}}>
@@ -640,7 +656,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
         </div>
       )}
 
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div style={{ ...cardStyle,borderRadius:10,padding:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{color:C.textMuted,fontSize:12}}>Acumulado do mês</div>
         <div style={{fontFamily:"monospace",fontSize:28,fontWeight:900,color:totalMes>0?C.dangerLight:C.accentLight,
           textShadow:totalMes>0?`0 0 14px ${C.dangerLight}66`:"none"}}>{totalMes}</div>
@@ -687,8 +703,7 @@ export function PainelAvariasTV({ avariasData, setTela }) {
   const corTopo=totalMes===0?C.accentLight:totalMes<=10?C.warningLight:C.dangerLight;
 
   return(
-    <div onClick={()=>setTela&&setTela("historico")} style={{
-      background:C.card,border:`1px solid ${totalMes>0?C.dangerLight+"44":C.border}`,
+    <div onClick={()=>setTela&&setTela("historico")} style={{ ...cardStyle,border:`1px solid ${totalMes>0?C.dangerLight+"44":C.border}`,
       borderTop:`3px solid ${corTopo}`,borderRadius:14,padding:"14px 18px 12px",
       cursor:"pointer",display:"flex",flexDirection:"column",gap:10,overflow:"hidden",
       boxShadow:`0 2px 16px rgba(0,0,0,.5)`,height:"100%",boxSizing:"border-box"}}>
