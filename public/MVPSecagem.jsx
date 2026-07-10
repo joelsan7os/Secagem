@@ -1120,7 +1120,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
             })()}
 
             {/* ── 01 STATUS OPERACIONAL ── */}
-            <div style={{background:C.card,border:`1px solid ${stArea.cor}33`,borderTop:`2px solid ${stArea.cor}`,borderRadius:12,padding:"13px 14px",marginBottom:10}}>
+            <div style={{...cardStyle,padding:"14px 16px",marginBottom:10}}>
               <SecH n="01" t="Status Operacional" cor={stArea.cor}/>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                 <div style={{width:12,height:12,borderRadius:"50%",background:stArea.dot,boxShadow:`0 0 8px ${stArea.dot},0 0 18px ${stArea.dot}88`,animation:stArea.anim?`${stArea.anim} 1.6s ease-in-out infinite`:"none",flexShrink:0}}/>
@@ -1135,9 +1135,9 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                   {l:"Em Alerta",v:eqAlerta.length,c:eqAlerta.length>0?C.warningLight:C.accentLight},
                   {l:"Críticos",v:eqCritico.length,c:eqCritico.length>0?C.dangerLight:C.accentLight},
                 ].map(({l,v,c})=>(
-                  <div key={l} style={{background:C.tagBg,borderRadius:8,padding:"7px 4px",textAlign:"center"}}>
-                    <div style={{color:c,fontWeight:900,fontSize:16,lineHeight:1}}>{v}</div>
-                    <div style={{color:C.textDim,fontSize:8,textTransform:"uppercase",marginTop:3,letterSpacing:"0.03em"}}>{l}</div>
+                  <div key={l} style={{background:"linear-gradient(180deg, rgba(14,32,23,0.9), rgba(7,18,13,0.95))",border:"1px solid rgba(0,230,118,0.10)",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.05)",borderRadius:10,padding:"9px 4px",textAlign:"center"}}>
+                    <div style={{color:c,fontWeight:800,fontSize:17,lineHeight:1,fontFamily:"monospace"}}>{v}</div>
+                    <div style={{color:C.textDim,fontSize:8,textTransform:"uppercase",marginTop:5,letterSpacing:"0.06em"}}>{l}</div>
                   </div>
                 ))}
               </div>
