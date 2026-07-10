@@ -1312,15 +1312,15 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                     const ret=(storageGet("cleaners_hist_h2")||[]).filter(h=>h.status==="OPERANDO"&&h.data>=d10s).length;
                     return(
                       <div style={{display:"flex",gap:6,marginTop:2}}>
-                        <div style={{flex:1,background:C.tagBg,borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{...glassMini,flex:1,borderRadius:10,padding:"7px 10px",display:"flex",alignItems:"center",gap:8}}>
                           <span style={{color:C.warningLight,fontFamily:"monospace",fontWeight:900,fontSize:18,lineHeight:1}}>{mov}</span>
                           <span style={{color:C.textDim,fontSize:8,letterSpacing:"0.06em",lineHeight:1.3}}>retiradas<br/>10 dias</span>
                         </div>
-                        <div style={{flex:1,background:C.tagBg,borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{...glassMini,flex:1,borderRadius:10,padding:"7px 10px",display:"flex",alignItems:"center",gap:8}}>
                           <span style={{color:C.accentLight,fontFamily:"monospace",fontWeight:900,fontSize:18,lineHeight:1}}>{ret}</span>
                           <span style={{color:C.textDim,fontSize:8,letterSpacing:"0.06em",lineHeight:1.3}}>retornos<br/>10 dias</span>
                         </div>
-                        <div style={{flex:1,background:C.tagBg,borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{...glassMini,flex:1,borderRadius:10,padding:"7px 10px",display:"flex",alignItems:"center",gap:8}}>
                           <span style={{color:foraTotal>0?C.warningLight:C.accentLight,fontFamily:"monospace",fontWeight:900,fontSize:18,lineHeight:1}}>{foraTotal}</span>
                           <span style={{color:C.textDim,fontSize:8,letterSpacing:"0.06em",lineHeight:1.3}}>fora<br/>agora</span>
                         </div>
@@ -1412,9 +1412,9 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
               const med=meds.reduce((a,m)=>a+m.v,0)/meds.length;
               const cor=v=>v>=1.88&&v<=1.92?C.accentLight:Math.abs(v-1.90)<=0.04?C.warningLight:C.dangerLight;
               return(
-                <div style={{background:C.card,border:`1px solid ${cor(med)}44`,borderTop:`2px solid ${cor(med)}`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+                <div style={{...cardStyle,padding:"12px 16px",marginBottom:10}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                    <span style={{color:cor(med),fontWeight:800,fontSize:11,textTransform:"uppercase",letterSpacing:"0.06em"}}>◉ Altura Units · Enf.</span>
+                    <span style={{color:C.white,fontWeight:800,fontSize:11,textTransform:"uppercase",letterSpacing:"0.06em"}}>Altura Units · Enf.</span>
                   </div>
                   <div style={{display:"flex",alignItems:"flex-end",gap:4,height:44,borderBottom:`1px solid ${C.border}33`,position:"relative"}}>
                     <div style={{position:"absolute",left:0,right:0,bottom:`${((1.90-1.84)/0.11)*100}%`,height:1,borderTop:`1px dashed ${C.accentLight}44`}}/>
@@ -1438,10 +1438,10 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
       })()}
       <h3 style={{color:C.text,fontSize:12,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.06em"}}>Acesso Rápido</h3>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        {[{label:"📋 Check-list",tela:"checklist"},{label:"🔧 Equipamentos",tela:"equipamentos"},{label:"🎯 Mural de Oportunidades",tela:"mural"},{label:"🗂 Justificar Rotas",tela:"rotas"},{label:"📖 Manual",tela:"manual"}].map(a=>(
-          <button key={a.tela} onClick={()=>setTela(a.tela)} style={{background:"rgba(10,25,45,0.7)",border:`1px solid ${C.border}`,color:C.text,borderRadius:12,padding:"13px 14px",cursor:"pointer",fontSize:13,fontWeight:500,textAlign:"left",transition:"all .2s"}}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.card;}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surface;}}>{a.label}</button>
+        {[{label:"Check-list",tela:"checklist"},{label:"Equipamentos",tela:"equipamentos"},{label:"Mural de Oportunidades",tela:"mural"},{label:"Justificar Rotas",tela:"rotas"},{label:"Manual",tela:"manual"}].map(a=>(
+          <button key={a.tela} onClick={()=>setTela(a.tela)} style={{...glassMini,color:C.text,borderRadius:12,padding:"13px 14px",cursor:"pointer",fontSize:13,fontWeight:500,textAlign:"left",transition:"all .2s"}}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(0,230,118,0.4)";}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.08)";}}>{a.label}</button>
         ))}
       </div>
 
