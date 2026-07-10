@@ -4267,8 +4267,7 @@ export default function App() {
   return (
     <div style={{background:"#03100A",minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text,position:"relative"}}>
       <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",background:"radial-gradient(42% 22% at 8% 0%, rgba(210,255,235,0.16), transparent 60%),radial-gradient(70% 34% at 10% 2%, rgba(0,230,118,0.24), transparent 62%),radial-gradient(75% 45% at 92% 30%, rgba(0,220,140,0.12), transparent 60%),linear-gradient(180deg,#062018 0%,#04140E 40%,#03100A 100%)"}}/>
-      <div style={{position:"relative",zIndex:1}}>
-      <div style={{maxWidth:860,margin:"0 auto",position:"relative"}}>
+      <div style={{maxWidth:860,margin:"0 auto",position:"relative",zIndex:1}}>
       <style>{`
         @keyframes trava-pulse {
           0%   { box-shadow: 0 0 0 0 rgba(232,51,58,0.8); }
@@ -4481,7 +4480,6 @@ export default function App() {
         </div>
       )}
       </div>
-    </div>
     </div>
   );
 }
