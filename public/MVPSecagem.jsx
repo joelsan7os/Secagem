@@ -28,7 +28,50 @@ const C = {
   textDim:      "#3A5880",
   white:        "#ffffff",
   tagBg:        "rgba(10,25,45,0.9)",
+  bgDeep:       "#03100A",
+  cardGrad:     "linear-gradient(180deg, rgba(18,34,27,0.92), rgba(8,20,14,0.96))",
+  cardBorder:   "rgba(0,230,118,0.14)",
+  heroGrad:     "linear-gradient(150deg,#00C766,#00A555 55%,#00863f)",
+  waveColor:    "#00E676",
 };
+
+// ─── Primitivos visuais (layout flutuante VÉRTICE) ──────────────────────────
+const cardStyle = {
+  position:"relative", borderRadius:16,
+  background:C.cardGrad, border:`1px solid ${C.cardBorder}`,
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.07),0 2px 4px rgba(0,0,0,0.5),0 24px 48px -20px rgba(0,0,0,0.9)",
+};
+function Waves() {
+  return (
+    <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none",opacity:0.5}} preserveAspectRatio="none" viewBox="0 0 452 1400" aria-hidden="true">
+      <defs><linearGradient id="vxwave" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#00E676" stopOpacity="0"/>
+        <stop offset="0.5" stopColor="#00E676" stopOpacity="0.20"/>
+        <stop offset="1" stopColor="#00F0FF" stopOpacity="0"/>
+      </linearGradient></defs>
+      <path d="M-40,180 C120,120 220,300 452,150" fill="none" stroke="url(#vxwave)" strokeWidth="1.5"/>
+      <path d="M-40,240 C140,200 260,360 500,220" fill="none" stroke="url(#vxwave)" strokeWidth="1"/>
+      <path d="M-40,560 C120,620 300,440 520,600" fill="none" stroke="url(#vxwave)" strokeWidth="1.5"/>
+      <path d="M-40,620 C160,680 320,500 520,660" fill="none" stroke="url(#vxwave)" strokeWidth="1"/>
+      <path d="M-40,980 C120,1040 300,860 520,1020" fill="none" stroke="url(#vxwave)" strokeWidth="1.5"/>
+      <path d="M-40,1040 C160,1100 320,920 520,1080" fill="none" stroke="url(#vxwave)" strokeWidth="1"/>
+    </svg>
+  );
+}
+function Connector() {
+  return (
+    <div style={{display:"flex",justifyContent:"center",margin:"-2px 0"}}>
+      <svg width="40" height="22" viewBox="0 0 40 22" style={{overflow:"visible"}} aria-hidden="true">
+        <path d="M20,0 L20,22" stroke="#00E676" strokeWidth="1" strokeDasharray="2 3" opacity="0.5"/>
+        <circle cx="20" cy="0" r="2" fill="#00E676"/>
+        <circle cx="20" cy="22" r="2" fill="#00E676"/>
+      </svg>
+    </div>
+  );
+}
+function SecTag({ t }) {
+  return <span style={{fontFamily:"monospace",width:30,height:30,borderRadius:9,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:C.accentLight,background:"rgba(0,230,118,0.08)",border:"1px solid rgba(0,230,118,0.2)"}}>{t}</span>;
+}
 
 
 // ─── Checklists e Catálogo ──────────────────────────────────────────────────
@@ -1040,7 +1083,10 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
           </div>
         );
         return(
-          <div style={{marginBottom:16}}>
+          <div style={{position:"relative",marginBottom:16,padding:"2px 0",
+            background:"radial-gradient(60% 22% at 12% 2%, rgba(0,230,118,0.14), transparent 60%),radial-gradient(70% 30% at 90% 100%, rgba(0,200,120,0.07), transparent 65%)"}}>
+            <Waves/>
+            <div style={{position:"relative",zIndex:1}}>
 
             {/* ── 00 PAINEL DE ALARMES · SDCD ── */}
             {(()=>{
@@ -1373,6 +1419,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
             })()}
             {/* Avarias removidas daqui - ver analytics no histórico */}
 
+            </div>
           </div>
         );
       })()}
