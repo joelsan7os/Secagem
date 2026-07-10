@@ -37,16 +37,19 @@ const C = {
 
 // ─── Primitivos visuais (layout flutuante VÉRTICE) ──────────────────────────
 const cardStyle = {
-  position:"relative", borderRadius:20, overflow:"hidden",
-  background:"rgba(10,24,18,0.48)",
+  position:"relative", borderRadius:20, overflow:"hidden", isolation:"isolate",
+  background:"rgba(10,24,18,0.42)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.04) 20%, transparent 44%),radial-gradient(120px 120px at 0% 0%, rgba(210,255,235,0.14), transparent 70%)",
   backdropFilter:"blur(22px) saturate(1.4)", WebkitBackdropFilter:"blur(22px) saturate(1.4)",
-  border:"1px solid rgba(255,255,255,0.10)",
-  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.18),inset 0 0 40px rgba(255,255,255,0.02),0 10px 30px -10px rgba(0,0,0,0.7)",
+  border:"1px solid rgba(255,255,255,0.12)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.30),inset 0 0 30px rgba(255,255,255,0.03),0 10px 30px -10px rgba(0,0,0,0.7)",
 };
 const glassMini = {
-  background:"rgba(255,255,255,0.04)",
-  border:"1px solid rgba(255,255,255,0.06)",
-  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.08)",
+  position:"relative", overflow:"hidden",
+  background:"rgba(255,255,255,0.05)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.10), transparent 50%)",
+  border:"1px solid rgba(255,255,255,0.08)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.14)",
 };
 function Waves() {
   return (
