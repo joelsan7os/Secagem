@@ -1811,7 +1811,7 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
           </div>
         </div>
       ))}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
+      <div style={{...cardStyle,padding:14,marginBottom:14}}>
         <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:7}}>Observações / Ações tomadas</label>
         <textarea value={obs} onChange={e=>setObs(e.target.value)} rows={2} placeholder="Desvios encontrados, ações realizadas..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/>
       </div>
@@ -1942,12 +1942,12 @@ function RejeicaoTela({ onSalvar, turno, letra, opPU, opPainel, data }) {
               );
             })}
           </div>
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
+          <div style={{...cardStyle,padding:14,marginBottom:14}}>
             <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:8}}>Fotos da ocorrência</label>
             {fotos.length>0&&(<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>{fotos.map((src,i)=>(<div key={i} style={{position:"relative"}}><img src={src} alt="" style={{width:68,height:68,objectFit:"cover",borderRadius:8,border:`2px solid ${tipo.cor}55`}}/><button onClick={()=>setFotos(p=>p.filter((_,j)=>j!==i))} style={{position:"absolute",top:-5,right:-5,background:C.danger,border:"none",color:"#fff",width:28,height:28,borderRadius:"50%",fontSize:9,cursor:"pointer",fontWeight:800}}>✕</button></div>))}</div>)}
             <BotaoFoto fotos={[]} onAdd={src=>setFotos(p=>[...p,src])}/>
           </div>
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
+          <div style={{...cardStyle,padding:14,marginBottom:14}}>
             <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:7}}>Observações da ocorrência</label>
             <textarea value={obs} onChange={e=>setObs(e.target.value)} rows={2} placeholder="Descreva detalhes relevantes..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/>
           </div>
@@ -2022,7 +2022,7 @@ function WFTTela({ onSalvar, turno, letra, opPU:opPUProp, opPainel:opPainelProp,
           </div>
         </div>
       </div>
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:16}}>
+      <div style={{...cardStyle,padding:16,marginBottom:16}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
           <div>
             <div style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:3}}>Meta H2 (M2+M3)</div>
@@ -2083,7 +2083,7 @@ function WFTTela({ onSalvar, turno, letra, opPU:opPUProp, opPainel:opPainelProp,
               <p style={{color:C.textMuted,fontSize:12,margin:0}}>{WFT_META_H2} m³/h H2 · Atual: {consumoNum} m³/h</p>
             </div>
           )}
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
+          <div style={{...cardStyle,padding:14,marginBottom:14}}>
             <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:7}}>Observações</label>
             <textarea value={obs} onChange={e=>setObs(e.target.value)} rows={2} placeholder="Anotações adicionais..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/>
           </div>
@@ -2225,7 +2225,7 @@ function RitmoVaporTela({ onSalvar, turno, letra, opPU:opPUProp, opPainel:opPain
       <Grupo titulo="Verificou itens do processo?" num="01" itens={RITMO_VAPOR_PROCESSO}/>
       <Grupo titulo="Qual a condição dos secadores?" num="02" itens={RITMO_VAPOR_EQUIPAMENTOS}/>
 
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
+      <div style={{...cardStyle,padding:14,marginBottom:14}}>
         <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:7}}>Observações</label>
         <textarea value={obs} onChange={e=>setObs(e.target.value)} rows={3} placeholder="Anotações gerais..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/>
       </div>
@@ -2453,7 +2453,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
 
       {/* Seletor de tipo */}
       <div style={{marginBottom:14,position:"relative"}}>
-        <button onClick={()=>setSelectorAberto(p=>!p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",background:C.card,border:`2px solid ${C.accentLight}55`,borderRadius:12,padding:"12px 16px",cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.accentLight} onMouseLeave={e=>e.currentTarget.style.borderColor=C.accentLight+"55"}>
+        <button onClick={()=>setSelectorAberto(p=>!p)} style={{...glassMini,width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",border:`1px solid ${C.accentLight}55`,borderRadius:12,padding:"12px 16px",cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.accentLight} onMouseLeave={e=>e.currentTarget.style.borderColor=C.accentLight+"55"}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{textAlign:"left"}}>
               <div style={{color:C.white,fontWeight:800,fontSize:14}}>{tipo?.label}</div>
@@ -2463,7 +2463,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
           <span style={{color:C.textMuted,fontSize:18,transform:selectorAberto?"rotate(180deg)":"none",transition:"transform .2s"}}>⌄</span>
         </button>
         {selectorAberto&&(
-          <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,right:0,zIndex:50,background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden",boxShadow:"0 8px 24px #00000066"}}>
+          <div style={{...cardStyle,position:"absolute",top:"calc(100% + 6px)",left:0,right:0,zIndex:50,borderRadius:12,boxShadow:"0 8px 24px #00000066"}}>
             {catalogo_area.map(c=>(
               <button key={c.id} onClick={()=>trocarTipo(c.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:tipoId===c.id?C.card:"transparent",border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",textAlign:"left",borderLeft:`3px solid ${tipoId===c.id?C.accent:"transparent"}`}}>
                 <div>
@@ -2496,7 +2496,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
         <RitmoVaporTela onSalvar={onSalvar} turno={turno} letra={letra} opPU={opPU} opPainel={opPainel} data={data}/>
       ):(
       <>{/* Formulário padrão */}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:16}}>
+      <div style={{...cardStyle,padding:16,marginBottom:16}}>
         {tipo?.porMaquina&&(
           <div style={{display:"flex",gap:8,marginBottom:14}}>
             {["M2","M3"].map(m=>(
@@ -2558,7 +2558,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
           <div key={secao} style={{marginBottom:14}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6,padding:"0 2px"}}>
               <span style={{display:"flex",alignItems:"center",gap:5}}>
-                <span style={{fontSize:13}}>{iconSecao[secao]||"🔹"}</span>
+                
                 <span style={{color:C.text,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em"}}>{secao}</span>
               </span>
               <span style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -2604,7 +2604,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                         return s;
                       });
                     }:undefined}
-                    style={{background:C.card,borderRadius:10,padding:"11px 14px",display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap",border:`1px solid ${borderColor}`,borderLeft:`3px solid ${leftColor}`,cursor:item.tipo==="valor_stepper"?"pointer":"default"}}>
+                    style={{...glassMini,borderRadius:10,padding:"11px 14px",display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap",border:`1px solid ${borderColor}`,borderLeft:`3px solid ${leftColor}`,cursor:item.tipo==="valor_stepper"?"pointer":"default"}}>
                     <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,background:isNok||isAlert||isValNok||stepperNok?(isCritico?C.danger:isAtencao?C.warning:C.danger):stepperWarn?C.warning:preen?C.success:C.tagBg,border:`2px solid ${isNok||isAlert||isValNok||stepperNok||stepperWarn?nokColor:preen?C.accentLight:C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:800,marginTop:2}}>
                       {isNok||isAlert||isValNok||stepperNok||stepperWarn?"⚠":preen?"✓":i+1}
                     </div>
@@ -2894,7 +2894,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
           {items.filter(i=>isItemNok(i,valores[i.id])).map(i=>(<div key={i.id} style={{color:C.textMuted,fontSize:11,marginBottom:2}}>· {i.secao} — {i.item}</div>))}
         </div>
       )}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
+      <div style={{...cardStyle,padding:14,marginBottom:14}}>
         <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:8}}>Observações do Turno</label>
         <textarea value={obs} onChange={e=>setObs(e.target.value)} rows={3} placeholder="Anomalias, ocorrências..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/>
       </div>
@@ -3062,7 +3062,7 @@ function GraficoLetrasAntigo({ historico }) {
   const maxVal=Math.max(...dadosRaw.map(d=>d.total),1);
   const corEfic=(e)=>e===null?C.textDim:e>=80?C.accentLight:e>=50?C.warningLight:C.dangerLight;
   return (
-    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:16}}>
+    <div style={{...cardStyle,padding:16,marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <span style={{color:C.white,fontWeight:800,fontSize:13}}>Lançamentos e Eficiência por Letra</span>
         <div style={{display:"flex",gap:10}}>
@@ -3568,7 +3568,7 @@ function RotaEnfardamentoTela({ onSalvar }) {
       {Object.entries(secoes).map(([secao,itensDaSecao])=>(
         <div key={secao} style={{marginBottom:14}}>
           <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:7,padding:"0 2px"}}>
-            <span style={{fontSize:13}}>{iconSecao[secao]||"🔹"}</span>
+            
             <span style={{color:C.text,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em"}}>{secao}</span>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:7}}>
