@@ -4265,7 +4265,9 @@ export default function App() {
   if(adminAberto && perfil.funcao==="dev") return <PainelAdmin onVoltar={()=>setAdminAberto(false)}/>;
   if(modoVisao==="dashboard") return <React.Suspense fallback={<div style={{background:C.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",color:C.accentLight,fontFamily:"monospace",fontSize:14}}>Carregando dashboard…</div>}><DashboardTV setTela={(t)=>{setModoVisao("app");setTela(t);}} setModoVisao={setModoVisao}/></React.Suspense>;
   return (
-    <div style={{background:"radial-gradient(42% 22% at 8% 0%, rgba(210,255,235,0.16), transparent 60%),radial-gradient(70% 34% at 10% 2%, rgba(0,230,118,0.24), transparent 62%),radial-gradient(75% 45% at 92% 30%, rgba(0,220,140,0.12), transparent 60%),linear-gradient(180deg,#062018 0%,#04140E 40%,#03100A 100%)",backgroundAttachment:"fixed",minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text}}>
+    <div style={{background:"#03100A",minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text,position:"relative"}}>
+      <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",background:"radial-gradient(42% 22% at 8% 0%, rgba(210,255,235,0.16), transparent 60%),radial-gradient(70% 34% at 10% 2%, rgba(0,230,118,0.24), transparent 62%),radial-gradient(75% 45% at 92% 30%, rgba(0,220,140,0.12), transparent 60%),linear-gradient(180deg,#062018 0%,#04140E 40%,#03100A 100%)"}}/>
+      <div style={{position:"relative",zIndex:1}}>
       <div style={{maxWidth:860,margin:"0 auto",position:"relative"}}>
       <style>{`
         @keyframes trava-pulse {
@@ -4479,6 +4481,7 @@ export default function App() {
         </div>
       )}
       </div>
+    </div>
     </div>
   );
 }
