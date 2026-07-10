@@ -1210,15 +1210,15 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
             </div>
 
             {/* ── 04 PASSAGEM DE TURNO ── */}
-            <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`2px solid #B388FF`,borderRadius:12,padding:"13px 14px",marginBottom:10}}>
-              <SecH n="04" t="Passagem de Turno" cor="#B388FF"/>
+            <div style={{...cardStyle,padding:"14px 16px",marginBottom:10}}>
+              <SecH n="04" t="Passagem de Turno"/>
               {herdados.length===0&&ultObs.length===0?(
                 <div style={{color:C.textMuted,fontSize:11,fontStyle:"italic"}}>Sem pendências herdadas</div>
               ):(
                 <>
                   {herdados.slice(0,3).map(c=>(
                     <div key={c.id} style={{display:"flex",alignItems:"flex-start",gap:7,padding:"4px 0"}}>
-                      <span style={{color:"#B388FF",fontSize:10,flexShrink:0,marginTop:1}}>◷</span>
+                      <span style={{color:C.accentLight,fontSize:10,flexShrink:0,marginTop:1}}>◷</span>
                       <span style={{color:C.text,fontSize:11,lineHeight:1.4}}>{c.equipamentoNome} <span style={{color:C.textDim,fontSize:9}}>· desde {c.dataAbertura?.split("-").reverse().slice(0,2).join("/")}</span></span>
                     </div>
                   ))}
