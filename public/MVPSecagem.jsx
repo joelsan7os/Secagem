@@ -1090,7 +1090,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
         );
         return(
           <div style={{position:"relative",marginBottom:16,padding:"2px 0",
-            background:"radial-gradient(55% 26% at 12% 2%, rgba(0,230,118,0.22), transparent 60%),radial-gradient(60% 34% at 90% 100%, rgba(0,200,120,0.12), transparent 65%)"}}>
+            background:"radial-gradient(65% 32% at 10% 0%, rgba(0,230,118,0.34), transparent 62%),radial-gradient(70% 40% at 92% 42%, rgba(0,220,140,0.16), transparent 60%),radial-gradient(80% 60% at 50% 108%, rgba(0,200,120,0.14), transparent 60%),linear-gradient(180deg,#062018 0%,#04140E 55%,#03100A 100%)"}}>
             <Waves/>
             <div style={{position:"relative",zIndex:1}}>
 
