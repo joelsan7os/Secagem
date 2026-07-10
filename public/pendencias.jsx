@@ -15,6 +15,22 @@ const C = {
   text:"#FFFFFF", textMuted:"#B5C6DA", textDim:"#3A5880",
   border:"rgba(60,255,140,0.15)", tagBg:"rgba(255,255,255,0.04)",
 };
+
+const cardStyle = {
+  position:"relative", borderRadius:20, overflow:"hidden", isolation:"isolate",
+  background:"rgba(10,24,18,0.42)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.04) 20%, transparent 44%),radial-gradient(120px 120px at 0% 0%, rgba(210,255,235,0.14), transparent 70%)",
+  backdropFilter:"blur(22px) saturate(1.4)", WebkitBackdropFilter:"blur(22px) saturate(1.4)",
+  border:"1px solid rgba(255,255,255,0.12)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.30),inset 0 0 30px rgba(255,255,255,0.03),0 10px 30px -10px rgba(0,0,0,0.7)",
+};
+const glassMini = {
+  position:"relative", overflow:"hidden",
+  background:"rgba(255,255,255,0.05)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.10), transparent 50%)",
+  border:"1px solid rgba(255,255,255,0.08)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.14)",
+};
 const inputStyle={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",color:"#fff",fontSize:14,outline:"none"};
 
 const storageGet = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
@@ -416,7 +432,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
         </div>
         {/* ações */}
         <div style={{ display:"flex", gap:8, marginTop:12, paddingTop:11, borderTop:`1px solid ${C.border}` }}>
-          {!modoGeral && <button onClick={()=>{ setAgOpen({janId:jan.id}); setAgMaq("M2"); }} style={{ flex:1, background:C.tagBg, border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:8, padding:"7px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📅 Agendar parada</button>}
+          {!modoGeral && <button onClick={()=>{ setAgOpen({janId:jan.id}); setAgMaq("M2"); }} style={{ flex:1, background:C.tagBg, border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:8, padding:"7px", fontSize:11, fontWeight:700, cursor:"pointer" }}>Agendar parada</button>}
           {selMaq
             ? <button onClick={()=>setSelMaq(null)} style={{ flex:1, background:`${cor}14`, border:`1px solid ${cor}44`, color:cor, borderRadius:8, padding:"7px", fontSize:11, fontWeight:700, cursor:"pointer" }}>Mostrar M2 + M3</button>
             : <div style={{ flex:1, textAlign:"center", color:C.textDim, fontSize:10, alignSelf:"center" }}>Toque numa máquina para filtrar</div>}
@@ -583,7 +599,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
                         {pl ? <span style={{ color:janSel.cor, fontSize:11, fontWeight:700 }}>{pl}</span> : <span style={{ color:C.textDim, fontSize:10, fontStyle:"italic" }}>—</span>}
                       </div>
                     ))}
-                    <button onClick={()=>{ setAgOpen({janId:sel}); setAgMaq("M2"); }} style={{ background:C.tagBg, border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:9, padding:"8px 11px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📅</button>
+                    <button onClick={()=>{ setAgOpen({janId:sel}); setAgMaq("M2"); }} style={{ background:C.tagBg, border:`1px solid ${C.border}`, color:C.textMuted, borderRadius:9, padding:"8px 11px", fontSize:11, fontWeight:700, cursor:"pointer" }}></button>
                   </div>
                   {/* principais equipamentos em falha */}
                   {principais.length>0 && (
@@ -618,12 +634,12 @@ function MuralInterno({ eqState = {}, onVoltar }) {
             </div>
           </div>
           {arrSel.length===0 ? (
-            <div style={{ color:C.textDim, fontSize:12, textAlign:"center", padding:32, fontStyle:"italic" }}>Nada pendente nesta área 🎉</div>
+            <div style={{ color:C.textDim, fontSize:12, textAlign:"center", padding:32, fontStyle:"italic" }}>Nada pendente nesta área </div>
           ) : arrSel.map((p,i) => {
             const cf = critFinal(p);
             const manual = !!prioridades[p.chave];
             return (
-              <div key={p.chave} className="mural-item" style={{ animationDelay:`${i*0.04}s`, background:C.card, border:`1px solid ${C.border}`, borderLeft:`3px solid ${CRIT_COR[cf]}`, borderRadius:11, padding:"11px 12px", marginBottom:8, display:"flex", alignItems:"center", gap:10 }}>
+              <div key={p.chave} className="mural-item" style={{ animationDelay:`${i*0.04}s`, ...glassMini, border:`1px solid ${C.border}`, borderLeft:`3px solid ${CRIT_COR[cf]}`, borderRadius:11, padding:"11px 12px", marginBottom:8, display:"flex", alignItems:"center", gap:10 }}>
                 <span style={{ width:20, color:C.textDim, fontSize:12, fontWeight:700, fontFamily:"monospace", flexShrink:0 }}>{i+1}</span>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ color:C.text, fontSize:13, fontWeight:600, lineHeight:1.3 }}>{p.titulo}</div>
@@ -637,7 +653,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
                 <div style={{ position:"relative", flexShrink:0 }}>
                   <button onClick={()=>setEditPrio(editPrio===p.chave?null:p.chave)} style={{ display:"flex", alignItems:"center", gap:5, background:`${CRIT_COR[cf]}18`, border:`1px solid ${CRIT_COR[cf]}66`, borderRadius:7, padding:"5px 9px", cursor:"pointer" }}>
                     <span style={{ width:7, height:7, borderRadius:"50%", background:CRIT_COR[cf] }}/>
-                    <span style={{ color:CRIT_COR[cf], fontSize:10, fontWeight:700 }}>{cf}{manual?" ✎":""}</span>
+                    <span style={{ color:CRIT_COR[cf], fontSize:10, fontWeight:700 }}>{cf}{manual?" ":""}</span>
                     <span style={{ color:CRIT_COR[cf], fontSize:9 }}>▾</span>
                   </button>
                   {editPrio===p.chave && (
@@ -665,7 +681,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
       {/* Modal adicionar */}
       {addOpen && (
         <div onClick={()=>setAddOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:20 }}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:20, maxWidth:380, width:"100%", maxHeight:"85vh", overflowY:"auto" }}>
+          <div onClick={e=>e.stopPropagation()} style={{ ...cardStyle, borderRadius:16, padding:20, maxWidth:380, width:"100%", maxHeight:"85vh", overflowY:"auto" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
               <span style={{ color:C.text, fontWeight:800, fontSize:15 }}>Nova Pendência</span>
               <button onClick={()=>setAddOpen(false)} style={{ background:"none", border:"none", color:C.textMuted, fontSize:20, cursor:"pointer" }}>×</button>
@@ -706,9 +722,9 @@ function MuralInterno({ eqState = {}, onVoltar }) {
       {/* Modal agendar parada */}
       {agOpen && (
         <div onClick={()=>setAgOpen(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:20 }}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:20, maxWidth:340, width:"100%" }}>
+          <div onClick={e=>e.stopPropagation()} style={{ ...cardStyle, borderRadius:16, padding:20, maxWidth:340, width:"100%" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <span style={{ color:C.text, fontWeight:800, fontSize:15 }}>📅 Agendar Parada</span>
+              <span style={{ color:C.text, fontWeight:800, fontSize:15 }}>Agendar Parada</span>
               <button onClick={()=>setAgOpen(null)} style={{ background:"none", border:"none", color:C.textMuted, fontSize:20, cursor:"pointer" }}>×</button>
             </div>
             <div style={{ color:C.textMuted, fontSize:11, marginBottom:12 }}>{JANELAS.find(j=>j.id===agOpen.janId)?.label}</div>
@@ -747,8 +763,8 @@ class MuralErrorBoundary extends React.Component {
       return (
         <div style={{padding:"16px 16px 80px"}}>
           <button onClick={this.props.onVoltar} style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button>
-          <div style={{background:C.card,border:`1px solid ${C.dangerLight}44`,borderLeft:`3px solid ${C.dangerLight}`,borderRadius:12,padding:16}}>
-            <div style={{color:C.dangerLight,fontWeight:800,fontSize:14,marginBottom:8}}>⚠ Erro ao carregar o Mural</div>
+          <div style={{...cardStyle,border:`1px solid ${C.dangerLight}44`,borderLeft:`3px solid ${C.dangerLight}`,borderRadius:12,padding:16}}>
+            <div style={{color:C.dangerLight,fontWeight:800,fontSize:14,marginBottom:8}}>Erro ao carregar o Mural</div>
             <pre style={{color:C.textMuted,fontSize:11,whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0,fontFamily:"monospace"}}>{String(this.state.erro?.message||this.state.erro)}</pre>
           </div>
         </div>
