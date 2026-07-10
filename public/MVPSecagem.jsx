@@ -4414,7 +4414,7 @@ export default function App() {
       </div>
       <div style={{padding:"20px 16px 100px"}}>{renderTela()}</div>
       {/* Nav */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(4,17,29,0.92)",backdropFilter:"blur(25px)",WebkitBackdropFilter:"blur(25px)",borderTop:"1px solid rgba(0,230,118,0.2)",display:"flex",padding:"8px 0 16px",boxShadow:"0 -4px 40px rgba(0,0,0,0.7)"}}>
+      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:200,background:"rgba(4,17,29,0.92)",backdropFilter:"blur(25px)",WebkitBackdropFilter:"blur(25px)",borderTop:"1px solid rgba(0,230,118,0.2)",display:"flex",padding:"8px 0 16px",boxShadow:"0 -4px 40px rgba(0,0,0,0.7)"}}>
         {nav.map(n=>{
           const ativo=tela===n.id;
           return (
