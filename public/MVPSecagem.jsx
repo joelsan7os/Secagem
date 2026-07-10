@@ -1092,8 +1092,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
           </div>
         );
         return(
-          <div style={{position:"relative",marginBottom:16,padding:"2px 0",
-            background:"radial-gradient(38% 20% at 8% -2%, rgba(220,255,238,0.30), transparent 60%),radial-gradient(65% 32% at 10% 0%, rgba(0,230,118,0.34), transparent 62%),radial-gradient(70% 40% at 92% 42%, rgba(0,220,140,0.16), transparent 60%),radial-gradient(80% 60% at 50% 108%, rgba(0,200,120,0.14), transparent 60%),linear-gradient(180deg,#062018 0%,#04140E 55%,#03100A 100%)"}}>
+          <div style={{position:"relative",marginBottom:16,padding:"2px 0"}}>
             <Waves/>
             <div style={{position:"relative",zIndex:1}}>
 
@@ -1102,7 +1101,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
               const vivos=[...atencao].filter(a=>!recon[a.chave]).sort((a,b)=>a.nivel-b.nivel);
               const temCrit=vivos.some(a=>a.nivel<=3);
               return(
-              <div style={{background:C.card,border:`1px solid ${vivos.length>0?C.dangerLight+"44":C.border}`,borderTop:`2px solid ${vivos.length>0?C.dangerLight:C.accentLight}`,borderRadius:12,padding:"10px 12px",marginBottom:10,boxShadow:temCrit?`0 0 10px ${C.dangerLight}22`:"none"}}>
+              <div style={vivos.length>0?{background:C.card,border:`1px solid ${C.dangerLight}44`,borderTop:`2px solid ${C.dangerLight}`,borderRadius:12,padding:"10px 12px",marginBottom:10,boxShadow:temCrit?`0 0 10px ${C.dangerLight}22`:"none"}:{...cardStyle,padding:"12px 16px",marginBottom:10}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:vivos.length>0?8:0}}>
                   <span style={{color:vivos.length>0?C.dangerLight:C.textDim,fontSize:9,fontFamily:"monospace",fontWeight:700,letterSpacing:"0.12em"}}>ALARMES</span>
                   <div style={{minWidth:28,textAlign:"center",background:vivos.length>0?C.danger:C.tagBg,color:vivos.length>0?"#fff":C.textDim,fontFamily:"monospace",fontWeight:900,fontSize:13,borderRadius:5,padding:"1px 7px",animation:temCrit?"trava-pulse 1.6s ease-in-out infinite":"none"}}>{vivos.length}</div>
@@ -1353,12 +1352,12 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                 );
               };
               return(
-                <div onClick={()=>setTela("chuveiros")} style={{background:`linear-gradient(135deg,${C.card},${C.blueLight}08)`,border:`1px solid ${C.blueLight}44`,borderTop:`3px solid ${C.blueLight}`,borderRadius:14,padding:"14px 14px 12px",marginBottom:10,cursor:"pointer",boxShadow:`0 4px 24px ${C.blueLight}15`}}>
+                <div onClick={()=>setTela("chuveiros")} style={{...cardStyle,padding:"14px 16px 12px",marginBottom:10,cursor:"pointer"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <span style={{color:C.white,fontSize:13,fontWeight:900,letterSpacing:"0.06em"}}>EFICIÊNCIA DE LIMPEZA</span>
                     </div>
-                    <span style={{color:C.blueLight,fontSize:11,fontWeight:700,letterSpacing:"0.04em"}}>abrir ›</span>
+                    <span style={{color:C.accentLight,fontSize:11,fontWeight:700,letterSpacing:"0.04em"}}>abrir ›</span>
                   </div>
                   <div style={{display:"flex",gap:10,marginBottom:14}}>
                     <Gauge label="M2" pct={effM2.pct}/>
@@ -4266,7 +4265,7 @@ export default function App() {
   if(adminAberto && perfil.funcao==="dev") return <PainelAdmin onVoltar={()=>setAdminAberto(false)}/>;
   if(modoVisao==="dashboard") return <React.Suspense fallback={<div style={{background:C.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",color:C.accentLight,fontFamily:"monospace",fontSize:14}}>Carregando dashboard…</div>}><DashboardTV setTela={(t)=>{setModoVisao("app");setTela(t);}} setModoVisao={setModoVisao}/></React.Suspense>;
   return (
-    <div style={{background:C.bg,minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text}}>
+    <div style={{background:"radial-gradient(42% 22% at 8% 0%, rgba(210,255,235,0.16), transparent 60%),radial-gradient(70% 34% at 10% 2%, rgba(0,230,118,0.24), transparent 62%),radial-gradient(75% 45% at 92% 30%, rgba(0,220,140,0.12), transparent 60%),linear-gradient(180deg,#062018 0%,#04140E 40%,#03100A 100%)",backgroundAttachment:"fixed",minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text}}>
       <div style={{maxWidth:860,margin:"0 auto",position:"relative"}}>
       <style>{`
         @keyframes trava-pulse {
