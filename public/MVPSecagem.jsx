@@ -1277,7 +1277,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
               const lastSedim=sedimAll.length>0?sedimAll[sedimAll.length-1]:null;
               const corSedim=lastSedim?(lastSedim.valor<150?C.accentLight:lastSedim.valor<=250?C.warningLight:C.dangerLight):null;
               return(
-                <div onClick={()=>setTela("cleaners")} style={{background:`linear-gradient(135deg,${C.card},${corEg}08)`,border:`1px solid ${corEg}44`,borderTop:`3px solid ${corEg}`,borderRadius:14,padding:"14px 14px 12px",marginBottom:10,cursor:"pointer",boxShadow:`0 4px 24px ${corEg}15`}}>
+                <div onClick={()=>setTela("cleaners")} style={{...cardStyle,padding:"14px 16px 12px",marginBottom:10,cursor:"pointer"}}>
                   {/* header */}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
