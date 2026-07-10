@@ -1077,7 +1077,6 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
         ];
         const SecH=({n,t,cor})=>(
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-            <span style={{color:cor||C.textDim,fontSize:9,fontWeight:900,letterSpacing:"0.1em"}}>{n}</span>
             <span style={{color:cor||C.text,fontSize:11,fontWeight:800,letterSpacing:"0.08em",textTransform:"uppercase"}}>{t}</span>
             <div style={{flex:1,height:1,background:`linear-gradient(90deg,${(cor||C.border)}44,transparent)`}}/>
           </div>
@@ -1152,9 +1151,9 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                   const afetada=mCor==="vermelho"||mCor==="amarelo";
                   const ledCor=mCor==="vermelho"?C.dangerLight:C.warningLight;
                   return(
-                  <div key={m} style={{background:afetada?`${ledCor}08`:C.card,border:`1.5px solid ${afetada?ledCor:cor+"33"}`,borderTop:`2px solid ${afetada?ledCor:cor}`,borderRadius:12,padding:"11px 12px",boxShadow:afetada?`0 0 8px ${ledCor}66,0 0 18px ${ledCor}33,inset 0 0 12px ${ledCor}11`:"none",animation:afetada&&mCor==="vermelho"?"trava-pulse 1.6s ease-in-out infinite":"none"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <span style={{color:afetada?ledCor:cor,fontWeight:900,fontSize:13,letterSpacing:"0.05em"}}>MÁQ. {m.replace("M","")}</span>
+                  <div key={m} style={afetada?{background:`${ledCor}08`,border:`1.5px solid ${ledCor}`,borderRadius:14,padding:"12px 13px",boxShadow:`0 0 8px ${ledCor}66,0 0 18px ${ledCor}33,inset 0 0 12px ${ledCor}11`,animation:mCor==="vermelho"?"trava-pulse 1.6s ease-in-out infinite":"none"}:{...cardStyle,borderRadius:14,padding:"12px 13px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                      <span style={{color:afetada?ledCor:C.text,fontWeight:900,fontSize:14,letterSpacing:"0.05em"}}>MÁQ. {m.replace("M","")}</span>
                       <div style={{width:9,height:9,borderRadius:"50%",background:afetada?(mCor==="vermelho"?C.danger:C.warning):d.ok?C.success:d.cr>0?C.danger:C.warning,boxShadow:`0 0 6px ${afetada?(mCor==="vermelho"?C.danger:C.warning):d.ok?C.success:d.cr>0?C.danger:C.warning}`}}/>
                     </div>
                     {[
@@ -1162,9 +1161,13 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                       {l:"Alertas",v:d.al,c:d.al>0?C.warningLight:C.text},
                       {l:"Críticos",v:d.cr,c:d.cr>0?C.dangerLight:C.text},
                     ].map(({l,v,c,clickDetalhe})=>(
-                      <div key={l} onClick={()=>clickDetalhe&&setPopupChecks({maquina:m,detalhes:clickDetalhe})} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"3px 0",borderBottom:`1px solid ${C.border}22`,cursor:clickDetalhe?"pointer":"default"}}>
-                        <span style={{color:C.textDim,fontSize:9,textTransform:"uppercase"}}>{l}</span>
-                        <span style={{color:c,fontWeight:700,fontSize:11,display:"flex",alignItems:"center",gap:4}}>{v}{clickDetalhe&&<span style={{fontSize:11,opacity:0.6}}>›</span>}</span>
+                      <div key={l} onClick={()=>clickDetalhe&&setPopupChecks({maquina:m,detalhes:clickDetalhe})} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:l!=="Críticos"?"1px solid rgba(0,230,118,0.08)":"none",cursor:clickDetalhe?"pointer":"default"}}>
+                        <span style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.04em"}}>{l}</span>
+                        {l==="Status"?(
+                          <span style={{fontFamily:"monospace",fontSize:9,fontWeight:700,color:c,padding:"3px 9px",borderRadius:999,background:`${c}14`,border:`1px solid ${c}40`,letterSpacing:"0.04em"}}>{String(v).toUpperCase()}</span>
+                        ):(
+                          <span style={{color:c,fontWeight:700,fontSize:12,fontFamily:"monospace",display:"flex",alignItems:"center",gap:4}}>{v}{clickDetalhe&&<span style={{fontSize:11,opacity:0.6}}>›</span>}</span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1265,7 +1268,6 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                   {/* header */}
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{color:C.textDim,fontSize:9,fontWeight:900,letterSpacing:"0.1em"}}>05</span>
                       <span style={{color:C.white,fontSize:13,fontWeight:900,letterSpacing:"0.06em"}}>CLEANERS</span>
                       {lastSedim&&<span style={{background:`${corSedim}22`,border:`1px solid ${corSedim}55`,color:corSedim,borderRadius:20,padding:"1px 7px",fontSize:8,fontFamily:"monospace",fontWeight:800}}>Sedim {lastSedim.valor} mL/L</span>}
                     </div>
@@ -1341,7 +1343,6 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                 <div onClick={()=>setTela("chuveiros")} style={{background:`linear-gradient(135deg,${C.card},${C.blueLight}08)`,border:`1px solid ${C.blueLight}44`,borderTop:`3px solid ${C.blueLight}`,borderRadius:14,padding:"14px 14px 12px",marginBottom:10,cursor:"pointer",boxShadow:`0 4px 24px ${C.blueLight}15`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{color:C.textDim,fontSize:9,fontWeight:900,letterSpacing:"0.1em"}}>06</span>
                       <span style={{color:C.white,fontSize:13,fontWeight:900,letterSpacing:"0.06em"}}>EFICIÊNCIA DE LIMPEZA</span>
                     </div>
                     <span style={{color:C.blueLight,fontSize:11,fontWeight:700,letterSpacing:"0.04em"}}>abrir ›</span>
