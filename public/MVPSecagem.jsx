@@ -1184,22 +1184,25 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
             </div>
 
             {/* ── 03 CHECKLIST DO TURNO ── */}
-            <div style={{marginBottom:10}}>
+            <div style={{...cardStyle,padding:"14px 16px",marginBottom:10}}>
               <SecH n="03" t="Checklist do Turno"/>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-                {checklistBar.map(seg=>(
-                  <div key={seg.key} onClick={()=>setTela("checklist")} style={{background:seg.ok?`${C.accentLight}0d`:`${C.dangerLight}0d`,border:`1px solid ${seg.ok?C.accentLight+"44":C.dangerLight+"55"}`,borderTop:`2px solid ${seg.ok?C.accentLight:C.dangerLight}`,borderRadius:10,padding:"8px 8px 7px",cursor:"pointer",animation:seg.ok?"none":"trava-pulse 1.9s ease-in-out infinite"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                      <span style={{color:seg.ok?C.accentLight:C.dangerLight,fontSize:10,fontWeight:900,letterSpacing:"0.03em"}}>{seg.label}</span>
-                      <span style={{color:seg.ok?C.accentLight:C.dangerLight,fontSize:10,fontWeight:800,fontFamily:"monospace"}}>{seg.feitos}/{seg.total}</span>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                {checklistBar.map(seg=>{
+                  const cor=seg.ok?C.accentLight:C.warningLight;
+                  return(
+                  <div key={seg.key} onClick={()=>setTela("checklist")} style={{...glassMini,borderRadius:12,padding:"10px 10px 9px",cursor:"pointer"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <span style={{color:C.text,fontSize:11,fontWeight:800,letterSpacing:"0.02em"}}>{seg.label}</span>
+                      <span style={{color:cor,fontSize:11,fontWeight:800,fontFamily:"monospace"}}>{seg.feitos}/{seg.total}</span>
                     </div>
-                    <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+                    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                       {seg.un.map(u=>(
-                        <span key={u.id} style={{fontSize:8,fontWeight:800,fontFamily:"monospace",color:u.ok?"#04111D":C.dangerLight,background:u.ok?C.accentLight:"transparent",border:`1px solid ${u.ok?C.accentLight:C.dangerLight+"55"}`,borderRadius:4,padding:"1px 0",minWidth:17,textAlign:"center"}}>{u.id}</span>
+                        <span key={u.id} style={{fontSize:8,fontWeight:800,fontFamily:"monospace",color:u.ok?"#04111D":C.textDim,background:u.ok?C.accentLight:"rgba(255,255,255,0.05)",border:`1px solid ${u.ok?C.accentLight:"rgba(255,255,255,0.10)"}`,borderRadius:5,padding:"1px 0",minWidth:18,textAlign:"center"}}>{u.id}</span>
                       ))}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
