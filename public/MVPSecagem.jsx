@@ -37,24 +37,31 @@ const C = {
 
 // ─── Primitivos visuais (layout flutuante VÉRTICE) ──────────────────────────
 const cardStyle = {
-  position:"relative", borderRadius:16,
-  background:C.cardGrad, border:`1px solid ${C.cardBorder}`,
-  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.07),0 2px 4px rgba(0,0,0,0.5),0 24px 48px -20px rgba(0,0,0,0.9)",
+  position:"relative", borderRadius:20, overflow:"hidden",
+  background:"rgba(10,24,18,0.48)",
+  backdropFilter:"blur(22px) saturate(1.4)", WebkitBackdropFilter:"blur(22px) saturate(1.4)",
+  border:"1px solid rgba(255,255,255,0.10)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.18),inset 0 0 40px rgba(255,255,255,0.02),0 10px 30px -10px rgba(0,0,0,0.7)",
+};
+const glassMini = {
+  background:"rgba(255,255,255,0.04)",
+  border:"1px solid rgba(255,255,255,0.06)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.08)",
 };
 function Waves() {
   return (
-    <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none",opacity:0.5}} preserveAspectRatio="none" viewBox="0 0 452 1400" aria-hidden="true">
+    <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:0,pointerEvents:"none",opacity:0.65}} preserveAspectRatio="none" viewBox="0 0 452 1400" aria-hidden="true">
       <defs><linearGradient id="vxwave" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stopColor="#00E676" stopOpacity="0"/>
-        <stop offset="0.5" stopColor="#00E676" stopOpacity="0.20"/>
+        <stop offset="0.5" stopColor="#00E676" stopOpacity="0.30"/>
         <stop offset="1" stopColor="#00F0FF" stopOpacity="0"/>
       </linearGradient></defs>
-      <path d="M-40,180 C120,120 220,300 452,150" fill="none" stroke="url(#vxwave)" strokeWidth="1.5"/>
-      <path d="M-40,240 C140,200 260,360 500,220" fill="none" stroke="url(#vxwave)" strokeWidth="1"/>
-      <path d="M-40,560 C120,620 300,440 520,600" fill="none" stroke="url(#vxwave)" strokeWidth="1.5"/>
-      <path d="M-40,620 C160,680 320,500 520,660" fill="none" stroke="url(#vxwave)" strokeWidth="1"/>
-      <path d="M-40,980 C120,1040 300,860 520,1020" fill="none" stroke="url(#vxwave)" strokeWidth="1.5"/>
-      <path d="M-40,1040 C160,1100 320,920 520,1080" fill="none" stroke="url(#vxwave)" strokeWidth="1"/>
+      <path d="M-40,180 C120,120 220,300 452,150" fill="none" stroke="url(#vxwave)" strokeWidth="2"/>
+      <path d="M-40,240 C140,200 260,360 500,220" fill="none" stroke="url(#vxwave)" strokeWidth="1.4"/>
+      <path d="M-40,560 C120,620 300,440 520,600" fill="none" stroke="url(#vxwave)" strokeWidth="2"/>
+      <path d="M-40,620 C160,680 320,500 520,660" fill="none" stroke="url(#vxwave)" strokeWidth="1.4"/>
+      <path d="M-40,980 C120,1040 300,860 520,1020" fill="none" stroke="url(#vxwave)" strokeWidth="2"/>
+      <path d="M-40,1040 C160,1100 320,920 520,1080" fill="none" stroke="url(#vxwave)" strokeWidth="1.4"/>
     </svg>
   );
 }
@@ -1083,7 +1090,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
         );
         return(
           <div style={{position:"relative",marginBottom:16,padding:"2px 0",
-            background:"radial-gradient(60% 22% at 12% 2%, rgba(0,230,118,0.14), transparent 60%),radial-gradient(70% 30% at 90% 100%, rgba(0,200,120,0.07), transparent 65%)"}}>
+            background:"radial-gradient(55% 26% at 12% 2%, rgba(0,230,118,0.22), transparent 60%),radial-gradient(60% 34% at 90% 100%, rgba(0,200,120,0.12), transparent 65%)"}}>
             <Waves/>
             <div style={{position:"relative",zIndex:1}}>
 
@@ -1134,7 +1141,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
                   {l:"Em Alerta",v:eqAlerta.length,c:eqAlerta.length>0?C.warningLight:C.accentLight},
                   {l:"Críticos",v:eqCritico.length,c:eqCritico.length>0?C.dangerLight:C.accentLight},
                 ].map(({l,v,c})=>(
-                  <div key={l} style={{background:"linear-gradient(180deg, rgba(14,32,23,0.9), rgba(7,18,13,0.95))",border:"1px solid rgba(0,230,118,0.10)",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.05)",borderRadius:10,padding:"9px 4px",textAlign:"center"}}>
+                  <div key={l} style={{...glassMini,borderRadius:12,padding:"10px 4px",textAlign:"center"}}>
                     <div style={{color:c,fontWeight:800,fontSize:17,lineHeight:1,fontFamily:"monospace"}}>{v}</div>
                     <div style={{color:C.textDim,fontSize:8,textTransform:"uppercase",marginTop:5,letterSpacing:"0.06em"}}>{l}</div>
                   </div>
