@@ -31,6 +31,22 @@ const C = {
   tagBg:        "rgba(10,25,45,0.9)",
 };
 
+const cardStyle = {
+  position:"relative", borderRadius:20, overflow:"hidden", isolation:"isolate",
+  background:"rgba(10,24,18,0.42)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.04) 20%, transparent 44%),radial-gradient(120px 120px at 0% 0%, rgba(210,255,235,0.14), transparent 70%)",
+  backdropFilter:"blur(22px) saturate(1.4)", WebkitBackdropFilter:"blur(22px) saturate(1.4)",
+  border:"1px solid rgba(255,255,255,0.12)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.30),inset 0 0 30px rgba(255,255,255,0.03),0 10px 30px -10px rgba(0,0,0,0.7)",
+};
+const glassMini = {
+  position:"relative", overflow:"hidden",
+  background:"rgba(255,255,255,0.05)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.10), transparent 50%)",
+  border:"1px solid rgba(255,255,255,0.08)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.14)",
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const storageGet = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
 const storageSet = (key, val) => {
@@ -56,7 +72,7 @@ const btnIcon={background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMut
 
 const statusColor = (s) => s==="OP"?"green":s==="ALERTA"?"yellow":"red";
 const subColor    = (s) => s==="Comum"?C.warningLight:s==="M2"?C.blueLight:C.accentLight;
-const subLabel    = (s) => s==="Comum"?"⚡ COMUM":s;
+const subLabel    = (s) => s==="Comum"?"COMUM":s;
 
 
 // ─── Componentes auxiliares ──────────────────────────────────────────────────
@@ -97,7 +113,7 @@ function BotaoFoto({ fotos=[], onAdd, onRemove, compact=false }) {
         </div>
       )}
       <button onClick={()=>inputRef.current.click()} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4,background:fotos.length>0?"#0a2015":C.tagBg,border:`1px solid ${fotos.length>0?C.accentLight+"55":C.border}`,color:fotos.length>0?C.accentLight:C.textMuted,borderRadius:8,padding:compact?"4px 8px":"7px 12px",cursor:"pointer",fontSize:compact?14:16,transition:"all .15s",position:"relative"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accentLight;e.currentTarget.style.color=C.accentLight;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=fotos.length>0?C.accentLight+"55":C.border;e.currentTarget.style.color=fotos.length>0?C.accentLight:C.textMuted;}}>
-        📷
+        
         {fotos.length>0&&<span style={{background:C.accent,color:"#fff",borderRadius:"50%",width:14,height:14,fontSize:9,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",position:"absolute",top:-5,right:-5}}>{fotos.length}</span>}
       </button>
     </div>
@@ -137,7 +153,7 @@ function ModalObservacao({ eq, onClose, onSave }) {
   return (
     <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&onClose()}>
       {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"#000000dd",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={fotoAmpliada} alt="amp" style={{maxWidth:"95vw",maxHeight:"90vh",borderRadius:12}}/></div>}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"90vh",overflowY:"auto"}}>
+      <div style={{...glassMini,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"90vh",overflowY:"auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
           <div>
             <p style={{color:C.textMuted,fontSize:10,margin:"0 0 3px",textTransform:"uppercase"}}>Observação de Rota</p>
@@ -149,8 +165,8 @@ function ModalObservacao({ eq, onClose, onSave }) {
           </div>
           <button onClick={onClose} style={{...btnSec,padding:"5px 11px"}}>✕</button>
         </div>
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 12px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{color:C.textMuted,fontSize:11}}>📅 {dataAtual.split("-").reverse().join("/")}</span>
+        <div style={{...cardStyle,borderRadius:8,padding:"8px 12px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{color:C.textMuted,fontSize:11}}>{dataAtual.split("-").reverse().join("/")}</span>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
             <span style={{color:C.textMuted,fontSize:11}}>⏱</span>
             <input type="time" value={hora} onChange={e=>setHora(e.target.value)} style={{...inputStyle,width:90,padding:"3px 8px",fontSize:11}}/>
@@ -199,12 +215,12 @@ function ModalNotas({ eq, onClose, onSave }) {
   const upd=(id,f,v)=>setNotas(p=>p.map(n=>n._id===id?{...n,[f]:v}:n));
   return (
     <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:24,width:"100%",maxWidth:600,maxHeight:"85vh",overflowY:"auto"}}>
+      <div style={{...glassMini,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:24,width:"100%",maxWidth:600,maxHeight:"85vh",overflowY:"auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18}}>
           <div>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
               <span style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.accentLight,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800,fontFamily:"monospace"}}>{eq.sub}</span>
-              {eq.sub==="Comum"&&<span style={{background:"#2a180088",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800}}>⚡ IMPACTA M2 E M3</span>}
+              {eq.sub==="Comum"&&<span style={{background:"#2a180088",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800}}>IMPACTA M2 E M3</span>}
             </div>
             <h3 style={{color:C.text,fontSize:15,fontWeight:800,margin:"0 0 2px"}}>{eq.nome}</h3>
             <code style={{color:C.textMuted,fontSize:11}}>{eq.tag}</code>
@@ -232,8 +248,8 @@ function ModalNotas({ eq, onClose, onSave }) {
                       <p style={{color:C.text,fontSize:13,margin:0,lineHeight:1.5}}>{nota.desc||"—"}</p>
                     </div>
                     <div style={{display:"flex",gap:5,flexShrink:0}}>
-                      <button onClick={()=>setEditando(nota._id)} style={btnIcon}>✏</button>
-                      <button onClick={()=>del(nota._id)} style={{...btnIcon,color:C.dangerLight}}>🗑</button>
+                      <button onClick={()=>setEditando(nota._id)} style={btnIcon}></button>
+                      <button onClick={()=>del(nota._id)} style={{...btnIcon,color:C.dangerLight}}></button>
                     </div>
                   </div>
                 )}
@@ -241,7 +257,7 @@ function ModalNotas({ eq, onClose, onSave }) {
             ))}
           </div>
         }
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:16}}>
+        <div style={{...cardStyle,borderRadius:10,padding:16,marginBottom:16}}>
           <p style={{color:C.textMuted,fontSize:11,textTransform:"uppercase",margin:"0 0 10px"}}>+ Nova Nota</p>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             <input value={novaNum} onChange={e=>setNovaNum(e.target.value)} placeholder="Número da nota (ex: MNT-2025-1234)" style={inputStyle}/>
@@ -906,7 +922,7 @@ const checklistCortadeiraM2 = [
   { id:"cs2_30", secao:"Layboy",     item:"Acúmulo de Folhas",
     ref:"—",         unit:"ok/nok", tipo:"ok_nok" },
   // FAQUINHAS — 11 facas ─────────────────────────────────────────────────────
-  // Faixas: 1,5–2,5 = Normal 🟢 | 2,5–3,5 = Atenção 🟡 | 3,5–4,0 = Crítico 🔴
+  // Faixas: 1,5–2,5 = Normal | 2,5–3,5 = Atenção | 3,5–4,0 = Crítico 
   { id:"cs2_31", secao:"Faquinhas",  item:"Pressão das Faquinhas (1 a 11)",
     ref:"1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5/1,5", unit:"bar", tipo:"faquinhas",
     refs:["1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5","1,5"],
@@ -1090,10 +1106,10 @@ const CATALOGO = [
   { id:"wft",              label:"Consumo WFT",         icon:"", desc:"Diagnóstico de consumo de água — Meta H2: 315 m³/h",   porMaquina:false, tipo:"wft",      area:"pu",  getItems:()=>[] },
   { id:"cortadeira",       label:"Rotina",              icon:"", desc:"Check-list operacional — Secador + Cortadeira + Layboy",porMaquina:true,  tipo:"padrao",   area:"cs",  getItems:(m)=>m==="M2"?checklistCortadeiraM2:checklistCortadeiraM3 },
   { id:"passagem_ponta_cs",label:"Passagem de Ponta",   icon:"", desc:"Check-list Parte Seca — antes da passagem de ponta",   porMaquina:true,  tipo:"padrao",   area:"cs",  passagem:true, getItems:()=>checklistPassagemPontaCS },
-  { id:"rejeicao",         label:"Diagnóstico Rejeição",icon:"⚠️",desc:"Fluxo de diagnóstico — Faca circular / Facão / Transversal",porMaquina:false,tipo:"rejeicao",area:"cs",getItems:()=>[] },
+  { id:"rejeicao",         label:"Diagnóstico Rejeição",icon:"️",desc:"Fluxo de diagnóstico — Faca circular / Facão / Transversal",porMaquina:false,tipo:"rejeicao",area:"cs",getItems:()=>[] },
   { id:"enf_qualidade",    label:"Check List Qualidade",icon:"", desc:"Qualidade do fardo — todas as linhas",                 porMaquina:false, tipo:"enf",      area:"enf", getItems:()=>checklistEnfardamento },
   { id:"rota_enf",         label:"Rota Enfardamento",   icon:"", desc:"Inspeção por turno — todos os equipamentos",           porMaquina:true,  tipo:"rota_enf", area:"enf", getItems:()=>checklistRotaEnfardamento },
-  { id:"barcode_enf",      label:"Validação de Fardos", icon:"📦", desc:"Leitura de código de barras — Lado A / Lado B",        porMaquina:false, tipo:"barcode_enf",area:"enf", getItems:()=>[] },
+  { id:"barcode_enf",      label:"Validação de Fardos", icon:"", desc:"Leitura de código de barras — Lado A / Lado B",        porMaquina:false, tipo:"barcode_enf",area:"enf", getItems:()=>[] },
 ];
 
 
@@ -1181,30 +1197,30 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
           </div>
           <Badge color={statusColor(eq.status)}>{eq.status}</Badge>
         </div>
-        {eq.sub==="Comum"&&<div style={{background:"#1a0f0055",border:`1px solid ${C.warningLight}44`,borderRadius:8,padding:"10px 12px",marginBottom:16}}><p style={{color:C.warningLight,fontSize:12,margin:0,fontWeight:600}}>⚡ Equipamento de Área Comum — uma falha aqui impacta Máquina 2 e Máquina 3</p></div>}
+        {eq.sub==="Comum"&&<div style={{background:"#1a0f0055",border:`1px solid ${C.warningLight}44`,borderRadius:8,padding:"10px 12px",marginBottom:16}}><p style={{color:C.warningLight,fontSize:12,margin:0,fontWeight:600}}>Equipamento de Área Comum — uma falha aqui impacta Máquina 2 e Máquina 3</p></div>}
         {/* Notas */}
-        <div style={{background:C.surface,border:`1px solid ${eq.notas.length>0?C.warningLight+"44":C.border}`,borderTop:`2px solid ${eq.notas.length>0?C.warningLight:C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
+        <div style={{...glassMini,border:`1px solid ${eq.notas.length>0?C.warningLight+"44":C.border}`,borderTop:`2px solid ${eq.notas.length>0?C.warningLight:C.border}`,borderRadius:10,padding:14,marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
             <div style={{display:"flex",alignItems:"center",gap:7}}>
-              <span>🗒</span><span style={{color:C.text,fontWeight:700,fontSize:13}}>Notas de Manutenção</span>
+              <span></span><span style={{color:C.text,fontWeight:700,fontSize:13}}>Notas de Manutenção</span>
               {eq.notas.length>0&&<span style={{background:"#2a180055",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:20,padding:"1px 7px",fontSize:10,fontWeight:800}}>{eq.notas.length}</span>}
             </div>
-            <button onClick={()=>setModalEq(eq)} style={{...btnPrim,padding:"5px 12px",fontSize:11}}>🗒 Registrar Nota</button>
+            <button onClick={()=>setModalEq(eq)} style={{...btnPrim,padding:"5px 12px",fontSize:11}}>Registrar Nota</button>
           </div>
-          {eq.notas.length===0?<p style={{color:C.textDim,fontSize:12,margin:0}}>Nenhuma nota aberta.</p>:eq.notas.map((n,i)=>(<div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.warningLight}`,borderRadius:7,padding:"9px 12px",marginBottom:6}}><span style={{background:"#2a180055",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:5,padding:"1px 7px",fontSize:10,fontWeight:800,fontFamily:"monospace",display:"inline-block",marginBottom:4}}>{n.num||"S/Nº"}</span><p style={{color:C.text,fontSize:12,margin:0,lineHeight:1.5}}>{n.desc}</p></div>))}
+          {eq.notas.length===0?<p style={{color:C.textDim,fontSize:12,margin:0}}>Nenhuma nota aberta.</p>:eq.notas.map((n,i)=>(<div key={i} style={{...cardStyle,borderLeft:`3px solid ${C.warningLight}`,borderRadius:7,padding:"9px 12px",marginBottom:6}}><span style={{background:"#2a180055",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:5,padding:"1px 7px",fontSize:10,fontWeight:800,fontFamily:"monospace",display:"inline-block",marginBottom:4}}>{n.num||"S/Nº"}</span><p style={{color:C.text,fontSize:12,margin:0,lineHeight:1.5}}>{n.desc}</p></div>))}
         </div>
         {/* Status */}
-        <div style={{background:C.surface,border:`1px solid ${dotColor2(eq.status)}44`,borderTop:`2px solid ${dotColor2(eq.status)}`,borderRadius:10,padding:12}}>
+        <div style={{...glassMini,border:`1px solid ${dotColor2(eq.status)}44`,borderTop:`2px solid ${dotColor2(eq.status)}`,borderRadius:10,padding:12}}>
           <p style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",margin:"0 0 8px"}}>Status</p>
           <div style={{display:"flex",gap:7}}>
             {["OP","ALERTA","MANUTENÇÃO"].map(s=>{const cor=s==="OP"?C.accentLight:s==="ALERTA"?C.warningLight:C.dangerLight;const ativo=eq.status===s;return(<button key={s} onClick={()=>setStatus(eq.id,s)} style={{flex:1,padding:"7px",borderRadius:7,cursor:"pointer",fontWeight:700,fontSize:10,textTransform:"uppercase",background:ativo?`linear-gradient(135deg,${cor}33,${cor}18)`:C.tagBg,border:`1.5px solid ${ativo?cor:C.border}`,color:ativo?cor:C.textMuted,boxShadow:ativo?`0 0 10px ${cor}44,0 0 20px ${cor}22`:"none"}}>{s}</button>);})}
           </div>
         </div>
         {/* Observações de Rota */}
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderTop:`2px solid #5090FF`,borderRadius:10,padding:14,marginTop:12}}>
+        <div style={{...glassMini,border:`1px solid ${C.border}`,borderTop:`2px solid #5090FF`,borderRadius:10,padding:14,marginTop:12}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
             <div style={{display:"flex",alignItems:"center",gap:7}}>
-              <span>📝</span><span style={{color:C.text,fontWeight:700,fontSize:13}}>Observações de Rota</span>
+              <span></span><span style={{color:C.text,fontWeight:700,fontSize:13}}>Observações de Rota</span>
               {(eq.obsRotaHistorico||[]).length>0&&<span style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:20,padding:"1px 7px",fontSize:10,fontWeight:700}}>{(eq.obsRotaHistorico||[]).length}</span>}
             </div>
             <button onClick={()=>setModalObs(eq)} style={{...btnPrim,padding:"5px 12px",fontSize:11}}>+ Registrar</button>
@@ -1212,9 +1228,9 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
           {!(eq.obsRotaHistorico||[]).length?<p style={{color:C.textDim,fontSize:12,margin:0}}>Nenhuma observação registrada.</p>:(
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {[...(eq.obsRotaHistorico||[])].reverse().map((o,i)=>(
-                <div key={o.id||i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px"}}>
+                <div key={o.id||i} style={{...cardStyle,borderRadius:8,padding:"10px 12px"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
-                    <span style={{color:C.textDim,fontSize:10}}>📅 {o.data?.split("-").reverse().join("/")} · {o.hora}</span>
+                    <span style={{color:C.textDim,fontSize:10}}>{o.data?.split("-").reverse().join("/")} · {o.hora}</span>
                     <button onClick={()=>{
                       const novaHist=(eq.obsRotaHistorico||[]).filter((_,idx)=>(eq.obsRotaHistorico.length-1-idx)!==i);
                       const key=getListKey();
@@ -1278,7 +1294,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
               <div key={i} style={{background:C.card,border:"1px solid #5090FF33",borderLeft:"3px solid #5090FF",borderRadius:8,padding:"8px 10px"}}>
                 <div style={{color:C.text,fontWeight:700,fontSize:11,marginBottom:2}}>{p.eqNome||"—"}</div>
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                  {p.nota?<span style={{color:C.accentLight,fontFamily:"monospace",fontSize:10,fontWeight:700}}>📋 {p.nota}</span>:<span style={{color:"#5090FF",fontSize:9}}>sem nº SAP</span>}
+                  {p.nota?<span style={{color:C.accentLight,fontFamily:"monospace",fontSize:10,fontWeight:700}}>{p.nota}</span>:<span style={{color:"#5090FF",fontSize:9}}>sem nº SAP</span>}
                   <span style={{color:C.textDim,fontSize:9}}>· {p.abertoBy} · {fmtTs(p.abertoEm)}</span>
                 </div>
               </div>
@@ -1294,8 +1310,8 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
       {modalObs&&<ModalObservacao eq={modalObs} onClose={()=>setModalObs(null)} onSave={salvarObservacao}/>}
       {modalPendencia&&(
         <div onClick={()=>{setModalPendencia(null);setNotaInput("");}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:C.surface,border:`1px solid ${C.accentLight}33`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600}}>
-            <div style={{color:C.accentLight,fontWeight:800,fontSize:14,marginBottom:3}}>📋 Abrir chamado / nota</div>
+          <div onClick={e=>e.stopPropagation()} style={{...glassMini,border:`1px solid ${C.accentLight}33`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600}}>
+            <div style={{color:C.accentLight,fontWeight:800,fontSize:14,marginBottom:3}}>Abrir chamado / nota</div>
             <div style={{color:C.textDim,fontSize:11,marginBottom:12}}>{modalPendencia.nome}</div>
             <input value={notaInput} onChange={e=>setNotaInput(e.target.value)} placeholder="Nº nota SAP ou chamado..." style={{...inputStyle,marginBottom:14,fontSize:15,fontFamily:"monospace",fontWeight:700}} autoFocus/>
             <div style={{display:"flex",gap:8}}>
@@ -1339,7 +1355,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
                   const cor=eq.status==="MANUTENÇÃO"?C.dangerLight:C.warningLight;
                   return(
                     <div key={eq.id} style={{display:"flex",alignItems:"center",gap:6,background:C.tagBg,border:`1px solid ${cor}33`,borderLeft:`3px solid ${cor}`,borderRadius:7,padding:"7px 8px"}}>
-                      <span style={{fontSize:12,flexShrink:0}}>{eq.status==="MANUTENÇÃO"?"🔧":"⚡"}</span>
+                      <span style={{fontSize:12,flexShrink:0}}>{eq.status==="MANUTENÇÃO"?"":""}</span>
                       <div onClick={()=>setSelId(eq.id)} style={{minWidth:0,flex:1,cursor:"pointer"}}>
                         <div style={{color:C.text,fontSize:11,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{eq.nome}</div>
                         <div style={{color:cor,fontSize:8.5,fontFamily:"monospace",fontWeight:700,marginTop:1}}>{eq.status}</div>
@@ -1404,8 +1420,8 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
         {[{id:"pu",l:"P. ÚMIDA",cor:"#5090FF",glow:"rgba(80,144,255,0.6)"},{id:"cs",l:"CORTADEIRA",cor:"#A855F7",glow:"rgba(168,85,247,0.6)"},{id:"enf",l:"ENFARD.",cor:"#FFB300",glow:"rgba(255,179,0,0.6)"}].map(a=>{const ativo=areaAtiva===a.id;return(
           <button key={a.id} onClick={()=>{setAreaAtiva(a.id);setFiltroSub("M2");setFiltroArea("TODAS");setFiltroStatus("TODOS");setBusca("");}}
             style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.05em",transition:"all .15s",position:"relative",overflow:"hidden",
-              background:ativo?`linear-gradient(135deg,${a.cor}22,${a.cor}0a)`:C.tagBg,
-              border:`2px solid ${ativo?a.cor+"99":C.border}`,
+              background:ativo?`linear-gradient(135deg,${a.cor}22,${a.cor}0a)`:"rgba(255,255,255,0.05)",
+              border:`1px solid ${ativo?a.cor+"99":"rgba(255,255,255,0.08)"}`,
               color:ativo?a.cor:C.textMuted,
               boxShadow:ativo?`0 0 12px ${a.glow},0 0 24px ${a.glow.replace("0.6","0.25")}`:"none"}}>
             {ativo&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${a.cor},transparent)`}}/>}
@@ -1425,8 +1441,8 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
           return(
             <button key={k} onClick={()=>{setFiltroSub(k);setFiltroArea("TODAS");setFiltroStatus("TODOS");setBusca("");}}
               style={{flex:1,padding:"10px 6px",borderRadius:11,cursor:"pointer",transition:"all .15s",position:"relative",overflow:"hidden",
-                background:ativo?`linear-gradient(155deg,${cor}22,rgba(7,24,40,0.97))`:C.tagBg,
-                border:`2px solid ${ativo?cor+"99":C.border}`,
+                background:ativo?`linear-gradient(155deg,${cor}22,rgba(7,24,40,0.97))`:"rgba(255,255,255,0.05)",
+                border:`1px solid ${ativo?cor+"99":"rgba(255,255,255,0.08)"}`,
                 boxShadow:ativo?`0 0 14px ${glow},0 0 28px ${glow.replace("0.6","0.25")}`:"none",
                 display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
               {ativo&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${cor},transparent)`}}/>}
@@ -1435,9 +1451,9 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
                 <span style={{color:ativo?cor:C.textMuted,fontWeight:900,fontSize:13,letterSpacing:"0.04em"}}>{label}</span>
               </div>
               <div style={{display:"flex",gap:4,minHeight:16}}>
-                {al>0&&<span style={{background:"rgba(255,193,7,0.15)",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:10,padding:"0 6px",fontSize:9,fontWeight:800}}>⚡{al}</span>}
-                {nts>0&&<span style={{background:"rgba(255,82,82,0.12)",border:`1px solid ${C.dangerLight}44`,color:C.dangerLight,borderRadius:10,padding:"0 6px",fontSize:9,fontWeight:800}}>🗒{nts}</span>}
-                {cham>0&&<span style={{background:"rgba(80,144,255,0.12)",border:"1px solid rgba(80,144,255,0.4)",color:"#5090FF",borderRadius:10,padding:"0 6px",fontSize:9,fontWeight:800}}>🔧{cham}</span>}
+                {al>0&&<span style={{background:"rgba(255,193,7,0.15)",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:10,padding:"0 6px",fontSize:9,fontWeight:800}}>{al}</span>}
+                {nts>0&&<span style={{background:"rgba(255,82,82,0.12)",border:`1px solid ${C.dangerLight}44`,color:C.dangerLight,borderRadius:10,padding:"0 6px",fontSize:9,fontWeight:800}}>{nts}</span>}
+                {cham>0&&<span style={{background:"rgba(80,144,255,0.12)",border:"1px solid rgba(80,144,255,0.4)",color:"#5090FF",borderRadius:10,padding:"0 6px",fontSize:9,fontWeight:800}}>{cham}</span>}
                 {al===0&&nts===0&&cham===0&&<span style={{color:C.textDim,fontSize:9}}>{eqs.length} eq.</span>}
               </div>
             </button>
@@ -1447,7 +1463,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
           <div style={{display:"flex",gap:7,marginBottom:14}}>
             {mkSel("M2","MÁQ. 2",[...eqState.m2,...eqState.cs_m2,...eqState.enf_m2],"#5090FF","rgba(80,144,255,0.6)")}
             {mkSel("M3","MÁQ. 3",[...eqState.m3,...eqState.cs_m3,...eqState.enf_m3],C.accentLight,"rgba(0,230,118,0.6)")}
-            {areaAtiva==="pu"&&mkSel("Comum","⚡ COMUM",eqState.comum,C.warningLight,"rgba(255,193,7,0.6)")}
+            {areaAtiva==="pu"&&mkSel("Comum","COMUM",eqState.comum,C.warningLight,"rgba(255,193,7,0.6)")}
           </div>
         );
       })()}
@@ -1483,7 +1499,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
         <span style={{color:C.text,fontSize:11,fontWeight:800,letterSpacing:"0.08em",textTransform:"uppercase"}}>Ativos</span>
         <div style={{flex:1,height:1,background:`linear-gradient(90deg,${C.border},transparent)`}}/>
       </div>
-      <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="🔍  Buscar nome ou TAG..." style={{...inputStyle,marginBottom:8}}/>
+      <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder=" Buscar nome ou TAG..." style={{...inputStyle,marginBottom:8}}/>
       <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:4,marginBottom:12}}>
         {["TODOS","OP","ALERTA","MANUTENÇÃO"].map(s=>(<button key={s} onClick={()=>setFiltroStatus(s)} style={{padding:"4px 10px",borderRadius:20,cursor:"pointer",whiteSpace:"nowrap",fontSize:10,fontWeight:700,textTransform:"uppercase",background:filtroStatus===s?C.accent:C.tagBg,border:`1px solid ${filtroStatus===s?C.accent:C.border}`,color:filtroStatus===s?"#fff":C.textMuted}}>{s}</button>))}
         <div style={{width:1,background:C.border,margin:"0 3px"}}/>
@@ -1493,7 +1509,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {filtrados.length===0&&<div style={{textAlign:"center",color:C.textMuted,padding:"36px 0",fontSize:13}}>Nenhum resultado.</div>}
         {filtrados.map(eq=>(
-          <div key={eq.id} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${dotColor2(eq.status)}`,borderRadius:10,padding:"11px 12px",display:"flex",alignItems:"center",gap:10}}>
+          <div key={eq.id} style={{...cardStyle,borderLeft:`3px solid ${dotColor2(eq.status)}`,borderRadius:10,padding:"11px 12px",display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:9,height:9,borderRadius:"50%",flexShrink:0,background:dotColor2(eq.status),boxShadow:`0 0 6px ${dotColor2(eq.status)}88`}}/>
             <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setSelId(eq.id)}>
               <div style={{color:C.text,fontWeight:600,fontSize:13,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{eq.nome}</div>
@@ -1503,9 +1519,9 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
               </div>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
-              {eq.notas.length>0&&<button onClick={()=>setModalEq(eq)} style={{background:"#2a080833",border:`1px solid ${C.dangerLight}55`,color:C.dangerLight,borderRadius:20,padding:"2px 7px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🗒{eq.notas.length}</button>}
-              {(eq.obsRotaHistorico||[]).length>0&&<button onClick={()=>setSelId(eq.id)} style={{background:"#0a2015",border:`1px solid ${C.accentLight}44`,color:C.accentLight,borderRadius:20,padding:"2px 7px",fontSize:10,fontWeight:800,cursor:"pointer"}}>📝{(eq.obsRotaHistorico||[]).length}</button>}
-              <button onClick={e=>{e.stopPropagation();setModalObs(eq);}} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:20,padding:"2px 8px",fontSize:10,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accentLight;e.currentTarget.style.color=C.accentLight;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textMuted;}}>📷</button>
+              {eq.notas.length>0&&<button onClick={()=>setModalEq(eq)} style={{background:"#2a080833",border:`1px solid ${C.dangerLight}55`,color:C.dangerLight,borderRadius:20,padding:"2px 7px",fontSize:10,fontWeight:800,cursor:"pointer"}}>{eq.notas.length}</button>}
+              {(eq.obsRotaHistorico||[]).length>0&&<button onClick={()=>setSelId(eq.id)} style={{background:"#0a2015",border:`1px solid ${C.accentLight}44`,color:C.accentLight,borderRadius:20,padding:"2px 7px",fontSize:10,fontWeight:800,cursor:"pointer"}}>{(eq.obsRotaHistorico||[]).length}</button>}
+              <button onClick={e=>{e.stopPropagation();setModalObs(eq);}} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:20,padding:"2px 8px",fontSize:10,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accentLight;e.currentTarget.style.color=C.accentLight;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textMuted;}}></button>
               <Badge color={statusColor(eq.status)}>{eq.status}</Badge>
               <span style={{color:C.textDim,fontSize:15,cursor:"pointer"}} onClick={()=>setSelId(eq.id)}>›</span>
             </div>
@@ -1596,7 +1612,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
               <span style={{background:`${corP(sel.prazo)}22`,border:`1px solid ${corP(sel.prazo)}55`,color:corP(sel.prazo),borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800}}>{sel.prazo||sel.prioridade}</span>
               {sel.disciplina&&<span style={{background:"rgba(14,40,71,0.9)",border:"1px solid rgba(26,92,204,0.4)",color:"#5090FF",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>{sel.disciplina}</span>}
               {sel.condicao&&<span style={{background:sel.condicao==="Parada de máquina"?"rgba(42,8,8,0.9)":"rgba(0,40,20,0.9)",border:`1px solid ${sel.condicao==="Parada de máquina"?C.dangerLight:C.accentLight}44`,color:sel.condicao==="Parada de máquina"?C.dangerLight:C.accentLight,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>{sel.condicao}</span>}
-              <span style={{background:sel.status==="aberto"?"#2a080833":"#002810",border:`1px solid ${sel.status==="aberto"?C.dangerLight:C.accentLight}44`,color:sel.status==="aberto"?C.dangerLight:C.accentLight,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>{sel.status==="aberto"?"🔴 Aberto":"✓ Encerrado"}</span>
+              <span style={{background:sel.status==="aberto"?"#2a080833":"#002810",border:`1px solid ${sel.status==="aberto"?C.dangerLight:C.accentLight}44`,color:sel.status==="aberto"?C.dangerLight:C.accentLight,borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>{sel.status==="aberto"?"Aberto":"✓ Encerrado"}</span>
             </div>
             <div style={{color:C.white,fontWeight:700,fontSize:14}}>{sel.equipamentoNome}</div>
             <code style={{color:C.textMuted,fontSize:11}}>{sel.equipamentoTag}</code>
@@ -1605,8 +1621,8 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
         {sel.notaSAP&&<div style={{background:C.tagBg,border:`1px solid ${C.border}`,borderRadius:8,padding:"6px 10px",marginBottom:10}}><span style={{color:C.textDim,fontSize:10}}>SAP: </span><span style={{color:C.warningLight,fontWeight:700,fontSize:12}}>{sel.notaSAP}</span></div>}
         <p style={{color:C.text,fontSize:13,margin:"0 0 10px",lineHeight:1.5}}>{sel.descricao}</p>
         <div style={{display:"flex",gap:12,color:C.textMuted,fontSize:11}}>
-          <span>📅 {fmtData(sel.dataAbertura)} {sel.horaAbertura}</span>
-          <span>👤 {sel.operador||"—"}</span>
+          <span>{fmtData(sel.dataAbertura)} {sel.horaAbertura}</span>
+          <span>{sel.operador||"—"}</span>
         </div>
         {sel.status==="encerrado"&&sel.resolucao&&<div style={{marginTop:10,background:"#002810",border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 12px"}}><p style={{color:C.textDim,fontSize:10,margin:"0 0 3px",textTransform:"uppercase"}}>Resolução</p><p style={{color:C.accentLight,fontSize:12,margin:0}}>{sel.resolucao}</p><p style={{color:C.textMuted,fontSize:10,margin:"4px 0 0"}}>{fmtData(sel.dataEncerramento)} {sel.horaEncerramento}</p></div>}
         {(sel.fotosAbertura?.length>0||sel.fotosEncerramento?.length>0)&&(
@@ -1631,7 +1647,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
         )}
       </div>
       {sel.status==="aberto"&&(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
+        <div style={{...cardStyle,borderRadius:10,padding:14}}>
           <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:7}}>Encerrar chamado — o que foi feito?</label>
           <textarea value={resolucao} onChange={e=>setResolucao(e.target.value)} rows={3} placeholder="Descreva a resolução..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit",marginBottom:10}}/>
           <div style={{marginBottom:10}}>
@@ -1648,7 +1664,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
                   onMouseEnter={e=>e.currentTarget.style.borderColor=C.accentLight}
                   onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
                   <input type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={async e=>{if(e.target.files[0]){const b64=await comprimirFoto(e.target.files[0]);setFotosEncerramento(p=>[...p,b64]);}e.target.value="";}}/>
-                  <span style={{fontSize:20}}>📷</span>
+                  <span style={{fontSize:20}}></span>
                   <span style={{color:C.textDim,fontSize:9}}>Foto</span>
                 </label>
               )}
@@ -1669,7 +1685,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
           <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>Equipamento</label>
           <input value={eqSel?`${eqSel.tag} — ${eqSel.nome}`:buscarEq} onChange={e=>{setBuscarEq(e.target.value);setEqSel(null);}} placeholder="Digite TAG ou nome (mín. 3 letras)..." style={inputStyle}/>
           {sugestoes.length>0&&!eqSel&&(
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,marginTop:4,overflow:"hidden"}}>
+            <div style={{...glassMini,border:`1px solid ${C.border}`,borderRadius:8,marginTop:4,overflow:"hidden"}}>
               {sugestoes.map(eq=>(
                 <button key={eq.id} onClick={()=>{setEqSel(eq);setBuscarEq("");}} style={{width:"100%",background:"none",border:"none",borderBottom:`1px solid ${C.border}`,padding:"10px 12px",textAlign:"left",cursor:"pointer",color:C.text}}>
                   <div style={{fontWeight:600,fontSize:12}}>{eq.nome}</div>
@@ -1720,14 +1736,14 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
                 onMouseEnter={e=>e.currentTarget.style.borderColor=C.accentLight}
                 onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
                 <input type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={async e=>{if(e.target.files[0]){const b64=await comprimirFoto(e.target.files[0]);setFotosAbertura(p=>[...p,b64]);}e.target.value="";}}/>
-                <span style={{fontSize:22}}>📷</span>
+                <span style={{fontSize:22}}></span>
                 <span style={{color:C.textDim,fontSize:9}}>Foto</span>
               </label>
             )}
           </div>
         </div>
         <button onClick={abrirChamado} disabled={!eqSel||!descricao.trim()||!disciplina||!condicao} style={{background:(!eqSel||!descricao.trim()||!disciplina||!condicao)?"rgba(80,144,255,0.08)":`linear-gradient(135deg,#1a4aaa,#2563eb)`,border:`1.5px solid ${(!eqSel||!descricao.trim()||!disciplina||!condicao)?"rgba(80,144,255,0.2)":"rgba(100,160,255,0.5)"}`,borderRadius:12,padding:"14px",width:"100%",cursor:(!eqSel||!descricao.trim()||!disciplina||!condicao)?"not-allowed":"pointer",color:(!eqSel||!descricao.trim()||!disciplina||!condicao)?C.textMuted:"#fff",fontSize:14,fontWeight:800,letterSpacing:"0.04em",boxShadow:(!eqSel||!descricao.trim()||!disciplina||!condicao)?"none":"0 0 16px rgba(80,144,255,0.4),0 4px 12px rgba(0,0,0,0.3)",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-          <span style={{fontSize:16}}>🔧</span> Abrir Chamado
+          <span style={{fontSize:16}}></span> Abrir Chamado
         </button>
       </div>
     </div>
@@ -1740,7 +1756,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
         <div style={{display:"flex",gap:8}}><button onClick={onVoltar} style={{...btnSec,padding:"6px 12px",fontSize:12}}>← Voltar</button>{abaAtiva==="chamados"&&<button onClick={()=>setSubView("novo")} style={{...btnPrim,padding:"6px 14px",fontSize:12}}>+ Novo</button>}</div>
       </div>
       <div style={{display:"flex",gap:6,marginBottom:14}}>
-        {[{id:"chamados",l:"🔧 Chamados"},{id:"notas",l:"🗒 Notas Registradas"}].map(a=>(
+        {[{id:"chamados",l:"Chamados"},{id:"notas",l:"Notas Registradas"}].map(a=>(
           <button key={a.id} onClick={()=>setAbaAtiva(a.id)} style={{flex:1,padding:"8px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:11,background:abaAtiva===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${abaAtiva===a.id?"rgba(255,255,255,0.55)":C.border}`,color:abaAtiva===a.id?"#fff":C.textMuted,boxShadow:abaAtiva===a.id?"0 0 8px rgba(80,144,255,0.7),0 0 20px rgba(80,144,255,0.4)":"none"}}>{a.l}</button>
         ))}
       </div>
@@ -1777,7 +1793,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
         return(
           <div>
             <div style={{display:"flex",gap:8,marginBottom:12}}>
-              <input value={buscaTag} onChange={e=>setBuscaTag(e.target.value)} placeholder="🔍 Buscar por TAG ou nome..." style={{...inputStyle,flex:1}}/>
+              <input value={buscaTag} onChange={e=>setBuscaTag(e.target.value)} placeholder="Buscar por TAG ou nome..." style={{...inputStyle,flex:1}}/>
               <button onClick={()=>setShowRegNota(v=>!v)} style={{...btnPrim,padding:"8px 12px",fontSize:11,whiteSpace:"nowrap"}}>+ Registrar</button>
             </div>
             {showRegNota&&(
@@ -1785,13 +1801,13 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
                 <div>
                   <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>Equipamento</label>
                   <input value={regEq?`${regEq.tag} — ${regEq.nome}`:regBusca} onChange={e=>{setRegBusca(e.target.value);setRegEq(null);}} placeholder="TAG ou nome (mín. 3 letras)..." style={inputStyle}/>
-                  {sugs.length>0&&!regEq&&<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,marginTop:4,overflow:"hidden"}}>{sugs.map(eq=>(<button key={eq.id} onClick={()=>{setRegEq(eq);setRegBusca("");}} style={{width:"100%",background:"none",border:"none",borderBottom:`1px solid ${C.border}`,padding:"10px 12px",textAlign:"left",cursor:"pointer",color:C.text}}><div style={{fontWeight:600,fontSize:12}}>{eq.nome}</div><div style={{display:"flex",gap:8,marginTop:2}}><code style={{color:C.textMuted,fontSize:10}}>{eq.tag}</code><span style={{color:C.textDim,fontSize:10}}>{eq.sub} · {eq.area}</span></div></button>))}</div>}
+                  {sugs.length>0&&!regEq&&<div style={{...glassMini,border:`1px solid ${C.border}`,borderRadius:8,marginTop:4,overflow:"hidden"}}>{sugs.map(eq=>(<button key={eq.id} onClick={()=>{setRegEq(eq);setRegBusca("");}} style={{width:"100%",background:"none",border:"none",borderBottom:`1px solid ${C.border}`,padding:"10px 12px",textAlign:"left",cursor:"pointer",color:C.text}}><div style={{fontWeight:600,fontSize:12}}>{eq.nome}</div><div style={{display:"flex",gap:8,marginTop:2}}><code style={{color:C.textMuted,fontSize:10}}>{eq.tag}</code><span style={{color:C.textDim,fontSize:10}}>{eq.sub} · {eq.area}</span></div></button>))}</div>}
                   {regEq&&<div style={{background:"#002810",border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 12px",marginTop:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{color:C.accentLight,fontWeight:700,fontSize:12}}>{regEq.nome}</div><code style={{color:C.textMuted,fontSize:10}}>{regEq.tag} · {regEq.sub} · {regEq.area}</code></div><button onClick={()=>{setRegEq(null);setRegBusca("");}} style={{...btnSec,padding:"3px 8px",fontSize:11}}>✕</button></div>}
                 </div>
                 <div><label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>Número da Nota SAP</label><input value={regNum} onChange={e=>setRegNum(e.target.value)} placeholder="Ex: MNT-2025-1234" style={inputStyle}/></div>
                 <div><label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>Descrição</label><textarea value={regDesc} onChange={e=>setRegDesc(e.target.value)} rows={2} placeholder="Descreva o problema..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/></div>
                 <div style={{background:C.tagBg,borderRadius:8,padding:"7px 10px",display:"flex",gap:16}}><span style={{color:C.textDim,fontSize:10}}>Responsável: <b style={{color:C.text}}>{cfg.nomeOperador||"—"}</b></span><span style={{color:C.textDim,fontSize:10}}>Data: <b style={{color:C.text}}>{new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}</b></span></div>
-                <button disabled={!regEq||(!regNum.trim()&&!regDesc.trim())} onClick={registrar} style={{...btnPrim,opacity:!regEq||(!regNum.trim()&&!regDesc.trim())?0.4:1,padding:12}}>🗒 Registrar Nota</button>
+                <button disabled={!regEq||(!regNum.trim()&&!regDesc.trim())} onClick={registrar} style={{...btnPrim,opacity:!regEq||(!regNum.trim()&&!regDesc.trim())?0.4:1,padding:12}}>Registrar Nota</button>
               </div>
             )}
             {totalN===0&&!showHistN&&<div style={{textAlign:"center",color:C.textMuted,padding:"28px 0",fontSize:13}}>{buscaTag?"Nenhuma nota encontrada para este filtro.":"Nenhuma nota registrada."}</div>}
@@ -1803,13 +1819,13 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
                   <span style={{color:C.textDim,fontSize:9}}>{eq.sub} · {eq.area}</span>
                 </div>
                 {eq.notas.map((n,i)=>(
-                  <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.warningLight}`,borderRadius:9,padding:"9px 12px",marginBottom:5}}>
+                  <div key={i} style={{...cardStyle,borderLeft:`3px solid ${C.warningLight}`,borderRadius:9,padding:"9px 12px",marginBottom:5}}>
                     <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
                       <div style={{flex:1}}>
                         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
                           <span style={{background:"#2a180055",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:5,padding:"1px 7px",fontSize:10,fontWeight:800,fontFamily:"monospace"}}>{n.num||"S/Nº"}</span>
-                          {n.data&&<span style={{color:C.textDim,fontSize:9}}>📅 {n.data.split("-").reverse().slice(0,2).join("/")} {n.hora||""}</span>}
-                          {n.responsavel&&<span style={{color:C.textDim,fontSize:9}}>👤 {n.responsavel}</span>}
+                          {n.data&&<span style={{color:C.textDim,fontSize:9}}>{n.data.split("-").reverse().slice(0,2).join("/")} {n.hora||""}</span>}
+                          {n.responsavel&&<span style={{color:C.textDim,fontSize:9}}>{n.responsavel}</span>}
                         </div>
                         {n.desc&&<div style={{color:C.textMuted,fontSize:11,lineHeight:1.4}}>{n.desc}</div>}
                       </div>
@@ -1820,14 +1836,14 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
               </div>
             ))}
             <button onClick={()=>setShowHistN(v=>!v)} style={{width:"100%",marginTop:4,background:C.tagBg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 14px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",color:C.textMuted,fontWeight:700,fontSize:11}}>
-              <span>📋 Histórico de Notas Encerradas ({notasHist.length})</span>
+              <span>Histórico de Notas Encerradas ({notasHist.length})</span>
               <span>{showHistN?"▲":"▼"}</span>
             </button>
             {showHistN&&(
               <div style={{marginTop:8}}>
                 {notasHist.length===0?<div style={{textAlign:"center",color:C.textMuted,padding:"16px 0",fontSize:12}}>Nenhuma nota encerrada ainda.</div>
                 :[...notasHist].reverse().map((n,i)=>(
-                  <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.accentLight}44`,borderRadius:9,padding:"9px 12px",marginBottom:5,opacity:.85}}>
+                  <div key={i} style={{...cardStyle,borderLeft:`3px solid ${C.accentLight}44`,borderRadius:9,padding:"9px 12px",marginBottom:5,opacity:.85}}>
                     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
                       <span style={{background:"rgba(0,230,118,0.08)",border:`1px solid ${C.accentLight}44`,color:C.accentLight,borderRadius:5,padding:"1px 7px",fontSize:10,fontWeight:800,fontFamily:"monospace"}}>{n.num||"S/Nº"}</span>
                       <span style={{color:C.textDim,fontSize:9,fontWeight:700}}>{n.sub} · {n.eqNome}</span>
@@ -1835,9 +1851,9 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
                     </div>
                     {n.desc&&<div style={{color:C.textMuted,fontSize:11,lineHeight:1.4,marginBottom:4}}>{n.desc}</div>}
                     <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                      {n.data&&<span style={{color:C.textDim,fontSize:9}}>📅 Aberta: {n.data.split("-").reverse().slice(0,2).join("/")} {n.hora||""}</span>}
+                      {n.data&&<span style={{color:C.textDim,fontSize:9}}>Aberta: {n.data.split("-").reverse().slice(0,2).join("/")} {n.hora||""}</span>}
                       <span style={{color:C.accentLight,fontSize:9}}>✓ Encerrada: {n.dataEncerramento?.split("-").reverse().slice(0,2).join("/")} {n.horaEncerramento}</span>
-                      {n.encerradoPor&&<span style={{color:C.textDim,fontSize:9}}>👤 {n.encerradoPor}</span>}
+                      {n.encerradoPor&&<span style={{color:C.textDim,fontSize:9}}>{n.encerradoPor}</span>}
                     </div>
                   </div>
                 ))}
@@ -1852,7 +1868,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
       </div>
       {filtrados.length===0?(
         <div style={{background:C.card,border:`1px dashed ${C.border}`,borderRadius:12,padding:"36px 20px",textAlign:"center"}}>
-          <div style={{fontSize:28,marginBottom:8}}>📋</div>
+          <div style={{fontSize:28,marginBottom:8}}></div>
           <p style={{color:C.textMuted,fontSize:13,margin:0}}>Nenhum chamado {filtro}.</p>
         </div>
       ):(
@@ -1872,9 +1888,9 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
               <p style={{color:C.textMuted,fontSize:11,margin:"0 0 6px",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{ch.descricao}</p>
               <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
                 {ch.notaSAP&&<span style={{color:C.warningLight,fontSize:10,fontWeight:700}}>SAP: {ch.notaSAP}</span>}
-                <span style={{color:C.textDim,fontSize:10}}>📅 {fmtData(ch.dataAbertura)} {ch.horaAbertura}</span>
+                <span style={{color:C.textDim,fontSize:10}}>{fmtData(ch.dataAbertura)} {ch.horaAbertura}</span>
                 {ch.status==="encerrado"&&ch.dataEncerramento&&<span style={{color:C.accentLight,fontSize:10}}>✓ {fmtData(ch.dataEncerramento)} {ch.horaEncerramento}</span>}
-                <span style={{color:C.textDim,fontSize:10}}>👤 {ch.operador||"—"}</span>
+                <span style={{color:C.textDim,fontSize:10}}>{ch.operador||"—"}</span>
               </div>
             </div>
           ))}
@@ -1883,7 +1899,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
       {filtro==="aberto"&&(
         <>
           <button onClick={()=>setShowChamadosHist(v=>!v)} style={{width:"100%",marginTop:10,background:C.tagBg,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 14px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",color:C.textMuted,fontWeight:700,fontSize:11}}>
-            <span>📋 Histórico de Chamados Encerrados ({chamados.filter(c=>c.status==="encerrado").length})</span>
+            <span>Histórico de Chamados Encerrados ({chamados.filter(c=>c.status==="encerrado").length})</span>
             <span>{showChamadosHist?"▲":"▼"}</span>
           </button>
           {showChamadosHist&&(
@@ -1891,7 +1907,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
               {chamados.filter(c=>c.status==="encerrado").sort((a,b)=>b.id-a.id).length===0
                 ?<div style={{textAlign:"center",color:C.textMuted,padding:"20px 0",fontSize:12}}>Nenhum chamado encerrado ainda.</div>
                 :chamados.filter(c=>c.status==="encerrado").sort((a,b)=>b.id-a.id).map(ch=>(
-                  <div key={ch.id} onClick={()=>setSelId(ch.id)} style={{background:C.card,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.accentLight}44`,borderRadius:9,padding:"9px 12px",marginBottom:5,cursor:"pointer",opacity:.85}}>
+                  <div key={ch.id} onClick={()=>setSelId(ch.id)} style={{...cardStyle,borderLeft:`3px solid ${C.accentLight}44`,borderRadius:9,padding:"9px 12px",marginBottom:5,cursor:"pointer",opacity:.85}}>
                     <div style={{color:C.text,fontWeight:600,fontSize:12,marginBottom:3}}>{ch.equipamentoNome}</div>
                     <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                       <code style={{color:C.textDim,fontSize:9}}>{ch.equipamentoTag}</code>
@@ -1899,9 +1915,9 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
                     </div>
                     {ch.descricao&&<p style={{color:C.textMuted,fontSize:10,margin:"4px 0",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{ch.descricao}</p>}
                     <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:3}}>
-                      <span style={{color:C.textDim,fontSize:9}}>📅 Aberto: {fmtData(ch.dataAbertura)} {ch.horaAbertura}</span>
+                      <span style={{color:C.textDim,fontSize:9}}>Aberto: {fmtData(ch.dataAbertura)} {ch.horaAbertura}</span>
                       {ch.dataEncerramento&&<span style={{color:C.accentLight,fontSize:9}}>✓ Encerrado: {fmtData(ch.dataEncerramento)} {ch.horaEncerramento}</span>}
-                      <span style={{color:C.textDim,fontSize:9}}>👤 {ch.operador||"—"}</span>
+                      <span style={{color:C.textDim,fontSize:9}}>{ch.operador||"—"}</span>
                     </div>
                   </div>
                 ))
