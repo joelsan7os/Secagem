@@ -32,3 +32,26 @@ export function estaDeslocado(letraOperador, dataISO, horaHHMM) {
   if (!letraOperador) return false; // ADM/HE externo: sem letra, não se aplica
   return letraNoTurno(dataISO, horaHHMM) !== letraOperador;
 }
+
+// letras que TRABALHAM no dia (uma por turno). Em 6x4: 3 trabalham, 2 de folga.
+export function letrasNoDia(dataISO) {
+  return {
+    "00:00": letraNoTurno(dataISO, "00:00"),
+    "08:00": letraNoTurno(dataISO, "08:00"),
+    "16:00": letraNoTurno(dataISO, "16:00"),
+  };
+}
+
+// classifica a situação de um operador na escala:
+//  "normal"    -> está no turno da própria letra
+//  "deslocado" -> a letra dele trabalha nesse dia, mas em outro horário (inverteu/antecipou)
+//  "he_folga"  -> a letra dele está de folga nesse dia; veio trabalhar = HE
+//  "externo"   -> sem letra (ADM / apoio externo)
+export function situacaoLetra(letra, dataISO, horaHHMM) {
+  if (!letra) return "externo";
+  const dia = letrasNoDia(dataISO);
+  const doTurno = dia[horaHHMM] || letraNoTurno(dataISO, horaHHMM);
+  if (letra === doTurno) return "normal";
+  const trabalhando = new Set(Object.values(dia));
+  return trabalhando.has(letra) ? "deslocado" : "he_folga";
+}
