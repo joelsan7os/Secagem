@@ -287,6 +287,9 @@ function PopupCadeado({ onCancelar, onSalvar }){
               fontSize:12,fontWeight:700,cursor:"pointer"}}>{d}</button>
           ))}
         </div>
+        {disciplina==="Outras" && (
+          <input style={{...inp,marginTop:8}} autoFocus value={outraDisciplina} onChange={e=>setOutraDisciplina(e.target.value)} placeholder="Qual disciplina?"/>
+        )}
 
         <label style={lbl}>CELULAR</label>
         <input style={inp} value={celular} onChange={e=>setCelular(e.target.value)} placeholder="(00) 00000-0000" inputMode="tel"/>
