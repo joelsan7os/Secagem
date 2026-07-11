@@ -3,21 +3,14 @@ import MVPSecagem from './MVPSecagem';
 
 const PG = lazy(() => import('./vertice-pg/pg'));
 
-// ─── INTERRUPTOR DE ACESSO — VÉRTICE PG ───────────────────────────────────────
-// Enquanto false, o PG fica fechado para todos, EXCETO quem tiver o bypass de
-// desenvolvedor abaixo. Para reabrir pra todo mundo, troque para true.
-const PG_HABILITADO = false;
-
-// Bypass de dev: só funciona se alguém digitar manualmente, no console do
-// navegador, o comando abaixo (troque "SUA_SENHA_AQUI" por algo só seu):
-//   localStorage.setItem('vertice_dev_key', 'SUA_SENHA_AQUI')
-// Isso não aparece em nenhum botão ou tela — ninguém acha por acaso.
-const DEV_KEY = "vertice_dev_key";
-const DEV_SENHA = "SUA_SENHA_AQUI"; // troque por uma senha só sua antes de subir
-
-function acessoDev() {
-  try { return localStorage.getItem(DEV_KEY) === DEV_SENHA; } catch { return false; }
+// ─── ACESSO AO VÉRTICE PG ─────────────────────────────────────────────────────
+// Restrito ao perfil "dev" (definido no cadastro/Firestore pelo administrador).
+// Sem senha no código: o próprio login já grava a função em perfil_ativo_h2.
+function funcaoAtiva() {
+  try { return (JSON.parse(localStorage.getItem("perfil_ativo_h2")) || {}).funcao || null; }
+  catch { return null; }
 }
+function podePG() { return funcaoAtiva() === "dev"; }
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -42,14 +35,14 @@ class ErrorBoundary extends React.Component {
 }
 
 function lerModoPG() {
-  if (!PG_HABILITADO && !acessoDev()) return false;
+  if (!podePG()) return false;
   try {
     return localStorage.getItem("vertice_modo") === "pg" && !!localStorage.getItem("perfil_ativo_h2");
   } catch { return false; }
 }
 
 function lerTV() {
-  if (!PG_HABILITADO && !acessoDev()) return false;
+  if (!podePG()) return false;
   try {
     return location.hash.replace("#","").toLowerCase() === "tv" && !!localStorage.getItem("perfil_ativo_h2");
   } catch { return false; }
