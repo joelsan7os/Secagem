@@ -102,6 +102,79 @@ export default function SalaBloqueio(){
 
   const inp={background:C.bg,border:`1px solid ${C.borderPG}`,color:"#fff",borderRadius:7,padding:"7px 9px",fontSize:12.5};
 
+  // ── tela da caixa (entra na caixa) ──
+  if(cxSel){
+    const st=ov.caixas[cxSel.id]||{}; const status=st.status||"aberta";
+    const cs=cartoesDe(cxSel); const nb=cs.filter(c=>bloqueado(cxSel.id,c.id)).length;
+    return (
+      <>
+        <button onClick={()=>setSel(null)} style={{background:"none",border:"none",color:C.cyan,fontSize:13,cursor:"pointer",padding:"4px 0",marginBottom:8}}>‹ Caixas</button>
+        <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",marginBottom:10}}>
+          <div style={{width:150}}><Caixa3D cor={ST[status].cor} cadeados={(st.cadeados||[]).length}/></div>
+          <div style={{flex:1,minWidth:200}}>
+            <div style={{fontSize:18,fontWeight:800}}>{cxSel.nome} <span style={{fontFamily:"monospace",fontSize:10,color:GCOR[cxSel.grupo]}}>{cxSel.grupo}</span></div>
+            <div style={{fontFamily:"monospace",fontSize:10,color:ST[status].cor,letterSpacing:".1em",margin:"3px 0"}}>{ST[status].lab}</div>
+            <div style={{fontFamily:"monospace",fontSize:10,color:C.textDim}}>{nb}/{cs.length} cartões aplicados</div>
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            <button onClick={()=>bloquearCaixa(cxSel)} style={{background:C.vermelho,border:"none",color:"#fff",borderRadius:8,padding:"9px 14px",fontWeight:800,fontSize:12,cursor:"pointer"}}>BLOQUEAR CAIXA</button>
+            <button onClick={()=>desbloquearCaixa(cxSel)} style={{background:C.accent,border:"none",color:C.bg,borderRadius:8,padding:"9px 14px",fontWeight:800,fontSize:12,cursor:"pointer"}}>DESBLOQUEAR</button>
+            <button onClick={()=>rmCaixa(cxSel)} style={{background:"none",border:`1px solid ${C.danger}55`,color:C.danger,borderRadius:8,padding:"9px 12px",fontSize:12,cursor:"pointer"}}>Remover</button>
+          </div>
+        </div>
+
+        {/* cadeados pessoais */}
+        <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",background:"rgba(10,25,41,.45)",border:`1px solid ${C.borderPG}`,borderRadius:10,padding:"9px 11px",marginBottom:10}}>
+          <span style={{fontFamily:"monospace",fontSize:9,color:C.warning,letterSpacing:".1em"}}>CADEADOS:</span>
+          {(st.cadeados||[]).map((n,i)=>(
+            <span key={i} style={{display:"inline-flex",alignItems:"center",gap:4,background:"rgba(255,193,7,.1)",border:`1px solid ${C.warning}55`,borderRadius:14,padding:"3px 9px",fontSize:11}}>
+              🔒 {n} <button onClick={()=>rmCadeado(cxSel,i)} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:11,padding:0}}>✕</button>
+            </span>
+          ))}
+          <input style={{...inp,width:130}} placeholder="nome" value={novoCad} onChange={e=>setNovoCad(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCadeado(cxSel)}/>
+          <button onClick={()=>addCadeado(cxSel)} style={{background:"rgba(255,193,7,.15)",border:`1px solid ${C.warning}66`,color:C.warning,borderRadius:7,padding:"6px 10px",fontSize:11,cursor:"pointer"}}>+ cadeado</button>
+        </div>
+
+        {/* cartões */}
+        <div style={{display:"flex",flexDirection:"column",gap:4}}>
+          {cs.map(c=>{
+            const b=bloqueado(cxSel.id,c.id);
+            return (
+              <div key={c.id} style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,.02)",
+                border:`1px solid ${b?`${C.vermelho}66`:"rgba(255,255,255,.07)"}`,borderRadius:8,padding:"6px 9px"}}>
+                <button onClick={()=>toggleCartao(cxSel,c)} title={b?"desbloquear cartão":"bloquear cartão"} style={{
+                  width:34,height:24,borderRadius:5,border:"none",cursor:"pointer",fontFamily:"monospace",fontSize:9,fontWeight:800,
+                  background:b?C.vermelho:"rgba(255,255,255,.08)",color:b?"#fff":C.textDim}}>{b?"BLQ":"—"}</button>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.desc||"(sem descrição)"}</div>
+                  <div style={{fontFamily:"monospace",fontSize:9,color:C.textDim}}>
+                    {c.tag}{c.ccm?` · CCM ${c.ccm}`:""}{c.gaveta?` · ${c.gaveta}`:""}
+                  </div>
+                </div>
+                <span style={{fontFamily:"monospace",fontSize:8.5,fontWeight:800,color:GCOR[c.grupo]||C.textDim}}>{c.grupo}</span>
+                <button onClick={()=>rmCartao(cxSel,c)} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:12}}>✕</button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* add cartão */}
+        {novoCartao ? (
+          <div style={{marginTop:8,display:"flex",gap:6,flexWrap:"wrap",background:"rgba(0,0,0,.25)",borderRadius:8,padding:8}}>
+            <input style={{...inp,flex:2,minWidth:150}} placeholder="Descrição" value={novoCartao.desc||""} onChange={e=>setNovoCartao({...novoCartao,desc:e.target.value})}/>
+            <input style={{...inp,width:120}} placeholder="TAG" value={novoCartao.tag||""} onChange={e=>setNovoCartao({...novoCartao,tag:e.target.value})}/>
+            <input style={{...inp,width:130}} placeholder="CCM" value={novoCartao.ccm||""} onChange={e=>setNovoCartao({...novoCartao,ccm:e.target.value})}/>
+            <input style={{...inp,width:80}} placeholder="Gaveta" value={novoCartao.gaveta||""} onChange={e=>setNovoCartao({...novoCartao,gaveta:e.target.value})}/>
+            <button onClick={()=>addCartao(cxSel)} style={{background:C.accent,border:"none",color:C.bg,borderRadius:7,padding:"7px 12px",fontWeight:800,fontSize:12,cursor:"pointer"}}>Add</button>
+            <button onClick={()=>setNovoCartao(null)} style={{background:"none",border:`1px solid ${C.borderPG}`,color:C.textDim,borderRadius:7,padding:"7px 10px",fontSize:12,cursor:"pointer"}}>Cancelar</button>
+          </div>
+        ):(
+          <button onClick={()=>setNovoCartao({desc:""})} style={{marginTop:8,background:"transparent",border:`1px dashed ${C.borderPG}`,color:C.textDim,borderRadius:8,padding:"7px 12px",fontSize:11,cursor:"pointer"}}>+ cartão</button>
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       {/* progresso geral */}
@@ -159,75 +232,7 @@ export default function SalaBloqueio(){
         )}
       </div>
 
-      {/* painel da caixa selecionada */}
-      {cxSel && (()=>{
-        const st=ov.caixas[cxSel.id]||{}; const status=st.status||"aberta";
-        const cs=cartoesDe(cxSel); const nb=cs.filter(c=>bloqueado(cxSel.id,c.id)).length;
-        return (
-          <div style={{marginTop:14,background:"rgba(10,25,41,.55)",border:`1px solid ${C.borderPG}`,borderLeft:`3px solid ${ST[status].cor}`,borderRadius:12,padding:"12px 14px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-              <div>
-                <div style={{fontSize:15,fontWeight:800}}>{cxSel.nome} <span style={{fontFamily:"monospace",fontSize:9,color:GCOR[cxSel.grupo]}}>{cxSel.grupo}</span></div>
-                <div style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim}}>{nb}/{cs.length} cartões aplicados · {ST[status].lab}</div>
-              </div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                <button onClick={()=>bloquearCaixa(cxSel)} style={{background:C.vermelho,border:"none",color:"#fff",borderRadius:8,padding:"8px 12px",fontWeight:800,fontSize:11.5,cursor:"pointer"}}>BLOQUEAR CAIXA</button>
-                <button onClick={()=>desbloquearCaixa(cxSel)} style={{background:C.accent,border:"none",color:C.bg,borderRadius:8,padding:"8px 12px",fontWeight:800,fontSize:11.5,cursor:"pointer"}}>DESBLOQUEAR</button>
-                <button onClick={()=>rmCaixa(cxSel)} style={{background:"none",border:`1px solid ${C.danger}55`,color:C.danger,borderRadius:8,padding:"8px 10px",fontSize:11.5,cursor:"pointer"}}>Remover caixa</button>
-              </div>
-            </div>
 
-            {/* cadeados pessoais */}
-            <div style={{marginTop:10,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-              <span style={{fontFamily:"monospace",fontSize:9,color:C.warning,letterSpacing:".1em"}}>CADEADOS:</span>
-              {(st.cadeados||[]).map((n,i)=>(
-                <span key={i} style={{display:"inline-flex",alignItems:"center",gap:4,background:"rgba(255,193,7,.1)",border:`1px solid ${C.warning}55`,borderRadius:14,padding:"3px 9px",fontSize:11}}>
-                  🔒 {n} <button onClick={()=>rmCadeado(cxSel,i)} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:11,padding:0}}>✕</button>
-                </span>
-              ))}
-              <input style={{...inp,width:130}} placeholder="nome" value={novoCad} onChange={e=>setNovoCad(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCadeado(cxSel)}/>
-              <button onClick={()=>addCadeado(cxSel)} style={{background:"rgba(255,193,7,.15)",border:`1px solid ${C.warning}66`,color:C.warning,borderRadius:7,padding:"6px 10px",fontSize:11,cursor:"pointer"}}>+ cadeado</button>
-            </div>
-
-            {/* cartões */}
-            <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:4,maxHeight:340,overflowY:"auto"}}>
-              {cs.map(c=>{
-                const b=bloqueado(cxSel.id,c.id);
-                return (
-                  <div key={c.id} style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,.02)",
-                    border:`1px solid ${b?`${C.vermelho}66`:"rgba(255,255,255,.07)"}`,borderRadius:8,padding:"6px 9px"}}>
-                    <button onClick={()=>toggleCartao(cxSel,c)} title={b?"desbloquear cartão":"bloquear cartão"} style={{
-                      width:30,height:22,borderRadius:5,border:"none",cursor:"pointer",fontFamily:"monospace",fontSize:9,fontWeight:800,
-                      background:b?C.vermelho:"rgba(255,255,255,.08)",color:b?"#fff":C.textDim}}>{b?"BLQ":"—"}</button>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:11.5,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.desc||"(sem descrição)"}</div>
-                      <div style={{fontFamily:"monospace",fontSize:9,color:C.textDim}}>
-                        {c.tag}{c.ccm?` · CCM ${c.ccm}`:""}{c.gaveta?` · ${c.gaveta}`:""}
-                      </div>
-                    </div>
-                    <span style={{fontFamily:"monospace",fontSize:8.5,fontWeight:800,color:GCOR[c.grupo]||C.textDim}}>{c.grupo}</span>
-                    <button onClick={()=>rmCartao(cxSel,c)} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:12}}>✕</button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* add cartão */}
-            {novoCartao ? (
-              <div style={{marginTop:8,display:"flex",gap:6,flexWrap:"wrap",background:"rgba(0,0,0,.25)",borderRadius:8,padding:8}}>
-                <input style={{...inp,flex:2,minWidth:150}} placeholder="Descrição" value={novoCartao.desc||""} onChange={e=>setNovoCartao({...novoCartao,desc:e.target.value})}/>
-                <input style={{...inp,width:120}} placeholder="TAG" value={novoCartao.tag||""} onChange={e=>setNovoCartao({...novoCartao,tag:e.target.value})}/>
-                <input style={{...inp,width:130}} placeholder="CCM" value={novoCartao.ccm||""} onChange={e=>setNovoCartao({...novoCartao,ccm:e.target.value})}/>
-                <input style={{...inp,width:80}} placeholder="Gaveta" value={novoCartao.gaveta||""} onChange={e=>setNovoCartao({...novoCartao,gaveta:e.target.value})}/>
-                <button onClick={()=>addCartao(cxSel)} style={{background:C.accent,border:"none",color:C.bg,borderRadius:7,padding:"7px 12px",fontWeight:800,fontSize:12,cursor:"pointer"}}>Add</button>
-                <button onClick={()=>setNovoCartao(null)} style={{background:"none",border:`1px solid ${C.borderPG}`,color:C.textDim,borderRadius:7,padding:"7px 10px",fontSize:12,cursor:"pointer"}}>Cancelar</button>
-              </div>
-            ):(
-              <button onClick={()=>setNovoCartao({desc:""})} style={{marginTop:8,background:"transparent",border:`1px dashed ${C.borderPG}`,color:C.textDim,borderRadius:8,padding:"7px 12px",fontSize:11,cursor:"pointer"}}>+ cartão</button>
-            )}
-          </div>
-        );
-      })()}
     </>
   );
 }
@@ -236,35 +241,37 @@ export default function SalaBloqueio(){
 function Caixa3D({ cor, cadeados=0 }){
   const dark=shade(cor,-28), darker=shade(cor,-45);
   return (
-    <div style={{width:120,height:86,margin:"0 auto",position:"relative",transformStyle:"preserve-3d",
-      transform:"rotateX(58deg) rotateZ(-38deg)",transformOrigin:"50% 60%"}}>
-      {/* corpo */}
-      <div style={{position:"absolute",width:110,height:56,left:5,top:26,background:cor,borderRadius:5,
-        transform:"translateZ(0px)",boxShadow:"0 0 0 1px rgba(0,0,0,.25) inset"}}/>
-      {/* face frontal */}
-      <div style={{position:"absolute",width:110,height:34,left:5,top:82,background:dark,borderRadius:"0 0 6px 6px",
-        transform:"rotateX(-90deg)",transformOrigin:"top"}}/>
-      {/* face lateral */}
-      <div style={{position:"absolute",width:34,height:56,left:115,top:26,background:darker,borderRadius:"0 6px 6px 0",
-        transform:"rotateY(90deg)",transformOrigin:"left"}}/>
-      {/* tampa com furos */}
-      <div style={{position:"absolute",width:110,height:56,left:5,top:26,transform:"translateZ(10px)",
-        background:shade(cor,10),borderRadius:5,display:"grid",gridTemplateColumns:"repeat(6,1fr)",
-        alignItems:"center",justifyItems:"center",padding:"6px 8px",boxSizing:"border-box",gap:2}}>
-        {Array.from({length:12}).map((_,i)=>(
-          <span key={i} style={{width:8,height:8,borderRadius:2,background:"rgba(0,0,0,.45)"}}/>
-        ))}
-      </div>
-      {/* alça */}
-      <div style={{position:"absolute",width:56,height:12,left:32,top:14,transform:"translateZ(22px)",
-        background:"#151A21",borderRadius:6,boxShadow:"0 2px 0 #000 inset"}}/>
-      {/* cadeados pendurados */}
-      {cadeados>0 && (
-        <div style={{position:"absolute",left:10,top:96,transform:"rotateX(-58deg) rotateZ(38deg)",display:"flex",gap:3}}>
-          {Array.from({length:Math.min(cadeados,5)}).map((_,i)=>(
-            <span key={i} style={{fontSize:13,filter:"drop-shadow(0 1px 1px #000)"}}>🔒</span>
+    <div style={{height:104,margin:"0 auto",position:"relative",overflow:"hidden",width:"100%"}}>
+      <div style={{width:120,height:86,position:"absolute",left:"50%",top:14,marginLeft:-60,
+        transformStyle:"preserve-3d",transform:"rotateX(55deg) rotateZ(-35deg) scale(.82)",transformOrigin:"50% 50%"}}>
+        {/* corpo */}
+        <div style={{position:"absolute",width:110,height:56,left:5,top:26,background:cor,borderRadius:5,
+          transform:"translateZ(0px)",boxShadow:"0 0 0 1px rgba(0,0,0,.25) inset"}}/>
+        {/* face frontal */}
+        <div style={{position:"absolute",width:110,height:30,left:5,top:82,background:dark,borderRadius:"0 0 6px 6px",
+          transform:"rotateX(-90deg)",transformOrigin:"top"}}/>
+        {/* face lateral */}
+        <div style={{position:"absolute",width:30,height:56,left:115,top:26,background:darker,borderRadius:"0 6px 6px 0",
+          transform:"rotateY(90deg)",transformOrigin:"left"}}/>
+        {/* tampa com furos */}
+        <div style={{position:"absolute",width:110,height:56,left:5,top:26,transform:"translateZ(12px)",
+          background:shade(cor,10),borderRadius:5,display:"grid",gridTemplateColumns:"repeat(6,1fr)",
+          alignItems:"center",justifyItems:"center",padding:"6px 8px",boxSizing:"border-box",gap:2}}>
+          {Array.from({length:12}).map((_,i)=>(
+            <span key={i} style={{width:8,height:8,borderRadius:2,background:"rgba(0,0,0,.45)"}}/>
           ))}
-          {cadeados>5 && <span style={{fontFamily:"monospace",fontSize:10,color:"#FFC107",fontWeight:800}}>+{cadeados-5}</span>}
+        </div>
+        {/* alça */}
+        <div style={{position:"absolute",width:54,height:11,left:33,top:22,transform:"translateZ(26px)",
+          background:"#151A21",borderRadius:6,boxShadow:"0 2px 0 #000 inset"}}/>
+      </div>
+      {/* cadeados pendurados (fora da projeção 3D, sempre legíveis) */}
+      {cadeados>0 && (
+        <div style={{position:"absolute",right:6,bottom:2,display:"flex",gap:2,alignItems:"center"}}>
+          {Array.from({length:Math.min(cadeados,4)}).map((_,i)=>(
+            <span key={i} style={{fontSize:12,filter:"drop-shadow(0 1px 1px #000)"}}>🔒</span>
+          ))}
+          {cadeados>4 && <span style={{fontFamily:"monospace",fontSize:10,color:"#FFC107",fontWeight:800}}>+{cadeados-4}</span>}
         </div>
       )}
     </div>
