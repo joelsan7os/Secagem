@@ -629,32 +629,53 @@ const cloudGet = async (key) => {
 };
 
 
-// --- Desidrata/reidrata fotos: salva fotos em doc separado fotos_<id> ---
-// Mantem historico_h2 leve (abaixo do limite de 1MB do Firestore).
+// --- Desidrata/reidrata fotos: salva fotos em docs separados por item (fotos_<id>_<dono>) ---
+// Cada item vira seu proprio doc no Firestore, assim varias fotos por item nao estouram o limite de 1MB.
 const ehFotoBase64 = (s) => typeof s==="string" && s.startsWith("data:image");
 
-// Extrai todas as fotos de um registro, substituindo por marcadores. Retorna {fotos, limpo}.
+// Extrai todas as fotos de um registro, agrupadas por "dono" (item.id, "unit", "root" ou chave de fotos{}).
+// Retorna {grupos: {dono:{ref:base64}}, limpo, temFotos}.
 const extrairFotos = (registro) => {
-  const fotos = {};
-  let contador = 0;
-  const subst = (arr) => arr.map((src)=>{
-    if(ehFotoBase64(src)){ const ref="f"+(contador++); fotos[ref]=src; return "@@"+ref; }
+  const grupos = {};
+  let temFotos = false;
+  const substDono = (dono) => (arr) => arr.map((src)=>{
+    if(ehFotoBase64(src)){
+      const grupo = grupos[dono]||(grupos[dono]={});
+      const ref = "p"+Object.keys(grupo).length;
+      grupo[ref]=src; temFotos=true;
+      return "@@"+dono+"::"+ref;
+    }
     return src;
   });
   const limpo = JSON.parse(JSON.stringify(registro));
-  if(Array.isArray(limpo.items)) limpo.items.forEach(it=>{ if(Array.isArray(it.fotos)) it.fotos=subst(it.fotos); });
-  if(limpo.unit&&Array.isArray(limpo.unit.foto)) limpo.unit.foto=subst(limpo.unit.foto);
-  if(Array.isArray(limpo.fotos)) limpo.fotos=subst(limpo.fotos);
+  if(Array.isArray(limpo.items)) limpo.items.forEach(it=>{ if(Array.isArray(it.fotos)) it.fotos=substDono(it.id)(it.fotos); });
+  if(limpo.unit&&Array.isArray(limpo.unit.foto)) limpo.unit.foto=substDono("unit")(limpo.unit.foto);
+  if(Array.isArray(limpo.fotos)) limpo.fotos=substDono("root")(limpo.fotos);
   if(limpo.fotos&&typeof limpo.fotos==="object"&&!Array.isArray(limpo.fotos)){
-    Object.keys(limpo.fotos).forEach(k=>{ if(Array.isArray(limpo.fotos[k])) limpo.fotos[k]=subst(limpo.fotos[k]); });
+    Object.keys(limpo.fotos).forEach(k=>{ if(Array.isArray(limpo.fotos[k])) limpo.fotos[k]=substDono(k)(limpo.fotos[k]); });
   }
-  return { fotos, limpo, temFotos: contador>0 };
+  return { grupos, limpo, temFotos };
 };
 
-// Reidrata um registro: troca marcadores @@fN pelas fotos do mapa.
-const reidratarRegistro = (registro, fotosMap) => {
-  if(!fotosMap) return registro;
-  const rest = (arr) => arr.map(s=> (typeof s==="string"&&s.startsWith("@@")) ? (fotosMap[s.slice(2)]||s) : s);
+// Lista os "donos" (nomes dos docs fotos_<id>_<dono>) presentes num registro desidratado.
+const listarDonos = (registro) => {
+  const donos = new Set();
+  const scan = (arr)=>Array.isArray(arr)&&arr.forEach(s=>{ if(typeof s==="string"&&s.startsWith("@@")) donos.add(s.slice(2).split("::")[0]); });
+  if(Array.isArray(registro.items)) registro.items.forEach(it=>scan(it.fotos));
+  if(registro.unit) scan(registro.unit.foto);
+  scan(registro.fotos);
+  if(registro.fotos&&typeof registro.fotos==="object"&&!Array.isArray(registro.fotos)) Object.values(registro.fotos).forEach(scan);
+  return [...donos];
+};
+
+// Reidrata um registro: troca marcadores @@dono::ref pelas fotos do mapa {dono:{ref:base64}}.
+const reidratarRegistro = (registro, fotosPorDono) => {
+  if(!fotosPorDono) return registro;
+  const rest = (arr) => arr.map(s=>{
+    if(typeof s!=="string"||!s.startsWith("@@")) return s;
+    const [dono,ref]=s.slice(2).split("::");
+    return fotosPorDono[dono]?.[ref]||s;
+  });
   const r = JSON.parse(JSON.stringify(registro));
   if(Array.isArray(r.items)) r.items.forEach(it=>{ if(Array.isArray(it.fotos)) it.fotos=rest(it.fotos); });
   if(r.unit&&Array.isArray(r.unit.foto)) r.unit.foto=rest(r.unit.foto);
@@ -673,6 +694,13 @@ const temMarcadores = (registro) => {
   if(check(registro.fotos)) return true;
   if(registro.fotos&&typeof registro.fotos==="object"&&!Array.isArray(registro.fotos)&&Object.values(registro.fotos).some(check)) return true;
   return false;
+};
+
+// Salva os grupos de fotos de um registro extraido, um doc por dono.
+const salvarGruposFotos = async (registroId, grupos) => {
+  for(const dono of Object.keys(grupos)){
+    try{ await setDoc(doc(COL,"fotos_"+registroId+"_"+dono),{val:grupos[dono],ts:Date.now()}); }catch(e){ console.error("Falha ao salvar fotos do item",dono,e); }
+  }
 };
 
 // ─── Escala Operacional — estrutura preparada para implementação futura ───────
@@ -3348,7 +3376,6 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
   const [maquina,setMaquina]=useState("M2");
   const linhasFiltradas=LINHAS.filter(l=>maquina==="M2"?["L4","L5"].includes(l.id):["L6","L7","L8"].includes(l.id));
   const [linha,setLinha]=useState("L4");
-  const [posAtiva,setPosAtiva]=useState("pos1");
   const [hora,setHora]=useState(horaAtual);
   const [opArea,setOpArea]=useState(()=>storageGet("op_config")?.nomeOperador||opPU||"");
   const [opPainelLocal,setOpPainelLocal]=useState(()=>storageGet("op_config")?.operadorPainel||opPainel||"");
@@ -3361,7 +3388,6 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
   const [salvo,setSalvo]=useState(false);
   const temUnit=linha!=="L8";
   const items=checklistRotinaH2.filter(i=>temUnit||i.pos!=="unit");
-  const itemsTab=items.filter(i=>i.pos===posAtiva);
   const linhaInfo=LINHAS.find(l=>l.id===linha);
 
   const setResp=(id,val)=>{setRespostas(p=>({...p,[id]:val}));setSalvo(false);};
@@ -3417,20 +3443,8 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
           <div style={{display:"flex",gap:6}}>
             {linhasFiltradas.map(l=>{
               const ativo=linha===l.id;
-              return <button key={l.id} onClick={()=>{setLinha(l.id);if(l.id==="L8"&&posAtiva==="unit")setPosAtiva("pos1");setRespostas({});setSalvo(false);}} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:ativo?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${ativo?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:ativo?"#fff":C.textMuted,boxShadow:ativo?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
+              return <button key={l.id} onClick={()=>{setLinha(l.id);setRespostas({});setSalvo(false);}} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:ativo?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${ativo?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:ativo?"#fff":C.textMuted,boxShadow:ativo?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
                 {l.id}
-              </button>;
-            })}
-          </div>
-        </div>
-        {/* Seletor de posição - Amarradeiras/Unitizadora */}
-        <div style={{marginBottom:12}}>
-          <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:6}}>Posição</label>
-          <div style={{display:"flex",gap:6}}>
-            {[{id:"pos1",label:"1ª Posição"},{id:"pos2",label:"2ª Posição"},...(temUnit?[{id:"unit",label:"Unitizadora"}]:[])].map(p=>{
-              const ativo=posAtiva===p.id;
-              return <button key={p.id} onClick={()=>setPosAtiva(p.id)} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:12,transition:"all .15s",background:ativo?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${ativo?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:ativo?"#fff":C.textMuted,boxShadow:ativo?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
-                {p.label}
               </button>;
             })}
           </div>
@@ -3464,7 +3478,7 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
           <span style={{color:C.text,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em"}}>🛢 Amarradeiras / Unitizadora</span>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:7}}>
-          {itemsTab.map((item,idx)=>{
+          {items.map((item,idx)=>{
             const r=respostas[item.id];
             const isNok=r==="nok";
             const preen=!!r;
@@ -3695,8 +3709,11 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
   // Reidrata fotos sob demanda ao abrir um registro com marcadores
   React.useEffect(()=>{
     if(regBase&&temMarcadores(regBase)&&!fotosCarregadas[regBase.id]){
-      cloudGet("fotos_"+regBase.id).then(fmap=>{
-        if(fmap) setFotosCarregadas(prev=>({...prev,[regBase.id]:fmap}));
+      const donos=listarDonos(regBase);
+      Promise.all(donos.map(d=>cloudGet("fotos_"+regBase.id+"_"+d).then(fmap=>[d,fmap]))).then(pares=>{
+        const agregado={};
+        pares.forEach(([d,fmap])=>{ if(fmap) agregado[d]=fmap; });
+        setFotosCarregadas(prev=>({...prev,[regBase.id]:agregado}));
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4199,17 +4216,17 @@ export default function App() {
     const novo=[...historico,registro];
     setHistorico(novo);
     try{localStorage.setItem("historico_h2",JSON.stringify(novo));}catch{}
-    // Para o Firestore: separa fotos em doc proprio e salva historico leve
+    // Para o Firestore: separa fotos em docs por item e salva historico leve
     try{
-      const {fotos,limpo,temFotos}=extrairFotos(registro);
-      if(temFotos){ await setDoc(doc(COL,"fotos_"+registro.id),{val:fotos,ts:Date.now()}); }
+      const {grupos,limpo,temFotos}=extrairFotos(registro);
+      if(temFotos){ await salvarGruposFotos(registro.id,grupos); }
       // Desidrata TODOS os registros; migra fotos de registros antigos ainda nao migrados
       const historicoLeve=[];
       for(const r of novo){
         if(r.id===registro.id){ historicoLeve.push(limpo); continue; }
         if(temMarcadores(r)){ historicoLeve.push(r); continue; } // ja desidratado
         const ex=extrairFotos(r);
-        if(ex.temFotos){ try{ await setDoc(doc(COL,"fotos_"+r.id),{val:ex.fotos,ts:Date.now()}); }catch{} }
+        if(ex.temFotos){ await salvarGruposFotos(r.id,ex.grupos); }
         historicoLeve.push(ex.limpo);
       }
       await setDoc(doc(COL,"historico_h2"),{val:historicoLeve,ts:Date.now()});
