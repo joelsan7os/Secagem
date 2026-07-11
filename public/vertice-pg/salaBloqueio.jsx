@@ -22,9 +22,9 @@ export default function SalaBloqueio(){
   const [ov,setOv]=useState({caixas:{},caixasExtras:[]});   // overlay Firestore
   const [grupo,setGrupo]=useState("M2");
   const [sel,setSel]=useState(null);                         // id da caixa aberta
-  const [novoCad,setNovoCad]=useState("");
   const [novoCartao,setNovoCartao]=useState(null);           // {desc,tag,ccm,gaveta} | null
   const [novaCaixa,setNovaCaixa]=useState(null);             // {nome} | null
+  const [popupCad,setPopupCad]=useState(null);               // {caixaId} | null
 
   useEffect(()=>{
     const unsub=onSnapshot(doc(db,"pg_bloqueio_h2","estado"),snap=>{
@@ -82,8 +82,12 @@ export default function SalaBloqueio(){
     const n=Object.keys(cur).length;
     upCx(cx.id,{cartoes:cur,status:n>0?"bloqueada":(st.status==="desbloqueada"?"desbloqueada":"aberta")});
   };
-  const addCadeado=cx=>{ if(!novoCad.trim())return;
-    const st=ov.caixas[cx.id]||{}; upCx(cx.id,{cadeados:[...(st.cadeados||[]),novoCad.trim().toUpperCase()]}); setNovoCad(""); };
+  const salvarCadeado=(cx,dados)=>{
+    const st=ov.caixas[cx.id]||{};
+    const reg={nome:dados.nome.trim().toUpperCase(),numero:dados.numero.trim(),disciplina:dados.disciplina,
+      celular:dados.celular.trim(),ts:Date.now()};
+    upCx(cx.id,{cadeados:[...(st.cadeados||[]),reg]}); setPopupCad(null);
+  };
   const rmCadeado=(cx,i)=>{ const st=ov.caixas[cx.id]||{}; const l=[...(st.cadeados||[])]; l.splice(i,1); upCx(cx.id,{cadeados:l}); };
   const rmCartao=(cx,c)=>{
     const st=ov.caixas[cx.id]||{};
@@ -124,15 +128,24 @@ export default function SalaBloqueio(){
         </div>
 
         {/* cadeados pessoais */}
-        <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",background:"rgba(10,25,41,.45)",border:`1px solid ${C.borderPG}`,borderRadius:10,padding:"9px 11px",marginBottom:10}}>
-          <span style={{fontFamily:"monospace",fontSize:9,color:C.warning,letterSpacing:".1em"}}>CADEADOS:</span>
-          {(st.cadeados||[]).map((n,i)=>(
-            <span key={i} style={{display:"inline-flex",alignItems:"center",gap:4,background:"rgba(255,193,7,.1)",border:`1px solid ${C.warning}55`,borderRadius:14,padding:"3px 9px",fontSize:11}}>
-              🔒 {n} <button onClick={()=>rmCadeado(cxSel,i)} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:11,padding:0}}>✕</button>
-            </span>
-          ))}
-          <input style={{...inp,width:130}} placeholder="nome" value={novoCad} onChange={e=>setNovoCad(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCadeado(cxSel)}/>
-          <button onClick={()=>addCadeado(cxSel)} style={{background:"rgba(255,193,7,.15)",border:`1px solid ${C.warning}66`,color:C.warning,borderRadius:7,padding:"6px 10px",fontSize:11,cursor:"pointer"}}>+ cadeado</button>
+        <div style={{background:"rgba(10,25,41,.45)",border:`1px solid ${C.borderPG}`,borderRadius:10,padding:"9px 11px",marginBottom:10}}>
+          <div style={{fontFamily:"monospace",fontSize:9,color:C.warning,letterSpacing:".1em",marginBottom:(st.cadeados||[]).length?8:0}}>CADEADOS</div>
+          <div style={{display:"flex",flexDirection:"column",gap:5}}>
+            {(st.cadeados||[]).map((n,i)=>{
+              const r = typeof n==="string" ? {nome:n,numero:"",disciplina:"",celular:""} : n; // compat com dado antigo
+              return (
+                <div key={i} style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,193,7,.08)",border:`1px solid ${C.warning}44`,borderRadius:8,padding:"6px 9px"}}>
+                  <span style={{fontSize:14}}>🔒</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:700}}>{r.nome}{r.numero?` · cadeado nº ${r.numero}`:""}</div>
+                    <div style={{fontFamily:"monospace",fontSize:9,color:C.textDim}}>{r.disciplina||"—"}{r.celular?` · ${r.celular}`:""}</div>
+                  </div>
+                  <button onClick={()=>rmCadeado(cxSel,i)} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:13}}>✕</button>
+                </div>
+              );
+            })}
+          </div>
+          <button onClick={()=>setPopupCad({caixaId:cxSel.id})} style={{marginTop:8,background:"rgba(255,193,7,.15)",border:`1px solid ${C.warning}66`,color:C.warning,borderRadius:7,padding:"7px 12px",fontSize:11.5,cursor:"pointer",fontWeight:700}}>+ cadeado</button>
         </div>
 
         {/* cartões */}
@@ -170,6 +183,9 @@ export default function SalaBloqueio(){
           </div>
         ):(
           <button onClick={()=>setNovoCartao({desc:""})} style={{marginTop:8,background:"transparent",border:`1px dashed ${C.borderPG}`,color:C.textDim,borderRadius:8,padding:"7px 12px",fontSize:11,cursor:"pointer"}}>+ cartão</button>
+        )}
+      {popupCad?.caixaId===cxSel.id && (
+          <PopupCadeado onCancelar={()=>setPopupCad(null)} onSalvar={dados=>salvarCadeado(cxSel,dados)}/>
         )}
       </>
     );
@@ -234,6 +250,47 @@ export default function SalaBloqueio(){
 
 
     </>
+  );
+}
+
+// ─── Popup de cadeado (rastreabilidade básica) ────────────────────────────────
+const DISCIPLINAS=["Elétrica","Mecânica","Instrumentação","SKF","Outras"];
+function PopupCadeado({ onCancelar, onSalvar }){
+  const [nome,setNome]=useState(""); const [numero,setNumero]=useState("");
+  const [disciplina,setDisciplina]=useState("Elétrica"); const [celular,setCelular]=useState("");
+  const inp={width:"100%",background:C.bg,border:`1px solid ${C.borderPG}`,color:"#fff",borderRadius:8,padding:"10px 12px",fontSize:14};
+  const lbl={display:"block",fontFamily:"monospace",fontSize:9,color:C.textDim,letterSpacing:".1em",margin:"10px 0 5px"};
+  const submit=()=>{ if(!nome.trim())return; onSalvar({nome,numero,disciplina,celular}); };
+  return (
+    <div onClick={onCancelar} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:60}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.card,width:"100%",maxWidth:440,borderRadius:"16px 16px 0 0",border:`1px solid ${C.borderPG}`,padding:"14px 18px 20px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+          <h3 style={{margin:0,fontSize:16,color:"#fff"}}>🔒 Novo cadeado</h3>
+          <button onClick={onCancelar} style={{background:C.surface,border:`1px solid ${C.borderPG}`,color:C.textDim,width:28,height:28,borderRadius:7,cursor:"pointer"}}>✕</button>
+        </div>
+
+        <label style={lbl}>NOME</label>
+        <input style={inp} autoFocus value={nome} onChange={e=>setNome(e.target.value)} placeholder="Nome de quem aplicou"/>
+
+        <label style={lbl}>Nº DO CADEADO</label>
+        <input style={inp} value={numero} onChange={e=>setNumero(e.target.value)} placeholder="Número identificador"/>
+
+        <label style={lbl}>DISCIPLINA</label>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {DISCIPLINAS.map(d=>(
+            <button key={d} onClick={()=>setDisciplina(d)} style={{
+              background:disciplina===d?C.warning:C.bg,color:disciplina===d?C.bg:C.textDim,
+              border:`1px solid ${disciplina===d?C.warning:C.borderPG}`,borderRadius:20,padding:"7px 12px",
+              fontSize:12,fontWeight:700,cursor:"pointer"}}>{d}</button>
+          ))}
+        </div>
+
+        <label style={lbl}>CELULAR</label>
+        <input style={inp} value={celular} onChange={e=>setCelular(e.target.value)} placeholder="(00) 00000-0000" inputMode="tel"/>
+
+        <button onClick={submit} style={{marginTop:16,width:"100%",background:C.warning,border:"none",color:C.bg,borderRadius:10,padding:12,fontSize:14,fontWeight:800,cursor:"pointer"}}>Aplicar cadeado</button>
+      </div>
+    </div>
   );
 }
 
