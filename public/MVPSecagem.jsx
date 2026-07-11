@@ -548,13 +548,13 @@ const LINHAS = [
 
 // ─── Check-list Rotina H2 — Amarradeiras / Unitizadora (por linha) ───────────
 const checklistRotinaH2 = [
-  { id:"rh2_01", item:"Realizar limpeza do cabeçote - 1ª Amarradeira" },
-  { id:"rh2_02", item:"Completar óleo da 1ª Amarradeira" },
-  { id:"rh2_03", item:"Realizar limpeza do cabeçote - 2ª Amarradeira" },
-  { id:"rh2_04", item:"Completar óleo da 2ª Amarradeira" },
-  { id:"rh2_05", item:"Testar Translado - Carro móvel da Unit" },
-  { id:"rh2_06", item:"Realizar limpeza do cabeçote da Unitizadora" },
-  { id:"rh2_07", item:"Completar óleo da Unitizadora" },
+  { id:"rh2_01", item:"Realizar limpeza do cabeçote - 1ª Amarradeira", pos:"pos1" },
+  { id:"rh2_02", item:"Completar óleo da 1ª Amarradeira", pos:"pos1" },
+  { id:"rh2_03", item:"Realizar limpeza do cabeçote - 2ª Amarradeira", pos:"pos2" },
+  { id:"rh2_04", item:"Completar óleo da 2ª Amarradeira", pos:"pos2" },
+  { id:"rh2_05", item:"Testar Translado - Carro móvel da Unit", pos:"unit" },
+  { id:"rh2_06", item:"Realizar limpeza do cabeçote da Unitizadora", pos:"unit" },
+  { id:"rh2_07", item:"Completar óleo da Unitizadora", pos:"unit" },
 ];
 
 const AREAS = [
@@ -574,7 +574,7 @@ const CATALOGO = [
   { id:"rejeicao",         label:"Diagnóstico Rejeição",icon:"⚠️",desc:"Fluxo de diagnóstico — Faca circular / Facão / Transversal",porMaquina:false,tipo:"rejeicao",area:"cs",getItems:()=>[] },
   { id:"enf_qualidade",    label:"Check List Qualidade",icon:"", desc:"Qualidade do fardo — todas as linhas",                 porMaquina:false, tipo:"enf",      area:"enf", getItems:()=>checklistEnfardamento },
   { id:"rota_enf",         label:"Rota Enfardamento",   icon:"", desc:"Inspeção por turno — todos os equipamentos",           porMaquina:true,  tipo:"rota_enf", area:"enf", getItems:()=>checklistRotaEnfardamento },
-  { id:"rotina_h2",        label:"Check List Rotina H2",icon:"", desc:"Amarradeiras e Unitizadora — 00h/08h/16h — L4 a L8",   porMaquina:false, tipo:"rotina_h2",area:"enf", getItems:()=>checklistRotinaH2 },
+  { id:"rotina_h2",        label:"Amarradeira/Unitizadora",icon:"", desc:"Amarradeiras e Unitizadora — L4 a L8",   porMaquina:false, tipo:"rotina_h2",area:"enf", getItems:()=>checklistRotinaH2 },
   { id:"barcode_enf",      label:"Validação de Fardos", icon:"📦", desc:"Leitura de código de barras — Lado A / Lado B",        porMaquina:false, tipo:"barcode_enf",area:"enf", getItems:()=>[] },
   { id:"avaria_enf",       label:"Inspecao de Avarias", icon:"", desc:"Registro de avarias por unit — capa, arame, impressao", porMaquina:false, tipo:"avaria_enf", area:"enf", getItems:()=>[] },
 ];
@@ -3348,6 +3348,7 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
   const [maquina,setMaquina]=useState("M2");
   const linhasFiltradas=LINHAS.filter(l=>maquina==="M2"?["L4","L5"].includes(l.id):["L6","L7","L8"].includes(l.id));
   const [linha,setLinha]=useState("L4");
+  const [posAtiva,setPosAtiva]=useState("pos1");
   const [hora,setHora]=useState(horaAtual);
   const [opArea,setOpArea]=useState(()=>storageGet("op_config")?.nomeOperador||opPU||"");
   const [opPainelLocal,setOpPainelLocal]=useState(()=>storageGet("op_config")?.operadorPainel||opPainel||"");
@@ -3358,7 +3359,9 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
   const remFoto=(id,idx)=>{setFotos(p=>({...p,[id]:(p[id]||[]).filter((_,i)=>i!==idx)}));setSalvo(false);};
   const [obs,setObs]=useState("");
   const [salvo,setSalvo]=useState(false);
-  const items=checklistRotinaH2;
+  const temUnit=linha!=="L8";
+  const items=checklistRotinaH2.filter(i=>temUnit||i.pos!=="unit");
+  const itemsTab=items.filter(i=>i.pos===posAtiva);
   const linhaInfo=LINHAS.find(l=>l.id===linha);
 
   const setResp=(id,val)=>{setRespostas(p=>({...p,[id]:val}));setSalvo(false);};
@@ -3414,8 +3417,20 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
           <div style={{display:"flex",gap:6}}>
             {linhasFiltradas.map(l=>{
               const ativo=linha===l.id;
-              return <button key={l.id} onClick={()=>{setLinha(l.id);setRespostas({});setSalvo(false);}} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:ativo?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${ativo?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:ativo?"#fff":C.textMuted,boxShadow:ativo?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
+              return <button key={l.id} onClick={()=>{setLinha(l.id);if(l.id==="L8"&&posAtiva==="unit")setPosAtiva("pos1");setRespostas({});setSalvo(false);}} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:ativo?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${ativo?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:ativo?"#fff":C.textMuted,boxShadow:ativo?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
                 {l.id}
+              </button>;
+            })}
+          </div>
+        </div>
+        {/* Seletor de posição - Amarradeiras/Unitizadora */}
+        <div style={{marginBottom:12}}>
+          <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:6}}>Posição</label>
+          <div style={{display:"flex",gap:6}}>
+            {[{id:"pos1",label:"1ª Posição"},{id:"pos2",label:"2ª Posição"},...(temUnit?[{id:"unit",label:"Unitizadora"}]:[])].map(p=>{
+              const ativo=posAtiva===p.id;
+              return <button key={p.id} onClick={()=>setPosAtiva(p.id)} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:12,transition:"all .15s",background:ativo?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${ativo?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:ativo?"#fff":C.textMuted,boxShadow:ativo?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
+                {p.label}
               </button>;
             })}
           </div>
@@ -3449,7 +3464,7 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
           <span style={{color:C.text,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em"}}>🛢 Amarradeiras / Unitizadora</span>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:7}}>
-          {items.map((item,idx)=>{
+          {itemsTab.map((item,idx)=>{
             const r=respostas[item.id];
             const isNok=r==="nok";
             const preen=!!r;
