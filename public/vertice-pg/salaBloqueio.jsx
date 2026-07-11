@@ -258,9 +258,12 @@ const DISCIPLINAS=["Elétrica","Mecânica","Instrumentação","SKF","Outras"];
 function PopupCadeado({ onCancelar, onSalvar }){
   const [nome,setNome]=useState(""); const [numero,setNumero]=useState("");
   const [disciplina,setDisciplina]=useState("Elétrica"); const [celular,setCelular]=useState("");
+  const [outraDisciplina,setOutraDisciplina]=useState("");
   const inp={width:"100%",background:C.bg,border:`1px solid ${C.borderPG}`,color:"#fff",borderRadius:8,padding:"10px 12px",fontSize:14};
   const lbl={display:"block",fontFamily:"monospace",fontSize:9,color:C.textDim,letterSpacing:".1em",margin:"10px 0 5px"};
-  const submit=()=>{ if(!nome.trim())return; onSalvar({nome,numero,disciplina,celular}); };
+  const submit=()=>{ if(!nome.trim())return;
+    const disc = disciplina==="Outras" ? (outraDisciplina.trim()||"Outras") : disciplina;
+    onSalvar({nome,numero,disciplina:disc,celular}); };
   return (
     <div onClick={onCancelar} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:60}}>
       <div onClick={e=>e.stopPropagation()} style={{background:C.card,width:"100%",maxWidth:440,borderRadius:"16px 16px 0 0",border:`1px solid ${C.borderPG}`,padding:"14px 18px 20px"}}>
