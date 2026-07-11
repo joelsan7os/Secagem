@@ -590,6 +590,7 @@ import { ChuveirosTela, eficienciaMes, sugestaoTurno, IconeChuveiro, corChuveiro
 import { BarcodeModal } from "./barcode";
 import { AvariasTela, AvariasAnalytics } from "./avarias";
 import { MuralOportunidades } from "./pendencias";
+import { PainelCarrossel } from "./carrossel";
 // Dashboard TV carregado de forma tolerante: se o arquivo ainda não existir no
 // repo, o app NÃO quebra — o modo dashboard apenas fica indisponível até subir.
 const DashboardTV = React.lazy(() =>
@@ -1438,7 +1439,7 @@ function Dashboard({ eqState, setTela, historico, areaAtiva, setAreaAtiva, ocorr
       })()}
       <h3 style={{color:C.text,fontSize:12,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.06em"}}>Acesso Rápido</h3>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        {[{label:"Check-list",tela:"checklist"},{label:"Equipamentos",tela:"equipamentos"},{label:"Mural de Oportunidades",tela:"mural"},{label:"Justificar Rotas",tela:"rotas"},{label:"Manual",tela:"manual"}].map(a=>(
+        {[{label:"Check-list",tela:"checklist"},{label:"Equipamentos",tela:"equipamentos"},{label:"Mural de Oportunidades",tela:"mural"},{label:"Justificar Rotas",tela:"rotas"},{label:"Manual",tela:"manual"},...(perfil?.matricula==="242365"?[{label:"Carrossel",tela:"carrossel"}]:[])].map(a=>(
           <button key={a.tela} onClick={()=>setTela(a.tela)} style={{...glassMini,color:C.text,borderRadius:12,padding:"13px 14px",cursor:"pointer",fontSize:13,fontWeight:500,textAlign:"left",transition:"all .2s"}}
             onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(0,230,118,0.4)";}}
             onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.08)";}}>{a.label}</button>
@@ -4258,6 +4259,7 @@ export default function App() {
     if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout} onAbrirAdmin={()=>setAdminAberto(true)}/>;
     if(tela==="rotas")return <RotasTela historico={historico} onVoltar={()=>setTela("dashboard")}/>;
     if(tela==="mural")return <MuralOportunidades eqState={eqState} onVoltar={()=>setTela("dashboard")}/>;
+    if(tela==="carrossel")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>setTela("dashboard")} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><PainelCarrossel/></div>;
     if(tela==="cleaners")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>setTela("dashboard")} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><CleanersTela eqState={eqState}/></div>;
     if(tela==="chuveiros")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>{setTela("dashboard");setChuveiroAlvo(null);}} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><ChuveirosTela maquina={chuveiroAlvo?.maq||"M2"} abrirDireto={chuveiroAlvo}/></div>;
   };
