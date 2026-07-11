@@ -9,6 +9,7 @@ import { PG_CENARIOS, PG_TEMPOS_LIB } from "./pgTempos";
 import { PG_PERIODO, PG_FACILITADORES, PG_LTS, PG_PREMISSAS, PG_MATERIAIS, PG_MAT_SEGURANCA, PG_RADIOS, PG_INSPECAO_TANQUES, PG_LIMPEZA } from "./pgBook";
 import EquipeTela from "./equipeTela";
 import EscalaTela from "./escalaTela";
+import SalaBloqueio from "./salaBloqueio";
 
 const C = {
   bg:"#04111D", accent:"#00E676", cyan:"#00F0FF", blue:"#5090FF",
@@ -622,7 +623,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
 
       {/* ── Abas ── */}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[["plan","01","PLANEJAMENTO"],["exec","02","EXECUÇÃO"],["pos","03","RETOMADA"]].map(([id,num,lab])=>(
+        {[["plan","01","PLANEJAMENTO"],["exec","02","EXECUÇÃO"],["pos","03","RETOMADA"],["blq","04","SALA DE BLOQUEIO"]].map(([id,num,lab])=>(
           <button key={id} onClick={()=>setAba(id)} style={{
             flex:1, padding:"9px 6px", borderRadius:10, cursor:"pointer",
             display:"flex", alignItems:"center", justifyContent:"center", gap:8,
@@ -1140,6 +1141,12 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
       )}
 
       {/* ── Aba Pós-execução ── */}
+      {aba==="blq" && (
+        <Sec num="01" titulo="SALA DE BLOQUEIO · CAIXAS DE TRAVAMENTO">
+          <SalaBloqueio/>
+        </Sec>
+      )}
+
       {aba==="pos" && (
         <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:14}}>
           <Sec num="01" titulo="CHECKLIST DE RETOMADA · PROGRESSO">
