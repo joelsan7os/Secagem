@@ -21,7 +21,7 @@ export default function EscalaTela(){
   const [escala, setEscala] = useState(PG_ESCALA);
   const [idx, setIdx] = useState(()=>{ const h=new Date().toISOString().slice(0,10); const i=PG_ESCALA.findIndex(e=>e.d===h); return i>=0?i:0; });
   const [addTurno, setAddTurno] = useState(null); // índice do turno em modo "adicionar"
-  const [novoNome, setNovoNome] = useState(""); const [novaFn, setNovaFn] = useState(""); const [novoHE, setNovoHE] = useState(false);
+  const [novoNome, setNovoNome] = useState(""); const [novaFn, setNovaFn] = useState("");
 
   useEffect(()=>{
     const unsub = onSnapshot(doc(db,"pg_escala_h2","registro"), snap=>{
@@ -36,10 +36,9 @@ export default function EscalaTela(){
 
   const mut = fn => { const nova = clone(escala); fn(nova[idx]); salvar(nova); };
   const removerPessoa = (ti,pi)=> mut(d=>{ d.t[ti][1].splice(pi,1); });
-  const toggleHE = (ti,pi)=> mut(d=>{ const p=d.t[ti][1][pi]; p[2] = p[2]?0:1; while(p.length<3) p.push(p.length===1?null:0); });
   const addPessoa = ti => { if(!novoNome.trim()) return;
-    mut(d=>{ const p=[novoNome.trim()]; if(novaFn.trim()||novoHE) p.push(novaFn.trim()||null); if(novoHE) p.push(1); d.t[ti][1].push(p); });
-    setNovoNome(""); setNovaFn(""); setNovoHE(false); setAddTurno(null);
+    mut(d=>{ const p=[novoNome.trim()]; if(novaFn.trim()) p.push(novaFn.trim()); d.t[ti][1].push(p); });
+    setNovoNome(""); setNovaFn(""); setAddTurno(null);
   };
 
   if(!dia) return <div style={{color:C.textDim,fontSize:12}}>Sem escala.</div>;
@@ -70,13 +69,12 @@ export default function EscalaTela(){
                   const a = anotarPessoa(p, dia.d, h);
                   return (
                     <div key={pi} style={{display:"flex",alignItems:"center",gap:5,background:"rgba(255,255,255,.03)",
-                      border:`1px solid ${a.deslocado?`${C.warning}88`:p[2]?`${C.blue}66`:"rgba(255,255,255,.09)"}`,borderRadius:8,padding:"4px 7px"}}>
+                      border:`1px solid ${a.he?`${C.warning}88`:a.deslocado?`${C.cyan}66`:"rgba(255,255,255,.09)"}`,borderRadius:8,padding:"4px 7px"}}>
                       {a.letra && <span style={{fontFamily:"monospace",fontSize:8.5,fontWeight:800,color:C.bg,background:LCOR[a.letra],borderRadius:4,padding:"0 4px"}}>{a.letra}</span>}
                       <span style={{fontSize:11.5,fontWeight:700,color:a.resolvido?C.white:C.textDim}}>{p[0]}</span>
                       {p[1] && <span style={{fontFamily:"monospace",fontSize:8.5,color:C.textDim}}>{p[1]}</span>}
-                      <button onClick={()=>toggleHE(ti,pi)} title="hora extra" style={{cursor:"pointer",fontFamily:"monospace",fontSize:8,fontWeight:800,
-                        color:p[2]?C.bg:C.blue,background:p[2]?C.blue:"transparent",border:`1px solid ${C.blue}66`,borderRadius:4,padding:"0 4px"}}>HE</button>
-                      {a.deslocado && <span title="deslocado da rotação" style={{fontFamily:"monospace",fontSize:8,fontWeight:800,color:C.warning,border:`1px solid ${C.warning}88`,borderRadius:4,padding:"0 4px"}}>DESLOC</span>}
+                      {a.he && <span title="hora extra — veio na folga ou ficou além do horário" style={{fontFamily:"monospace",fontSize:8,fontWeight:800,color:C.warning,border:`1px solid ${C.warning}88`,borderRadius:4,padding:"0 4px"}}>HE</span>}
+                      {a.deslocado && <span title="deslocado — inverteu/antecipou o horário da própria letra" style={{fontFamily:"monospace",fontSize:8,fontWeight:800,color:C.cyan,border:`1px solid ${C.cyan}66`,borderRadius:4,padding:"0 4px"}}>DESLOC</span>}
                       <button onClick={()=>removerPessoa(ti,pi)} style={{cursor:"pointer",background:"none",border:"none",color:C.danger,fontSize:12,padding:"0 2px",lineHeight:1}}>✕</button>
                     </div>
                   );
@@ -89,9 +87,8 @@ export default function EscalaTela(){
                     style={{background:C.bg,border:`1px solid ${C.borderPG}`,color:C.white,borderRadius:7,padding:"7px 9px",fontSize:13,minWidth:130}}/>
                   <input value={novaFn} onChange={e=>setNovaFn(e.target.value)} placeholder="função (opcional)"
                     style={{background:C.bg,border:`1px solid ${C.borderPG}`,color:C.white,borderRadius:7,padding:"7px 9px",fontSize:13,flex:1,minWidth:120}}/>
-                  <button onClick={()=>setNovoHE(!novoHE)} style={{cursor:"pointer",fontFamily:"monospace",fontSize:10,fontWeight:800,color:novoHE?C.bg:C.blue,background:novoHE?C.blue:"transparent",border:`1px solid ${C.blue}66`,borderRadius:6,padding:"6px 8px"}}>HE</button>
                   <button onClick={()=>addPessoa(ti)} style={{cursor:"pointer",background:C.accent,color:C.bg,border:"none",borderRadius:7,padding:"7px 12px",fontSize:13,fontWeight:800}}>Add</button>
-                  <button onClick={()=>{setAddTurno(null);setNovoNome("");setNovaFn("");setNovoHE(false);}} style={{cursor:"pointer",background:"none",border:`1px solid ${C.borderPG}`,color:C.textDim,borderRadius:7,padding:"7px 10px",fontSize:13}}>Cancelar</button>
+                  <button onClick={()=>{setAddTurno(null);setNovoNome("");setNovaFn("");}} style={{cursor:"pointer",background:"none",border:`1px solid ${C.borderPG}`,color:C.textDim,borderRadius:7,padding:"7px 10px",fontSize:13}}>Cancelar</button>
                 </div>
               ) : (
                 <button onClick={()=>setAddTurno(ti)} style={{marginTop:8,background:"transparent",border:`1px dashed ${C.borderPG}`,color:C.textDim,borderRadius:8,padding:"6px 10px",fontSize:11,cursor:"pointer"}}>+ pessoa</button>
