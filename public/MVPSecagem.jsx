@@ -2403,7 +2403,9 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
 
   const handleFinalizar=()=>{
     if(preenchidos<total)return;
-    const registro={id:Date.now(),tipoId:tipoId||"rotina",tipoLabel:tipo?.label||"",maquina:tipo?.porMaquina?maquina:"M2/M3",turno,letra,data,opPU,matricula,opPainel,obs,noks,total,valores:{...valores},medidas:{...medidas},fotos:{...fotos},items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:valores[i.id]||"",medida:medidas[i.id]||"",obs:passagemNokDados[i.id]?.obs||obsNok[i.id]||"",valorPassagem:passagemNokDados[i.id]?.valor||"",fotos:(fotos[i.id]||[])}))};
+    const agora=new Date();
+    const hora=`${String(agora.getHours()).padStart(2,"0")}:${String(agora.getMinutes()).padStart(2,"0")}`;
+    const registro={id:Date.now(),tipoId:tipoId||"rotina",tipoLabel:tipo?.label||"",maquina:tipo?.porMaquina?maquina:"M2/M3",turno,hora,letra,data,opPU,matricula,opPainel,obs,noks,total,valores:{...valores},medidas:{...medidas},fotos:{...fotos},items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:valores[i.id]||"",medida:medidas[i.id]||"",obs:passagemNokDados[i.id]?.obs||obsNok[i.id]||"",valorPassagem:passagemNokDados[i.id]?.valor||"",fotos:(fotos[i.id]||[])}))};
     onSalvar(registro);setSalvo(true);
   };
 
@@ -3762,7 +3764,6 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
   const porArea=porMaquina.filter(h=>areaDoTipo(h.tipoId)===filtroArea);
   const tiposDisponiveis=[{id:"TODOS",label:"Todos os check-lists"},...CATALOGO.filter(c=>c.area===filtroArea).map(c=>({id:c.id,label:c.label})).filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i)];
   const filtrados=(filtroTipo==="TODOS"?porArea:porArea.filter(h=>h.tipoId===filtroTipo)).filter(h=>h.data===dataSel).sort((a,b)=>b.id-a.id);
-  // agrupa os registros do dia por tipo de check-list (subgrupos)
   const gruposPorTipo=(()=>{
     const mapa={};
     filtrados.forEach(h=>{(mapa[h.tipoLabel||"Outros"]=mapa[h.tipoLabel||"Outros"]||[]).push(h);});
@@ -4270,7 +4271,7 @@ export default function App() {
   const [tela,setTela]=useState("dashboard");
   const [chuveiroAlvo,setChuveiroAlvo]=useState(null); // {maq,id} para abrir direto
   const [modalChuveiroHome,setModalChuveiroHome]=useState(null); // {maq,id} registro rápido sem sair da Home
-  const [modoVisao,setModoVisao]=useState("app"); // "app" | "dashboard"
+  const [modoVisao,setModoVisao]=useState("app"); const irPG=()=>{try{localStorage.setItem("vertice_modo","pg");}catch(e){}location.reload();}; // "app" | "dashboard"
   const [historico,setHistorico]=useState(()=>storageGet("historico_h2")||[]);
   const [areaAtiva,setAreaAtiva]=useState("pu");
   const [ocorrencias,setOcorrencias]=useState({M2:null,M3:null});
@@ -4515,6 +4516,7 @@ export default function App() {
             {notasComum>0&&<button onClick={()=>setTela("equipamentos")} style={{background:"rgba(240,165,0,0.18)",border:`1px solid ${C.warningLight}`,color:C.warningLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>⚡{notasComum}</button>}
             {totalNotas>0&&<button onClick={()=>setTela("equipamentos")} style={{background:"rgba(232,51,58,0.18)",border:`1px solid ${C.dangerLight}`,color:C.dangerLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🗒{totalNotas}</button>}
             <button onClick={()=>setModoVisao("dashboard")} style={{background:"rgba(80,144,255,0.12)",border:`1px solid ${C.blueLight}55`,color:C.blueLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🖥️</button>
+            {perfil?.funcao==="dev" && <button onClick={irPG} title="Ir para o VÉRTICE PG" style={{background:"rgba(0,240,255,0.12)",border:"1px solid rgba(0,240,255,0.35)",color:"#00F0FF",borderRadius:20,padding:"3px 10px",fontSize:10,fontWeight:800,cursor:"pointer",letterSpacing:"0.04em"}}>PG</button>}
             <div style={{display:"flex",alignItems:"center",gap:4}}>
               <button onClick={()=>setModalSinal(true)} style={{background:"none",border:"none",cursor:"pointer",padding:"2px 4px",display:"flex",alignItems:"center",gap:4}}>
                 {(()=>{const oc=ocMaisCritica(ocorrencias);const cor=oc?.cor==="vermelho"?C.dangerLight:oc?.cor==="amarelo"?C.warningLight:C.accentLight;return <span style={{fontSize:18,filter:`drop-shadow(0 0 4px ${cor})`}}>🚦</span>;})()}
