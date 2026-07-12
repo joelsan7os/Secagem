@@ -31,3 +31,42 @@ export function anotarDia(diaEscala){
     hora, letraRotacao: letraNoTurno(diaEscala.d,hora),
     pessoas: pessoas.map(p=>anotarPessoa(p,diaEscala.d,hora)) })) };
 }
+
+// ─── skillsDe — deriva função, lotação e treinamentos de um operador ─────────
+// Usado pela FichaOperador (escalaTela). Deriva tudo dos campos já existentes
+// no registro (area, fab, tags); não há cadastro individual de validade.
+const _AREA_LABEL = {
+  painel: "Operador de Painel",
+  parte_umida: "Parte Úmida / Tancagem",
+  secador_cortadeira: "Secador / Cortadeira",
+  enfardamento: "Enfardamento",
+};
+const _TAG_TREINO = {
+  empilhadeira: "Empilhadeira",
+  brigadista: "Brigadista",
+  facilitador_pg: "Facilitador PG",
+  ponte: "Ponte Rolante",
+};
+// treinamentos-base por área (pré-requisitos assumidos em dia antes da PG)
+const _AREA_TREINO = {
+  parte_umida: ["NR-33", "NR-35"],
+  secador_cortadeira: ["NR-33", "NR-35"],
+  painel: [],
+  enfardamento: [],
+};
+export function skillsDe(op){
+  if(!op) return { funcao:"—", letra:null, lotacao:"—", operaAmbas:false, treinamentos:[] };
+  const funcao = op.tipo === "administrativo"
+    ? (op.cargo || "Administrativo")
+    : (_AREA_LABEL[op.area] || op.area || "—");
+  const base = _AREA_TREINO[op.area] || [];
+  const dasTags = (op.tags || []).map(t => _TAG_TREINO[t]).filter(Boolean);
+  const treinamentos = [...new Set([...base, ...dasTags])];
+  return {
+    funcao,
+    letra: op.letra || null,
+    lotacao: op.fab || "—",
+    operaAmbas: false, // distinção H1/H2 mantida; sem sobreposição cadastrada
+    treinamentos,
+  };
+}
