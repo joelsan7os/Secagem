@@ -6,6 +6,7 @@ import { db, doc, setDoc, onSnapshot } from "../firebase";
 import { PG_ESCALA } from "./pgPlano";
 import { PG_EQUIPE, anotarPessoa, resolverNome, skillsDe } from "./pgEquipe";
 import { letraNoTurno } from "./pgRotacao";
+import { PG_POSTOS } from "./pgBiblioteca";
 
 const C = {
   bg:"#04111D", card:"#0A1929", surface:"#071828",
@@ -17,12 +18,56 @@ const NOMES = PG_EQUIPE.map(o=>o.nome).sort();
 const dh = s => { const d=new Date(s+"T12:00"); return `${["DOM","SEG","TER","QUA","QUI","SEX","SÁB"][d.getDay()]} ${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`; };
 const clone = e => e.map(d=>({ d:d.d, t:d.t.map(([h,ps])=>[h, ps.map(p=>[...p])]) }));
 
+// ── Geração de escala pela rotação + postos da Biblioteca ────────────────────
+// Regra do projeto: escolhe-se o período livre → a rotação determina a letra de
+// cada turno → os nomes vêm do registro (PG_EQUIPE) daquela letra, na quantidade
+// que os PG_POSTOS sugerem. É sugestão: tudo permanece editável depois.
+const HORAS_TURNO = ["00:00","08:00","16:00"];
+const totalSugeridoNoTurno = hora => {
+  const k = hora.slice(0,2); // "00" | "08" | "16"
+  return PG_POSTOS.reduce((s,posto)=> s + (posto.sugestaoPorTurno?.[k] || 0), 0);
+};
+// operadores da letra, priorizando variedade de área (1 por área antes de repetir)
+const operadoresDaLetra = (letra, quantidade) => {
+  const daLetra = PG_EQUIPE.filter(o=>o.tipo==="turnista" && o.letra===letra);
+  const porArea = {};
+  daLetra.forEach(o=>{ (porArea[o.area||"_"]=porArea[o.area||"_"]||[]).push(o); });
+  const filas = Object.values(porArea);
+  const out = [];
+  let i = 0;
+  while(out.length < quantidade && filas.some(f=>f.length)){
+    const fila = filas[i % filas.length];
+    if(fila.length) out.push(fila.shift());
+    i++;
+  }
+  return out.slice(0, quantidade).map(o=>[o.nome]);
+};
+function gerarEscala(iniISO, fimISO){
+  if(!iniISO || !fimISO) return null;
+  const ini = new Date(iniISO+"T12:00"), fim = new Date(fimISO+"T12:00");
+  if(fim < ini) return null;
+  const dias = [];
+  for(let d=new Date(ini); d<=fim; d.setDate(d.getDate()+1)){
+    const dataISO = d.toISOString().slice(0,10);
+    const t = HORAS_TURNO.map(hora=>{
+      const letra = letraNoTurno(dataISO, hora);
+      const qtd = totalSugeridoNoTurno(hora);
+      return [hora, qtd>0 ? operadoresDaLetra(letra, qtd) : []];
+    });
+    dias.push({ d:dataISO, t });
+  }
+  return dias;
+}
+
 export default function EscalaTela(){
   const [escala, setEscala] = useState(PG_ESCALA);
   const [idx, setIdx] = useState(()=>{ const h=new Date().toISOString().slice(0,10); const i=PG_ESCALA.findIndex(e=>e.d===h); return i>=0?i:0; });
   const [addTurno, setAddTurno] = useState(null); // índice do turno em modo "adicionar"
   const [novoNome, setNovoNome] = useState(""); const [novaFn, setNovaFn] = useState("");
   const [ficha, setFicha] = useState(null); // {p, a, dia, hora} operador clicado
+  const [gerarAberto, setGerarAberto] = useState(false);
+  const [gIni, setGIni] = useState(""); const [gFim, setGFim] = useState("");
+  const [confirmarGeracao, setConfirmarGeracao] = useState(null); // escala prévia aguardando confirmação
 
   useEffect(()=>{
     const unsub = onSnapshot(doc(db,"pg_escala_h2","registro"), snap=>{
@@ -61,11 +106,54 @@ export default function EscalaTela(){
     mut(d=>{ const p=[novoNome.trim()]; if(novaFn.trim()) p.push(novaFn.trim()); d.t[ti][1].push(p); });
     setNovoNome(""); setNovaFn(""); setAddTurno(null);
   };
+  const preGerar = () => { const nova = gerarEscala(gIni, gFim); if(nova?.length) setConfirmarGeracao(nova); };
+  const aplicarGeracao = () => {
+    if(!confirmarGeracao) return;
+    salvar(confirmarGeracao); setIdx(0);
+    setConfirmarGeracao(null); setGerarAberto(false);
+  };
 
   if(!dia) return <div style={{color:C.textDim,fontSize:12}}>Sem escala.</div>;
 
   return (
     <>
+      {/* gerar escala por período (rotação + postos da Biblioteca) */}
+      <div style={{marginBottom:10,border:`1px solid ${C.borderPG}`,borderRadius:12,overflow:"hidden"}}>
+        <button onClick={()=>setGerarAberto(v=>!v)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(0,240,255,.05)",border:"none",color:C.cyan,padding:"9px 12px",cursor:"pointer",fontFamily:"monospace",fontSize:10.5,fontWeight:800,letterSpacing:".12em"}}>
+          <span>GERAR ESCALA POR PERÍODO</span><span>{gerarAberto?"▾":"▸"}</span>
+        </button>
+        {gerarAberto && (
+          <div style={{padding:"11px 12px",background:"rgba(0,0,0,.2)"}}>
+            <div style={{fontSize:10.5,color:C.textMuted,lineHeight:1.5,marginBottom:9}}>
+              A rotação 6×4 define a letra de cada turno no período; os nomes vêm do registro do time naquela letra, na quantidade sugerida pelos postos. Você ajusta tudo depois.
+            </div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
+              <label style={{display:"flex",flexDirection:"column",gap:3}}>
+                <span style={{fontFamily:"monospace",fontSize:8.5,color:C.textDim,letterSpacing:".1em"}}>INÍCIO</span>
+                <input type="date" value={gIni} onChange={e=>setGIni(e.target.value)} style={{background:C.bg,border:`1px solid ${C.borderPG}`,color:C.white,borderRadius:7,padding:"6px 8px",fontSize:12,colorScheme:"dark"}}/>
+              </label>
+              <label style={{display:"flex",flexDirection:"column",gap:3}}>
+                <span style={{fontFamily:"monospace",fontSize:8.5,color:C.textDim,letterSpacing:".1em"}}>TÉRMINO</span>
+                <input type="date" value={gFim} onChange={e=>setGFim(e.target.value)} style={{background:C.bg,border:`1px solid ${C.borderPG}`,color:C.white,borderRadius:7,padding:"6px 8px",fontSize:12,colorScheme:"dark"}}/>
+              </label>
+              <button onClick={preGerar} disabled={!gIni||!gFim} style={{cursor:(!gIni||!gFim)?"default":"pointer",background:(!gIni||!gFim)?"rgba(255,255,255,.06)":C.cyan,color:(!gIni||!gFim)?C.textDim:C.bg,border:"none",borderRadius:7,padding:"7px 14px",fontSize:12.5,fontWeight:800}}>Gerar</button>
+            </div>
+            {confirmarGeracao && (
+              <div style={{marginTop:11,padding:"10px",background:"rgba(255,193,7,.06)",border:`1px solid ${C.warning}55`,borderRadius:9}}>
+                <div style={{fontSize:11.5,color:C.white,fontWeight:700,marginBottom:3}}>Substituir a escala atual?</div>
+                <div style={{fontSize:10.5,color:C.textMuted,lineHeight:1.5,marginBottom:9}}>
+                  {confirmarGeracao.length} dias gerados · {confirmarGeracao.reduce((n,d)=>n+d.t.reduce((m,[,ps])=>m+ps.length,0),0)} alocações. A escala atual será sobrescrita (a semente do book continua disponível ao recarregar).
+                </div>
+                <div style={{display:"flex",gap:7}}>
+                  <button onClick={aplicarGeracao} style={{cursor:"pointer",background:C.accent,color:C.bg,border:"none",borderRadius:7,padding:"7px 14px",fontSize:12.5,fontWeight:800}}>Substituir</button>
+                  <button onClick={()=>setConfirmarGeracao(null)} style={{cursor:"pointer",background:"none",border:`1px solid ${C.borderPG}`,color:C.textDim,borderRadius:7,padding:"7px 12px",fontSize:12.5}}>Cancelar</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* navegação por dia */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
         <button onClick={()=>setIdx(Math.max(0,idx-1))} disabled={idx===0} style={navBtn(idx===0)}>‹</button>
