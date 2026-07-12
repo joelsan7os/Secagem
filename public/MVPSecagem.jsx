@@ -109,15 +109,15 @@ const checklistM2 = [
   { id:"m2c21", secao:"Prensas",  item:"Pressão WED ZONE – zonas 1 a 5",                        ref:"2/1,5/1/1,5/2", unit:"ok/ñok",  tipo:"ok_nok"  },
   { id:"m2c22", secao:"Prensas",  item:"Pressão régua vedação COUCH",                           ref:"0,85 e 0,5",    unit:"bar",     tipo:"valor"   },
   { id:"m2c23", secao:"Prensas",  item:"Pressão régua vedação PICK UP",                         ref:"0,75 e 0,75",   unit:"bar",     tipo:"valor"   },
-  { id:"m2c24", secao:"Prensas",  item:"Vazão água rolo COUCH",                                 ref:"—",             unit:"m³/h",    tipo:"valor"   , medidaSempre:true },
-  { id:"m2c25", secao:"Prensas",  item:"Vazão água rolo PICK UP",                               ref:"—",             unit:"m³/h",    tipo:"valor"   , medidaSempre:true },
-  { id:"m2c26", secao:"Prensas",  item:"Pressão Lump Breaker",                                  ref:"25",            unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
-  { id:"m2c27", secao:"Prensas",  item:"Pressão 1ª prensa",                                     ref:"55",            unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
-  { id:"m2c28", secao:"Prensas",  item:"Pressão 2ª prensa",                                     ref:"151",           unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
-  { id:"m2c29", secao:"Prensas",  item:"Pressão 3ª prensa",                                     ref:"1200",          unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
-  { id:"m2c30", secao:"Rolos",    item:"Passe Rolo curvo após 2ª Prensa (32-21-0-10-45)",        ref:"1",             unit:"%",       tipo:"valor"   , medidaSempre:true },
-  { id:"m2c31", secao:"Rolos",    item:"Passe PRIME PRESS",                                     ref:"1,6",           unit:"%",       tipo:"valor"   , medidaSempre:true },
-  { id:"m2c32", secao:"Rolos",    item:"Passe Rolo curvo após 3ª Prensa (32-21-0-10-78)",        ref:"0,2",           unit:"%",       tipo:"valor"   , medidaSempre:true },
+  { id:"m2c24", secao:"Prensas",  item:"Vazão água rolo COUCH",                                 ref:"—",             unit:"m³/h",    tipo:"valor"   },
+  { id:"m2c25", secao:"Prensas",  item:"Vazão água rolo PICK UP",                               ref:"—",             unit:"m³/h",    tipo:"valor"   },
+  { id:"m2c26", secao:"Prensas",  item:"Pressão Lump Breaker",                                  ref:"25",            unit:"kN/m",    tipo:"valor"   },
+  { id:"m2c27", secao:"Prensas",  item:"Pressão 1ª prensa",                                     ref:"55",            unit:"kN/m",    tipo:"valor"   },
+  { id:"m2c28", secao:"Prensas",  item:"Pressão 2ª prensa",                                     ref:"151",           unit:"kN/m",    tipo:"valor"   },
+  { id:"m2c29", secao:"Prensas",  item:"Pressão 3ª prensa",                                     ref:"1200",          unit:"kN/m",    tipo:"valor"   },
+  { id:"m2c30", secao:"Rolos",    item:"Passe Rolo curvo após 2ª Prensa (32-21-0-10-45)",        ref:"1",             unit:"%",       tipo:"valor"   },
+  { id:"m2c31", secao:"Rolos",    item:"Passe PRIME PRESS",                                     ref:"1,6",           unit:"%",       tipo:"valor"   },
+  { id:"m2c32", secao:"Rolos",    item:"Passe Rolo curvo após 3ª Prensa (32-21-0-10-78)",        ref:"0,2",           unit:"%",       tipo:"valor"   },
   { id:"m2c33", secao:"Telas",    item:"Chuveiro leque tela superior entupido?",                ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
   { id:"m2c34", secao:"Telas",    item:"Chuveiro leque tela inferior entupido?",                ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
   { id:"m2c35", secao:"Feltros",  item:"Feltro pickup – chuveiro químico entupido?",            ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
@@ -149,15 +149,15 @@ const checklistM3 = [
   { id:"m3c21", secao:"Prensas",  item:"Pressão WED ZONE – zonas 1 a 5",                        ref:"2/1,5/1/1,5/2", unit:"ok/ñok",  tipo:"ok_nok"  },
   { id:"m3c22", secao:"Prensas",  item:"Pressão régua vedação COUCH",                           ref:"0,9 e 0,7",     unit:"bar",     tipo:"valor"   },
   { id:"m3c23", secao:"Prensas",  item:"Pressão régua vedação PICK UP",                         ref:"0,75 e 0,7",    unit:"bar",     tipo:"valor"   },
-  { id:"m3c24", secao:"Prensas",  item:"Vazão água rolo COUCH",                                 ref:"—",             unit:"m³/h",    tipo:"valor"   , medidaSempre:true },
-  { id:"m3c25", secao:"Prensas",  item:"Vazão água rolo PICK UP",                               ref:"—",             unit:"m³/h",    tipo:"valor"   , medidaSempre:true },
-  { id:"m3c26", secao:"Prensas",  item:"Pressão Lump Breaker",                                  ref:"25",            unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
-  { id:"m3c27", secao:"Prensas",  item:"Pressão 1ª prensa",                                     ref:"55",            unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
-  { id:"m3c28", secao:"Prensas",  item:"Pressão 2ª prensa",                                     ref:"150",           unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
-  { id:"m3c29", secao:"Prensas",  item:"Pressão 3ª prensa",                                     ref:"1200",          unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
-  { id:"m3c30", secao:"Rolos",    item:"Passe Rolo curvo após 2ª Prensa (33-21-0-10-45)",        ref:"1",             unit:"%",       tipo:"valor"   , medidaSempre:true },
-  { id:"m3c31", secao:"Rolos",    item:"Passe PRIME PRESS",                                     ref:"1,6",           unit:"%",       tipo:"valor"   , medidaSempre:true },
-  { id:"m3c32", secao:"Rolos",    item:"Passe Rolo curvo após 3ª Prensa (33-21-0-10-78)",        ref:"0,2",           unit:"%",       tipo:"valor"   , medidaSempre:true },
+  { id:"m3c24", secao:"Prensas",  item:"Vazão água rolo COUCH",                                 ref:"—",             unit:"m³/h",    tipo:"valor"   },
+  { id:"m3c25", secao:"Prensas",  item:"Vazão água rolo PICK UP",                               ref:"—",             unit:"m³/h",    tipo:"valor"   },
+  { id:"m3c26", secao:"Prensas",  item:"Pressão Lump Breaker",                                  ref:"25",            unit:"kN/m",    tipo:"valor"   },
+  { id:"m3c27", secao:"Prensas",  item:"Pressão 1ª prensa",                                     ref:"55",            unit:"kN/m",    tipo:"valor"   },
+  { id:"m3c28", secao:"Prensas",  item:"Pressão 2ª prensa",                                     ref:"150",           unit:"kN/m",    tipo:"valor"   },
+  { id:"m3c29", secao:"Prensas",  item:"Pressão 3ª prensa",                                     ref:"1200",          unit:"kN/m",    tipo:"valor"   },
+  { id:"m3c30", secao:"Rolos",    item:"Passe Rolo curvo após 2ª Prensa (33-21-0-10-45)",        ref:"1",             unit:"%",       tipo:"valor"   },
+  { id:"m3c31", secao:"Rolos",    item:"Passe PRIME PRESS",                                     ref:"1,6",           unit:"%",       tipo:"valor"   },
+  { id:"m3c32", secao:"Rolos",    item:"Passe Rolo curvo após 3ª Prensa (33-21-0-10-78)",        ref:"0,2",           unit:"%",       tipo:"valor"   },
   { id:"m3c33", secao:"Telas",    item:"Chuveiro leque tela superior entupido?",                ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
   { id:"m3c34", secao:"Telas",    item:"Chuveiro leque tela inferior entupido?",                ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
   { id:"m3c35", secao:"Feltros",  item:"Feltro pickup – chuveiro químico entupido?",            ref:"—",             unit:"ok/ñok", tipo:"ok_nok" },
@@ -2286,7 +2286,6 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
   const matricula=storageGet("op_config")?.matricula||"";
   const [data,setData]=useState(hoje);
   const [valores,setValores]=useState({});
-  const [medidas,setMedidas]=useState({});
   const [fotos,setFotos]=useState({});
   const [obs,setObs]=useState("");
   const [nokAlerta,setNokAlerta]=useState(null);
@@ -2304,8 +2303,6 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
   React.useEffect(()=>{
     const v=getLastValores(tipoId,maquina);
     if(Object.keys(v).length>0) setValores(v);
-    const m=getLastMedidas(tipoId,maquina);
-    if(Object.keys(m).length>0) setMedidas(m);
   },[tipoId,maquina]);
 
   const getStepRange=(refStr)=>{
@@ -2335,22 +2332,13 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
     if(!entry.items)return{};
     return entry.items.reduce((acc,i)=>{if(i.resp&&i.resp!=="ok"&&i.resp!=="nok"&&i.resp!=="sim"&&i.resp!=="nao")acc[i.id]=i.resp;return acc;},{});
   };
-  const getLastMedidas=(tid,maq)=>{
-    const entry=[...historico]
-      .filter(h=>h.tipoId===tid&&(h.maquina===maq||h.maquina==="M2/M3"))
-      .sort((a,b)=>b.id-a.id)[0];
-    if(!entry)return{};
-    if(entry.medidas&&typeof entry.medidas==="object")return{...entry.medidas};
-    return{};
-  };
-  const setMedida=(id,v)=>{setMedidas(p=>({...p,[id]:v}));setSalvo(false);};
   const isItemNok=(item,val)=>{
     if(!val)return false;
     if(item.tipo==="sim_nao"){const ok=item.respostaOk||"sim";return val!==ok;}
     return["nok","atencao","critico","desvio"].includes(val);
   };
-  const trocar=m=>{setMaquina(m);setValores(getLastValores(tipoId,m));setMedidas(getLastMedidas(tipoId,m));setFotos({});setSalvo(false);setVerificados(new Set());};
-  const trocarTipo=id=>{setTipoId(id);setValores(getLastValores(id,maquina));setMedidas(getLastMedidas(id,maquina));setFotos({});setSalvo(false);setSelectorAberto(false);setVerificados(new Set());};
+  const trocar=m=>{setMaquina(m);setValores(getLastValores(tipoId,m));setFotos({});setSalvo(false);setVerificados(new Set());};
+  const trocarTipo=id=>{setTipoId(id);setValores(getLastValores(id,maquina));setFotos({});setSalvo(false);setSelectorAberto(false);setVerificados(new Set());};
   const items=tipo?tipo.getItems(maquina):[];
   const secoes=items.reduce((acc,i)=>{if(!acc[i.secao])acc[i.secao]=[];acc[i.secao].push(i);return acc;},{});
   const setVal=(id,v)=>{setValores(p=>({...p,[id]:v}));setSalvo(false);};
@@ -2403,7 +2391,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
 
   const handleFinalizar=()=>{
     if(preenchidos<total)return;
-    const registro={id:Date.now(),tipoId:tipoId||"rotina",tipoLabel:tipo?.label||"",maquina:tipo?.porMaquina?maquina:"M2/M3",turno,letra,data,opPU,matricula,opPainel,obs,noks,total,valores:{...valores},medidas:{...medidas},fotos:{...fotos},items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:valores[i.id]||"",medida:medidas[i.id]||"",obs:passagemNokDados[i.id]?.obs||obsNok[i.id]||"",valorPassagem:passagemNokDados[i.id]?.valor||"",fotos:(fotos[i.id]||[])}))};
+    const registro={id:Date.now(),tipoId:tipoId||"rotina",tipoLabel:tipo?.label||"",maquina:tipo?.porMaquina?maquina:"M2/M3",turno,letra,data,opPU,matricula,opPainel,obs,noks,total,valores:{...valores},fotos:{...fotos},items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:valores[i.id]||"",obs:passagemNokDados[i.id]?.obs||obsNok[i.id]||"",valorPassagem:passagemNokDados[i.id]?.valor||"",fotos:(fotos[i.id]||[])}))};
     onSalvar(registro);setSalvo(true);
   };
 
@@ -2443,8 +2431,8 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
         </div>
       )}
       {nokAlerta&&(
-        <div onClick={()=>{setNokAlerta(null);setNokGravidade(null);setNokObs("");}} style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:C.surface,border:`1px solid ${nokGravidade==="critico"?C.dangerLight:nokGravidade==="atencao"?C.warningLight:C.dangerLight}66`,borderRadius:"18px 18px 0 0",padding:24,width:"100%",maxWidth:600}}>
+        <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:C.surface,border:`1px solid ${nokGravidade==="critico"?C.dangerLight:nokGravidade==="atencao"?C.warningLight:C.dangerLight}66`,borderRadius:"18px 18px 0 0",padding:24,width:"100%",maxWidth:600}}>
             <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"flex-start"}}>
               <span style={{fontSize:22}}>{nokGravidade==="critico"?"🔴":nokGravidade==="atencao"?"🟡":"⚠️"}</span>
               <div>
@@ -2455,13 +2443,10 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
               </div>
             </div>
             {nokGravidade===null?(
-              <>
-                <div style={{display:"flex",gap:10}}>
-                  <button onClick={()=>{setVal(nokAlerta.id,"atencao");setNokGravidade("atencao");}} style={{flex:1,padding:13,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,background:C.warning,border:"none",color:"#fff"}}>⚠ Atenção</button>
-                  <button onClick={()=>{setVal(nokAlerta.id,"critico");setNokGravidade("critico");}} style={{flex:1,padding:13,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,background:C.danger,border:"none",color:"#fff"}}>🔴 Crítico</button>
-                </div>
-                <button onClick={()=>{setNokAlerta(null);setNokGravidade(null);setNokObs("");}} style={{width:"100%",marginTop:12,padding:10,borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:12,background:"transparent",border:`1px solid ${C.border}`,color:C.textMuted}}>Cancelar</button>
-              </>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>{setVal(nokAlerta.id,"atencao");setNokGravidade("atencao");}} style={{flex:1,padding:13,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,background:C.warning,border:"none",color:"#fff"}}>⚠ Atenção</button>
+                <button onClick={()=>{setVal(nokAlerta.id,"critico");setNokGravidade("critico");}} style={{flex:1,padding:13,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,background:C.danger,border:"none",color:"#fff"}}>🔴 Crítico</button>
+              </div>
             ):(
               <>
                 <textarea value={nokObs} onChange={e=>setNokObs(e.target.value)} rows={3}
@@ -2765,49 +2750,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                       </>
                     )}
                       {item.tipo==="sim_nao"&&<><Btn id={item.id} opcao="sim" label="SIM" isOk={item.respostaOk==="nao"?false:true}/><Btn id={item.id} opcao="nao" label="NÃO" isOk={item.respostaOk==="nao"?true:false}/></>}
-                      {item.tipo==="valor"&&(item.medidaSempre?(()=>{
-                        const{step,min,max}=getStepRange(item.ref);
-                        const dec=step<1?1:0;
-                        const rawMed=medidas[item.id]||"";
-                        const numMed=parseFloat((rawMed||"").replace(",","."))||parseRefNum(item.ref);
-                        const adj=(d)=>{
-                          const n=Math.min(max,Math.max(min,parseFloat((numMed+d).toFixed(dec))));
-                          setMedida(item.id,n.toString().replace(".",","));
-                        };
-                        const status=valores[item.id];
-                        return (
-                          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                            <button onClick={()=>setVal(item.id,status==="ok"?undefined:"ok")}
-                              style={{padding:"5px 11px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",transition:"all .15s",
-                                border:status==="ok"?"none":`1px solid ${C.border}`,
-                                background:status==="ok"?C.success:C.tagBg,
-                                color:status==="ok"?"#fff":C.textMuted}}>OK</button>
-                            <button onClick={()=>setVal(item.id,status==="nok"?undefined:"nok")}
-                              style={{padding:"5px 11px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",transition:"all .15s",
-                                border:status==="nok"?"none":`1px solid ${C.border}`,
-                                background:status==="nok"?C.danger:C.tagBg,
-                                color:status==="nok"?"#fff":C.textMuted}}>NOK</button>
-                            <div onClick={e=>e.stopPropagation()} style={{display:"flex",alignItems:"center",gap:3}}>
-                              <button onClick={()=>adj(-step)} style={{width:28,height:28,borderRadius:7,border:`1px solid ${C.border}`,background:C.tagBg,color:C.text,fontSize:16,fontWeight:700,cursor:"pointer",lineHeight:1}}>−</button>
-                              {editandoValor===item.id?(
-                                <input autoFocus type="text" inputMode="decimal"
-                                  value={rawMed||numMed.toFixed(dec)}
-                                  onChange={e=>setMedida(item.id,e.target.value)}
-                                  onFocus={e=>e.target.select()}
-                                  onBlur={()=>setEditandoValor(null)}
-                                  onKeyDown={e=>{if(e.key==="Enter")setEditandoValor(null);}}
-                                  style={{...inputStyle,width:58,textAlign:"center",padding:"3px 6px",fontSize:13,fontWeight:800}}/>
-                              ):(
-                                <button onClick={()=>setEditandoValor(item.id)} style={{background:C.tagBg,border:`1px solid ${C.border}`,borderRadius:7,padding:"3px 8px",minWidth:50,textAlign:"center",cursor:"pointer"}}>
-                                  <div style={{color:C.text,fontSize:12,fontWeight:900}}>{rawMed||numMed.toFixed(dec)}</div>
-                                  <div style={{color:C.textDim,fontSize:8}}>{item.unit}</div>
-                                </button>
-                              )}
-                              <button onClick={()=>adj(+step)} style={{width:28,height:28,borderRadius:7,border:`1px solid ${C.border}`,background:C.tagBg,color:C.text,fontSize:16,fontWeight:700,cursor:"pointer",lineHeight:1}}>+</button>
-                            </div>
-                          </div>
-                        );
-                      })():(tipo?.passagem?(
+                      {item.tipo==="valor"&&(tipo?.passagem?(
                       <>
                         <button onClick={()=>{setVal(item.id,"ok");setPassagemNokDados(p=>{const n={...p};delete n[item.id];return n;});setPassagemNokAberto(null);}}
                           style={{padding:"5px 11px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",transition:"all .15s",
@@ -2878,7 +2821,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                             setPassagemNokAberto(item.id);
                           }} style={{padding:"5px 11px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",transition:"all .15s",border:`1px solid ${C.border}`,background:C.tagBg,color:C.textMuted}}>NOK</button>
                         )}
-                      </>))}
+                      </>)}
                       {item.tipo==="valor_direto"&&(()=>{
                         const v=valores[item.id]||"";
                         const n=parseFloat(String(v).replace(",","."));
@@ -4249,7 +4192,7 @@ export default function App() {
   const [tela,setTela]=useState("dashboard");
   const [chuveiroAlvo,setChuveiroAlvo]=useState(null); // {maq,id} para abrir direto
   const [modalChuveiroHome,setModalChuveiroHome]=useState(null); // {maq,id} registro rápido sem sair da Home
-  const [modoVisao,setModoVisao]=useState("app"); // "app" | "dashboard"
+  const [modoVisao,setModoVisao]=useState("app"); const irPG=()=>{try{localStorage.setItem("vertice_modo","pg");}catch(e){}location.reload();}; // "app" | "dashboard"
   const [historico,setHistorico]=useState(()=>storageGet("historico_h2")||[]);
   const [areaAtiva,setAreaAtiva]=useState("pu");
   const [ocorrencias,setOcorrencias]=useState({M2:null,M3:null});
@@ -4494,6 +4437,7 @@ export default function App() {
             {notasComum>0&&<button onClick={()=>setTela("equipamentos")} style={{background:"rgba(240,165,0,0.18)",border:`1px solid ${C.warningLight}`,color:C.warningLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>⚡{notasComum}</button>}
             {totalNotas>0&&<button onClick={()=>setTela("equipamentos")} style={{background:"rgba(232,51,58,0.18)",border:`1px solid ${C.dangerLight}`,color:C.dangerLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🗒{totalNotas}</button>}
             <button onClick={()=>setModoVisao("dashboard")} style={{background:"rgba(80,144,255,0.12)",border:`1px solid ${C.blueLight}55`,color:C.blueLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🖥️</button>
+            {perfil?.funcao==="dev" && <button onClick={irPG} title="Ir para o VÉRTICE PG" style={{background:"rgba(0,240,255,0.12)",border:"1px solid rgba(0,240,255,0.35)",color:"#00F0FF",borderRadius:20,padding:"3px 10px",fontSize:10,fontWeight:800,cursor:"pointer",letterSpacing:"0.04em"}}>PG</button>}
             <div style={{display:"flex",alignItems:"center",gap:4}}>
               <button onClick={()=>setModalSinal(true)} style={{background:"none",border:"none",cursor:"pointer",padding:"2px 4px",display:"flex",alignItems:"center",gap:4}}>
                 {(()=>{const oc=ocMaisCritica(ocorrencias);const cor=oc?.cor==="vermelho"?C.dangerLight:oc?.cor==="amarelo"?C.warningLight:C.accentLight;return <span style={{fontSize:18,filter:`drop-shadow(0 0 4px ${cor})`}}>🚦</span>;})()}
