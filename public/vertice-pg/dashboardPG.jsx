@@ -576,6 +576,11 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
   const prioridade = (cfgPG.prioridade && cfgPG.prioridade!=="auto") ? cfgPG.prioridade : prioAuto;
   const gravaPrio = v => setDoc(doc(db,"pg_checklist_h2","pg_config"),
     { prioridade:v, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
+
+  // Período editável da PG (bloco 01). Semente = PG_PERIODO do book; overlay em pg_config.periodo.
+  const periodoPG = { ...{ MQ3:PG_PERIODO.MQ3, MQ2:PG_PERIODO.MQ2 }, ...(cfgPG.periodo||{}) };
+  const gravaPeriodo = (maq, campo, valor) => setDoc(doc(db,"pg_checklist_h2","pg_config"),
+    { periodo:{ [maq]:{ ...periodoPG[maq], [campo]:valor } }, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
   const zonaAcao = [...atrasadas, ...emRisco, ...criticasAndamento]
     .sort((a,b)=>(b[1]===prioridade?1:0)-(a[1]===prioridade?1:0)).slice(0,8);
 
@@ -905,12 +910,36 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
           </div>
           <Sec num="01" titulo="PERÍODO E FACILITADORES">
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-              {[["MQ3",PG_PERIODO.MQ3],["MQ2",PG_PERIODO.MQ2]].map(([m,p])=>(
-                <div key={m} style={{border:`1px solid ${CORMAQ[m]}44`,borderRadius:10,padding:"8px 10px"}}>
-                  <div style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ[m],letterSpacing:".14em"}}>{m} · {p.ini} → {p.fim}</div>
-                  <div style={{fontFamily:"monospace",fontSize:11.5,fontWeight:800,color:"#FFFFFF",marginTop:3}}>Parada {p.parada}</div>
-                </div>
-              ))}
+              {["MQ3","MQ2"].map(m=>{
+                const p = periodoPG[m] || {};
+                const book = (m==="MQ3"?PG_PERIODO.MQ3:PG_PERIODO.MQ2) || {};
+                // valor ISO só se já preenchido pela gestão (book é dd/mm sem ano → não vira type=date)
+                const isoDe = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? v : "";
+                const dataCampo = (lbl,campoId,ref)=>(
+                  <label style={{display:"flex",flexDirection:"column",gap:2}}>
+                    <span style={{fontFamily:"monospace",fontSize:8,color:C.textDim,letterSpacing:".08em"}}>{lbl} <span style={{color:`${CORMAQ[m]}99`}}>· book {ref}</span></span>
+                    <input type="date" defaultValue={isoDe(p[campoId])} onBlur={e=>{ if(e.target.value!==isoDe(p[campoId])) gravaPeriodo(m,campoId,e.target.value); }}
+                      style={{background:C.bg,border:`1px solid ${CORMAQ[m]}44`,color:"#FFFFFF",borderRadius:6,padding:"5px 6px",fontSize:11,colorScheme:"dark"}}/>
+                  </label>
+                );
+                return (
+                  <div key={m} style={{border:`1px solid ${CORMAQ[m]}44`,borderRadius:10,padding:"8px 10px"}}>
+                    <div style={{fontFamily:"monospace",fontSize:9.5,color:CORMAQ[m],letterSpacing:".14em",marginBottom:7}}>{m}</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      {dataCampo("INÍCIO","ini",book.ini||"—")}
+                      {dataCampo("TÉRMINO","fim",book.fim||"—")}
+                      <label style={{display:"flex",flexDirection:"column",gap:2}}>
+                        <span style={{fontFamily:"monospace",fontSize:8,color:C.textDim,letterSpacing:".08em"}}>PARADA</span>
+                        <input type="text" defaultValue={p.parada||book.parada||""} onBlur={e=>{ if(e.target.value!==(p.parada||book.parada||"")) gravaPeriodo(m,"parada",e.target.value); }}
+                          style={{background:C.bg,border:`1px solid ${CORMAQ[m]}44`,color:"#FFFFFF",borderRadius:6,padding:"5px 6px",fontSize:11}}/>
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{fontFamily:"monospace",fontSize:9,color:C.textDim,marginBottom:8,lineHeight:1.5}}>
+              Preencha início e término com o ano real; a escala usa o intervalo que cobre as duas máquinas (menor início → maior término). Ajuste manual sempre prevalece.
             </div>
             {PG_FACILITADORES.map(([l,r])=><Linha key={l} l={l} r={r}/>)}
           </Sec>
