@@ -3743,12 +3743,15 @@ function RotaEnfardamentoTela({ onSalvar }) {
 // ─── RelatorioCleaners — relatórios por turno no Histórico ────────────────────
 function HistoricoTela({ historico, areaAtiva, perfil }) {
   const [abaHist,setAbaHist]=useState("reg");
-  const [buscaData,setBuscaData]=useState("");
+  const [dataSel,setDataSel]=useState(()=>new Date().toISOString().slice(0,10));
   const [filtroMaq,setFiltroMaq]=useState("M2");
   const [filtroArea,setFiltroArea]=useState(areaAtiva||"pu");
   const [filtroTipo,setFiltroTipo]=useState("TODOS");
   const [sel,setSel]=useState(null);
   const fmtData=d=>{if(!d)return"—";const[y,m,day]=d.split("-");return`${day}/${m}/${y}`;};
+  const diaSemana=d=>{if(!d)return"";const dt=new Date(d+"T12:00");return["DOM","SEG","TER","QUA","QUI","SEX","SÁB"][dt.getDay()];};
+  const passoDia=(delta)=>{const dt=new Date(dataSel+"T12:00");dt.setDate(dt.getDate()+delta);setDataSel(dt.toISOString().slice(0,10));};
+  const ehHoje=dataSel===new Date().toISOString().slice(0,10);
   const LINHAS_M2=["L4","L5"],LINHAS_M3=["L6","L7","L8"];
   const areaDoTipo=id=>CATALOGO.find(c=>c.id===id)?.area||"pu";
   const porMaquina=historico.filter(h=>{
@@ -3758,7 +3761,13 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
   });
   const porArea=porMaquina.filter(h=>areaDoTipo(h.tipoId)===filtroArea);
   const tiposDisponiveis=[{id:"TODOS",label:"Todos os check-lists"},...CATALOGO.filter(c=>c.area===filtroArea).map(c=>({id:c.id,label:c.label})).filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i)];
-  const filtrados=(filtroTipo==="TODOS"?porArea:porArea.filter(h=>h.tipoId===filtroTipo)).filter(h=>!buscaData||h.data===buscaData).sort((a,b)=>b.id-a.id);
+  const filtrados=(filtroTipo==="TODOS"?porArea:porArea.filter(h=>h.tipoId===filtroTipo)).filter(h=>h.data===dataSel).sort((a,b)=>b.id-a.id);
+  // agrupa os registros do dia por tipo de check-list (subgrupos)
+  const gruposPorTipo=(()=>{
+    const mapa={};
+    filtrados.forEach(h=>{(mapa[h.tipoLabel||"Outros"]=mapa[h.tipoLabel||"Outros"]||[]).push(h);});
+    return Object.entries(mapa);
+  })();
   const AREAS_HIST=[{id:"pu",label:"Parte Úmida"},{id:"cs",label:"P. Seca/Cortad."},{id:"enf",label:"Enfardamento"}];
   const [fotoAmp,setFotoAmp]=useState(null);
   const [fotosCarregadas,setFotosCarregadas]=useState({}); // {regId: fotosMap}
@@ -3908,11 +3917,15 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
         );
       })()}
 
-      <div style={{marginBottom:10}}>
-        <label style={{color:C.textDim,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>📅 Buscar por data</label>
-        <div style={{display:"flex",gap:6}}>
-          <input type="date" value={buscaData} onChange={e=>setBuscaData(e.target.value)} style={{...inputStyle,flex:1,colorScheme:"dark",color:buscaData?C.accentLight:C.textMuted,fontWeight:buscaData?700:400,borderColor:buscaData?C.accentLight:C.border,fontFamily:"monospace",fontSize:14,cursor:"pointer"}}/>
-          {buscaData&&<button onClick={()=>setBuscaData("")} style={{padding:"0 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,background:C.danger+"22",border:`1px solid ${C.dangerLight}55`,color:C.dangerLight,whiteSpace:"nowrap"}}>✕ Limpar</button>}
+      <div style={{marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"stretch",gap:6}}>
+          <button onClick={()=>passoDia(-1)} style={{width:44,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:18,background:C.tagBg,border:`1px solid ${C.border}`,color:C.blue,lineHeight:1}}>‹</button>
+          <label style={{flex:1,position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:C.card,border:`1px solid ${ehHoje?C.accentLight+"66":C.border}`,borderRadius:9,padding:"6px 4px",cursor:"pointer"}}>
+            <span style={{color:C.white,fontSize:15,fontWeight:800,fontFamily:"monospace",letterSpacing:".04em"}}>{diaSemana(dataSel)} {fmtData(dataSel)}</span>
+            <span style={{color:ehHoje?C.accentLight:C.textDim,fontSize:9,fontWeight:700,textTransform:"uppercase",marginTop:1}}>{ehHoje?"hoje":"toque para escolher"}</span>
+            <input type="date" value={dataSel} onChange={e=>e.target.value&&setDataSel(e.target.value)} style={{position:"absolute",inset:0,opacity:0,cursor:"pointer",colorScheme:"dark"}}/>
+          </label>
+          <button onClick={()=>passoDia(1)} disabled={ehHoje} style={{width:44,borderRadius:9,cursor:ehHoje?"default":"pointer",fontWeight:800,fontSize:18,background:C.tagBg,border:`1px solid ${C.border}`,color:ehHoje?C.textDim:C.blue,lineHeight:1}}>›</button>
         </div>
       </div>
       <div style={{display:"flex",gap:8,marginBottom:10}}>
@@ -3926,34 +3939,42 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
           {tiposDisponiveis.map(t=>(<option key={t.id} value={t.id}>{t.label}</option>))}
         </select>
       </div>
-      <div style={{color:C.textDim,fontSize:11,marginBottom:8}}>{filtrados.length} registro{filtrados.length!==1?"s":""}</div>
+      <div style={{color:C.textDim,fontSize:11,marginBottom:8}}>{filtrados.length} registro{filtrados.length!==1?"s":""} neste dia</div>
       {filtrados.length===0?(
         <div style={{background:C.card,border:`1px dashed ${C.border}`,borderRadius:12,padding:"36px 20px",textAlign:"center"}}>
           <div style={{fontSize:28,marginBottom:8}}>📋</div>
-          <p style={{color:C.textMuted,fontSize:13,margin:0}}>{historico.length===0?"Nenhum check-list salvo ainda.":"Nenhum resultado para os filtros selecionados."}</p>
+          <p style={{color:C.textMuted,fontSize:13,margin:0}}>{historico.length===0?"Nenhum check-list salvo ainda.":"Nenhum registro em "+fmtData(dataSel)+" para os filtros selecionados."}</p>
         </div>
       ):(
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {filtrados.map(h=>(
-            <div key={h.id} onClick={()=>setSel(h.id)} style={{background:C.card,border:`1px solid ${h.noks>0?C.dangerLight+"44":C.border}`,borderLeft:`3px solid ${h.noks>0?C.dangerLight:C.accentLight}`,borderRadius:11,padding:"13px 14px",cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=h.noks>0?C.dangerLight+"44":C.border}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
-                  <span style={{background:C.blue,color:"#fff",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800}}>{h.linha||`M${h.maquina?.replace("M","")}`}</span>
-                  <span style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:6,padding:"2px 8px",fontSize:10}}>{h.turno}</span>
-                  {h.letra&&<span style={{background:C.accent,color:"#fff",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800}}>{h.letra}</span>}
-                  {h.hora&&<span style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:6,padding:"2px 8px",fontSize:9}}>{h.hora}</span>}
-                </div>
-                {h.noks>0?<span style={{color:C.dangerLight,fontSize:11,fontWeight:800,flexShrink:0}}>⚠ {h.noks}</span>:<span style={{color:C.accentLight,fontSize:11,fontWeight:800,flexShrink:0}}>✓</span>}
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          {gruposPorTipo.map(([tipoLabel,regs])=>(
+            <div key={tipoLabel}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <span style={{color:C.accentLight,fontSize:11,fontWeight:800,letterSpacing:"0.06em",textTransform:"uppercase"}}>{tipoLabel}</span>
+                <span style={{color:C.textDim,fontSize:10,fontFamily:"monospace"}}>· {regs.length}</span>
+                <div style={{flex:1,height:1,background:`linear-gradient(90deg,${C.accentLight}33,transparent)`}}/>
               </div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div>
-                  <span style={{color:C.white,fontWeight:700,fontSize:13,marginRight:8}}>{fmtData(h.data)}</span>
-                  <span style={{background:C.tagBg,border:`1px solid ${C.accentLight}33`,color:C.accentLight,borderRadius:6,padding:"1px 7px",fontSize:9,fontWeight:600}}>{h.tipoLabel}</span>
-                </div>
-                <span style={{color:C.textDim,fontSize:15}}>›</span>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {regs.map(h=>(
+                  <div key={h.id} onClick={()=>setSel(h.id)} style={{background:C.card,border:`1px solid ${h.noks>0?C.dangerLight+"44":C.border}`,borderLeft:`3px solid ${h.noks>0?C.dangerLight:C.accentLight}`,borderRadius:11,padding:"13px 14px",cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=h.noks>0?C.dangerLight+"44":C.border}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                      <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
+                        <span style={{background:C.blue,color:"#fff",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800}}>{h.linha||`M${h.maquina?.replace("M","")}`}</span>
+                        <span style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:6,padding:"2px 8px",fontSize:10}}>{h.turno}</span>
+                        {h.letra&&<span style={{background:C.accent,color:"#fff",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:800}}>{h.letra}</span>}
+                        {h.hora&&<span style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:6,padding:"2px 8px",fontSize:9}}>{h.hora}</span>}
+                      </div>
+                      {h.noks>0?<span style={{color:C.dangerLight,fontSize:11,fontWeight:800,flexShrink:0}}>⚠ {h.noks}</span>:<span style={{color:C.accentLight,fontSize:11,fontWeight:800,flexShrink:0}}>✓</span>}
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{color:C.white,fontWeight:700,fontSize:13}}>{fmtData(h.data)}</span>
+                      <span style={{color:C.textDim,fontSize:15}}>›</span>
+                    </div>
+                    {(h.opPU||h.opPainel)&&<div style={{display:"flex",gap:12,marginTop:6}}>{h.opPU&&<span style={{color:C.textMuted,fontSize:10}}>P.Ú.: {h.opPU}</span>}{h.opPainel&&<span style={{color:C.textMuted,fontSize:10}}>Painel: {h.opPainel}</span>}</div>}
+                    <div style={{background:C.tagBg,borderRadius:3,height:3,marginTop:8,overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,width:`${h.total>0?(h.total-h.noks)/h.total*100:100}%`,background:h.noks>0?C.dangerLight:C.accentLight}}/></div>
+                  </div>
+                ))}
               </div>
-              {(h.opPU||h.opPainel)&&<div style={{display:"flex",gap:12,marginTop:6}}>{h.opPU&&<span style={{color:C.textMuted,fontSize:10}}>P.Ú.: {h.opPU}</span>}{h.opPainel&&<span style={{color:C.textMuted,fontSize:10}}>Painel: {h.opPainel}</span>}</div>}
-              <div style={{background:C.tagBg,borderRadius:3,height:3,marginTop:8,overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,width:`${h.total>0?(h.total-h.noks)/h.total*100:100}%`,background:h.noks>0?C.dangerLight:C.accentLight}}/></div>
             </div>
           ))}
         </div>
@@ -4249,7 +4270,7 @@ export default function App() {
   const [tela,setTela]=useState("dashboard");
   const [chuveiroAlvo,setChuveiroAlvo]=useState(null); // {maq,id} para abrir direto
   const [modalChuveiroHome,setModalChuveiroHome]=useState(null); // {maq,id} registro rápido sem sair da Home
-  const [modoVisao,setModoVisao]=useState("app"); const irPG=()=>{try{localStorage.setItem("vertice_modo","pg");}catch(e){}location.reload();}; // "app" | "dashboard"
+  const [modoVisao,setModoVisao]=useState("app"); // "app" | "dashboard"
   const [historico,setHistorico]=useState(()=>storageGet("historico_h2")||[]);
   const [areaAtiva,setAreaAtiva]=useState("pu");
   const [ocorrencias,setOcorrencias]=useState({M2:null,M3:null});
@@ -4494,7 +4515,6 @@ export default function App() {
             {notasComum>0&&<button onClick={()=>setTela("equipamentos")} style={{background:"rgba(240,165,0,0.18)",border:`1px solid ${C.warningLight}`,color:C.warningLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>⚡{notasComum}</button>}
             {totalNotas>0&&<button onClick={()=>setTela("equipamentos")} style={{background:"rgba(232,51,58,0.18)",border:`1px solid ${C.dangerLight}`,color:C.dangerLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🗒{totalNotas}</button>}
             <button onClick={()=>setModoVisao("dashboard")} style={{background:"rgba(80,144,255,0.12)",border:`1px solid ${C.blueLight}55`,color:C.blueLight,borderRadius:20,padding:"3px 9px",fontSize:10,fontWeight:800,cursor:"pointer"}}>🖥️</button>
-            {perfil?.funcao==="dev" && <button onClick={irPG} title="Ir para o VÉRTICE PG" style={{background:"rgba(0,240,255,0.12)",border:"1px solid rgba(0,240,255,0.35)",color:"#00F0FF",borderRadius:20,padding:"3px 10px",fontSize:10,fontWeight:800,cursor:"pointer",letterSpacing:"0.04em"}}>PG</button>}
             <div style={{display:"flex",alignItems:"center",gap:4}}>
               <button onClick={()=>setModalSinal(true)} style={{background:"none",border:"none",cursor:"pointer",padding:"2px 4px",display:"flex",alignItems:"center",gap:4}}>
                 {(()=>{const oc=ocMaisCritica(ocorrencias);const cor=oc?.cor==="vermelho"?C.dangerLight:oc?.cor==="amarelo"?C.warningLight:C.accentLight;return <span style={{fontSize:18,filter:`drop-shadow(0 0 4px ${cor})`}}>🚦</span>;})()}
