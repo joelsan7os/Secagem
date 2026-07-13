@@ -10,6 +10,8 @@ import { PG_PERIODO, PG_FACILITADORES, PG_LTS, PG_PREMISSAS, PG_MATERIAIS, PG_MA
 import EquipeTela from "./equipeTela";
 import EscalaTela from "./escalaTela";
 import SalaBloqueio from "./salaBloqueio";
+import { gerarCronograma, envelopePeriodo, atividadesDoDia } from "./pgCronograma";
+import { PG_BIBLIOTECA } from "./pgBiblioteca";
 
 const C = {
   bg:"#04111D", accent:"#00E676", cyan:"#00F0FF", blue:"#5090FF",
@@ -25,6 +27,7 @@ const slug = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase(
 const docIdDe = (maq, area) => `${maq}__${slug(area)}`;
 const LIB_MAP = Object.fromEntries(PG_TEMPOS_LIB.map(([nome,dur])=>[slug(nome), dur]));
 const CORMAQ = { MQ2:"#00F0FF", MQ3:"#00E676", GERAL:"#5090FF" };
+const cronBtn = { cursor:"pointer", background:"rgba(255,255,255,.05)", border:`1px solid ${C.borderPG}`, color:C.cyan, borderRadius:5, width:22, height:22, fontSize:12, lineHeight:1, padding:0 };
 const campoS = { width:"100%",boxSizing:"border-box",padding:"6px 9px",borderRadius:7,
   background:"rgba(255,255,255,.04)",border:"1px solid rgba(80,144,255,.3)",
   color:"#FFFFFF",fontSize:11,fontFamily:"monospace",outline:"none" };
@@ -581,6 +584,20 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
   const periodoPG = { ...{ MQ3:PG_PERIODO.MQ3, MQ2:PG_PERIODO.MQ2 }, ...(cfgPG.periodo||{}) };
   const gravaPeriodo = (maq, campo, valor) => setDoc(doc(db,"pg_checklist_h2","pg_config"),
     { periodo:{ [maq]:{ ...periodoPG[maq], [campo]:valor } }, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
+
+  // Cronograma (atividade → data). Vive em pg_checklist_h2/cronograma.
+  const cronograma = (estados["cronograma"] && estados["cronograma"].itens) || [];
+  const _bibNome = Object.fromEntries(PG_BIBLIOTECA.map(a=>[a.id, a.nome]));
+  const salvarCronograma = itens => setDoc(doc(db,"pg_checklist_h2","cronograma"),
+    { itens, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
+  const gerarCron = () => { const it = gerarCronograma(periodoPG); if(it.length) salvarCronograma(it); };
+  const moverItem = (idx, dias) => {
+    const novo = cronograma.map((it,i)=>{ if(i!==idx) return it;
+      const d=new Date(it.data+"T12:00"); d.setDate(d.getDate()+dias);
+      return { ...it, data:d.toISOString().slice(0,10) }; });
+    salvarCronograma(novo);
+  };
+  const removerItem = idx => salvarCronograma(cronograma.filter((_,i)=>i!==idx));
   const zonaAcao = [...atrasadas, ...emRisco, ...criticasAndamento]
     .sort((a,b)=>(b[1]===prioridade?1:0)-(a[1]===prioridade?1:0)).slice(0,8);
 
@@ -942,6 +959,53 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
               Preencha início e término com o ano real; a escala usa o intervalo que cobre as duas máquinas (menor início → maior término). Ajuste manual sempre prevalece.
             </div>
             {PG_FACILITADORES.map(([l,r])=><Linha key={l} l={l} r={r}/>)}
+          </Sec>
+
+          <Sec num="01b" titulo="CRONOGRAMA DE ATIVIDADES">
+            {(()=>{
+              const env = envelopePeriodo(periodoPG);
+              if(!env) return (
+                <div style={{fontSize:11.5,color:C.textMuted,lineHeight:1.5}}>
+                  Defina início e término (com ano) no bloco 01 para gerar o cronograma.
+                </div>
+              );
+              const porData = {};
+              cronograma.forEach((it,i)=>{ (porData[it.data]=porData[it.data]||[]).push({...it,idx:i}); });
+              const datas = Object.keys(porData).sort();
+              return (
+                <>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:10}}>
+                    <button onClick={gerarCron} style={{cursor:"pointer",background:C.cyan,color:C.bg,border:"none",borderRadius:7,padding:"7px 13px",fontSize:12,fontWeight:800}}>
+                      {cronograma.length ? "Regerar" : "Gerar cronograma"}
+                    </button>
+                    <span style={{fontFamily:"monospace",fontSize:9.5,color:C.textDim}}>
+                      {env.ini.split("-").reverse().slice(0,2).join("/")} → {env.fim.split("-").reverse().slice(0,2).join("/")} · {cronograma.length} atividades
+                    </span>
+                  </div>
+                  {!cronograma.length ? (
+                    <div style={{fontSize:11,color:C.textDim}}>Sem cronograma. Clique em Gerar para distribuir as atividades pelo período.</div>
+                  ) : (
+                    <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                      {datas.map(d=>(
+                        <div key={d} style={{border:`1px solid ${C.borderPG}`,borderRadius:9,padding:"7px 9px"}}>
+                          <div style={{fontFamily:"monospace",fontSize:9.5,color:C.cyan,letterSpacing:".1em",marginBottom:5}}>{d.split("-").reverse().join("/")}</div>
+                          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                            {porData[d].map(it=>(
+                              <div key={it.idx} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,.03)",borderRadius:6,padding:"4px 7px"}}>
+                                <span style={{flex:1,fontSize:11,color:"#FFFFFF"}}>{_bibNome[it.atividadeId]||it.atividadeId}</span>
+                                <button onClick={()=>moverItem(it.idx,-1)} title="dia anterior" style={cronBtn}>‹</button>
+                                <button onClick={()=>moverItem(it.idx,1)} title="dia seguinte" style={cronBtn}>›</button>
+                                <button onClick={()=>removerItem(it.idx)} title="remover" style={{...cronBtn,color:C.danger}}>✕</button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </Sec>
           <Sec num="02" titulo="LIBERAÇÕES DE TRABALHO E BLOQUEIO">
             {PG_LTS.map(([l,r])=><Linha key={l} l={l} r={r}/>)}
