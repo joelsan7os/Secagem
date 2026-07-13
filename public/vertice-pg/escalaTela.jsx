@@ -79,7 +79,7 @@ export default function EscalaTela(){
   // envelope do período: lê pg_config.periodo (dashboard) e pré-preenche o gerador
   // com o menor início e o maior término entre MQ2 e MQ3. Só datas ISO já definidas.
   useEffect(()=>{
-    const unsub = onSnapshot(doc(db,"pg_checklist_h2","pg_config"), snap=>{
+    const unsub = onSnapshot(doc(db,"pg_escala_h2","config_periodo"), snap=>{
       const per = snap.data()?.periodo; if(!per) return;
       const iso = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? v : null;
       const inis = [iso(per.MQ3?.ini), iso(per.MQ2?.ini)].filter(Boolean).sort();
