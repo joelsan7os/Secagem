@@ -3212,7 +3212,7 @@ function GraficoEficienciaLimpeza(){
       {/* filtro máquina */}
       <div style={{display:"flex",gap:5,marginBottom:8}}>
         {[{id:"todas",l:"Ambas"},{id:"M2",l:"Máq. 2"},{id:"M3",l:"Máq. 3"}].map(o=>(
-          <button key={o.id} onClick={()=>setMaqF(o.id)} style={{flex:1,padding:"7px 4px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:11,border:`1.5px solid ${maqF===o.id?C.blueLight:C.border}`,background:maqF===o.id?C.blue:C.tagBg,color:maqF===o.id?"#fff":C.textMuted}}>{o.l}</button>
+          <button key={o.id} onClick={()=>setMaqF(o.id)} style={{flex:1,padding:"7px 4px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:11,border:`1.5px solid ${maqF===o.id?"rgba(0,199,102,0.55)":C.border}`,background:maqF===o.id?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":C.tagBg,color:maqF===o.id?"#00975A":C.textMuted}}>{o.l}</button>
         ))}
       </div>
       {/* filtro letra */}
@@ -3357,7 +3357,7 @@ function GraficoEficiencia({ historico }) {
       {/* Seletor de máquina */}
       <div style={{display:"flex",gap:5,marginBottom:8}}>
         {[{id:"ambas",l:"Ambas"},{id:"M2",l:"Máq. 2"},{id:"M3",l:"Máq. 3"}].map(m=>(
-          <button key={m.id} onClick={()=>setMaqFiltro(m.id)} style={{flex:1,padding:"6px 8px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${maqFiltro===m.id?C.blueLight:C.border}`,background:maqFiltro===m.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,color:maqFiltro===m.id?C.white:C.textMuted,transition:"all .15s"}}>{m.l}</button>
+          <button key={m.id} onClick={()=>setMaqFiltro(m.id)} style={{flex:1,padding:"6px 8px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${maqFiltro===m.id?"rgba(0,199,102,0.55)":C.border}`,background:maqFiltro===m.id?`linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))`:C.tagBg,color:maqFiltro===m.id?"#00975A":C.textMuted,transition:"all .15s"}}>{m.l}</button>
         ))}
       </div>
       {/* Seletor de letra */}
@@ -3393,7 +3393,7 @@ function GraficoEficiencia({ historico }) {
       <div style={{display:"flex",gap:10,paddingLeft:30,marginBottom:14}}>
         {dados.map(d=>(
           <div key={d.letra} style={{flex:1,display:"flex",justifyContent:"center"}}>
-            <div style={{width:32,height:32,borderRadius:9,background:d.efic!==null?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,display:"flex",alignItems:"center",justifyContent:"center",color:d.efic!==null?"#fff":C.textDim,fontSize:15,fontWeight:900,boxShadow:d.efic!==null?`0 2px 8px ${C.blueLight}44`:"none"}}>{d.letra}</div>
+            <div style={{width:32,height:32,borderRadius:9,background:d.efic!==null?`linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))`:C.tagBg,display:"flex",alignItems:"center",justifyContent:"center",color:d.efic!==null?"#fff":C.textDim,fontSize:15,fontWeight:900,boxShadow:d.efic!==null?`0 2px 8px ${C.blueLight}44`:"none"}}>{d.letra}</div>
           </div>
         ))}
       </div>
@@ -3880,7 +3880,7 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
       <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"8px 0 12px"}}/>
       <div style={{display:"flex",gap:6,marginBottom:14}}>
         {[{id:"reg",l:"REGISTROS"},{id:"ana",l:"EFICIENCIA"},{id:"avarias",l:"AVARIAS"}].map(a=>(
-          <button key={a.id} onClick={()=>setAbaHist(a.id)} style={{flex:1,padding:"8px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.03em",background:abaHist===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${abaHist===a.id?"rgba(255,255,255,0.55)":C.border}`,color:abaHist===a.id?"#fff":C.textMuted,boxShadow:abaHist===a.id?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>{a.l}</button>
+          <button key={a.id} onClick={()=>setAbaHist(a.id)} style={{flex:1,padding:"8px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.03em",background:abaHist===a.id?`linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))`:C.tagBg,border:`2px solid ${abaHist===a.id?"rgba(0,199,102,0.55)":C.border}`,color:abaHist===a.id?"#00975A":C.textMuted,boxShadow:abaHist===a.id?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>{a.l}</button>
         ))}
       </div>
       {abaHist==="ana"?(
@@ -3930,7 +3930,7 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
         </div>
       </div>
       <div style={{display:"flex",gap:8,marginBottom:10}}>
-        {["M2","M3"].map(m=>(<button key={m} onClick={()=>{setFiltroMaq(m);setFiltroTipo("TODOS");}} style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:filtroMaq===m?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${filtroMaq===m?"rgba(255,255,255,0.55)":C.border}`,color:filtroMaq===m?"#fff":C.textMuted,boxShadow:filtroMaq===m?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>Máquina {m.replace("M","")}<div style={{fontSize:9,fontWeight:400,marginTop:2,opacity:.7}}>{m==="M2"?"L4 · L5":"L6 · L7 · L8"}</div></button>))}
+        {["M2","M3"].map(m=>(<button key={m} onClick={()=>{setFiltroMaq(m);setFiltroTipo("TODOS");}} style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:filtroMaq===m?`linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))`:C.tagBg,border:`2px solid ${filtroMaq===m?"rgba(0,199,102,0.55)":C.border}`,color:filtroMaq===m?"#00975A":C.textMuted,boxShadow:filtroMaq===m?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>Máquina {m.replace("M","")}<div style={{fontSize:9,fontWeight:400,marginTop:2,opacity:.7}}>{m==="M2"?"L4 · L5":"L6 · L7 · L8"}</div></button>))}
       </div>
       <div style={{display:"flex",gap:6,marginBottom:10}}>
         {AREAS_HIST.map(a=>(<button key={a.id} onClick={()=>{setFiltroArea(a.id);setFiltroTipo("TODOS");}} style={{flex:1,padding:"8px 6px",borderRadius:9,cursor:"pointer",background:filtroArea===a.id?C.card:C.tagBg,border:`2px solid ${filtroArea===a.id?C.accentLight:C.border}`,color:filtroArea===a.id?C.accentLight:C.textMuted,fontWeight:700,fontSize:10,textAlign:"center",boxShadow:filtroArea===a.id?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>{a.label}</button>))}
@@ -4070,7 +4070,7 @@ function ConfiguracoesTela({ perfil, onLogout, onAbrirAdmin }) {
       {ehDev&&(
         <div style={{marginTop:16,background:C.card,border:`1px solid ${C.dangerLight}33`,borderRadius:12,padding:16}}>
           <div style={{color:C.dangerLight,fontSize:10,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6,fontWeight:800}}>⚠ Zona do desenvolvedor</div>
-          <button onClick={onAbrirAdmin} style={{width:"100%",padding:12,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,background:`linear-gradient(135deg,${C.blue},${C.blueLight})`,border:"none",color:"#fff",marginBottom:14,boxShadow:`0 2px 10px ${C.blueLight}44`}}>👥 Abrir Painel de Usuários</button>
+          <button onClick={onAbrirAdmin} style={{width:"100%",padding:12,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,background:`linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))`,border:"none",color:"#fff",marginBottom:14,boxShadow:`0 2px 10px ${C.blueLight}44`}}>👥 Abrir Painel de Usuários</button>
           <p style={{color:C.textMuted,fontSize:11,lineHeight:1.5,margin:"0 0 12px"}}>Apaga todos os dados operacionais (histórico, semáforo, equipamentos, chamados, cleaners, justificativas) do dispositivo e da nuvem. Logins e automação são mantidos. Não pode ser desfeito.</p>
           {!resetAberto?(
             <button onClick={()=>setResetAberto(true)} style={{width:"100%",padding:11,borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,background:C.danger+"22",border:`1px solid ${C.dangerLight}55`,color:C.dangerLight}}>🗑 Resetar dados operacionais</button>
@@ -4216,7 +4216,7 @@ function RotasTela({ historico, onVoltar }) {
           const justs=cfg.rotas.filter(r=>getStatus(id,r.id,r.maquina)==="justificado").length;
           const pend=tot-feitos-justs;
           return(
-            <button key={id} onClick={()=>setAreaAtiva(id)} style={{flex:1,padding:"8px 6px",borderRadius:10,cursor:"pointer",background:areaAtiva===id?C.blue:C.tagBg,border:`2px solid ${areaAtiva===id?C.accentLight:C.border}`,color:areaAtiva===id?"#fff":C.textMuted,fontWeight:700,fontSize:10,textAlign:"center",boxShadow:areaAtiva===id?"0 0 10px rgba(0,230,118,0.5),0 0 30px rgba(0,230,118,0.3)":"none"}}>
+            <button key={id} onClick={()=>setAreaAtiva(id)} style={{flex:1,padding:"8px 6px",borderRadius:10,cursor:"pointer",background:areaAtiva===id?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":C.tagBg,border:`2px solid ${areaAtiva===id?"rgba(0,199,102,0.55)":C.border}`,color:areaAtiva===id?"#00975A":C.textMuted,fontWeight:700,fontSize:10,textAlign:"center",boxShadow:areaAtiva===id?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
               <div style={{fontSize:9,marginBottom:4}}>{cfg.label}</div>
               <div style={{background:"rgba(255,255,255,0.08)",borderRadius:2,height:3,overflow:"hidden"}}>
                 <div style={{height:"100%",borderRadius:2,background:pend===0?C.accentLight:justs>0?C.warningLight:C.dangerLight,width:`${Math.round((feitos+justs)/tot*100)}%`,transition:"width .3s"}}/>
