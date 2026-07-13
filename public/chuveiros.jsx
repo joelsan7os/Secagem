@@ -6,13 +6,13 @@ import * as React from "react";
 import { COL, doc, setDoc, getDoc } from "./firebase";
 
 const C = {
-  bg:"#04111D", surface:"#071828", card:"#0A1929",
-  accent:"#00E676", accentLight:"#00E676", accentDark:"#006B2E",
-  blue:"#0E2847", blueLight:"#5090FF",
-  warning:"#b87d00", warningLight:"#FFC107",
-  danger:"#c0272d", dangerLight:"#FF5252",
-  text:"#FFFFFF", textMuted:"#B5C6DA", textDim:"#3A5880", white:"#ffffff",
-  border:"rgba(60,255,140,0.15)", tagBg:"rgba(255,255,255,0.04)",
+  bg:"#EEF2F6", surface:"#FFFFFF", card:"#FFFFFF",
+  accent:"#00C766", accentLight:"#00975A", accentDark:"#006B2E",
+  blue:"#1A5CCC", blueLight:"#1A5CCC",
+  warning:"#B87D00", warningLight:"#B87D00",
+  danger:"#C0272D", dangerLight:"#C0272D",
+  text:"#0B1F30", textMuted:"#54687A", textDim:"#93A6B6", white:"#0B1F30",
+  border:"rgba(11,31,48,0.12)", tagBg:"#EBF0F5",
 };
 const inputStyle={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",color:C.white,fontSize:14,outline:"none"};
 const btnSec={background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700};
