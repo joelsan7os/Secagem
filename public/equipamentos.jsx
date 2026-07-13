@@ -5,46 +5,46 @@ import { FacasTela } from "./facas";
 
 // ─── Paleta ───────────────────────────────────────────────────────────────────
 const C = {
-  bg:           "#04111D",
-  surface:      "#071828",
-  card:         "#0A1929",
-  cardHover:    "#0E2847",
-  border:       "rgba(60,255,140,0.15)",
-  borderLight:  "rgba(60,255,140,0.3)",
-  accent:       "#00E676",
-  accentHover:  "#52FF9C",
+  bg:           "#EEF2F6",
+  surface:      "#FFFFFF",
+  card:         "#FFFFFF",
+  cardHover:    "#F2F6FA",
+  border:       "rgba(11,31,48,0.12)",
+  borderLight:  "rgba(11,31,48,0.22)",
+  accent:       "#00C766",
+  accentHover:  "#00A855",
   accentDark:   "#006B2E",
-  accentLight:  "#00E676",
-  blue:         "#0E2847",
+  accentLight:  "#00975A",
+  blue:         "#1A5CCC",
   blueLight:    "#1A5CCC",
-  blueDark:     "#020C16",
-  success:      "#00E676",
-  successLight: "#52FF9C",
-  warning:      "#b87d00",
-  warningLight: "#FFC107",
-  danger:       "#c0272d",
-  dangerLight:  "#FF5252",
-  text:         "#FFFFFF",
-  textMuted:    "#B5C6DA",
-  textDim:      "#3A5880",
-  white:        "#ffffff",
-  tagBg:        "rgba(10,25,45,0.9)",
+  blueDark:     "#0E3C8C",
+  success:      "#00A855",
+  successLight: "#00975A",
+  warning:      "#B87D00",
+  warningLight: "#B87D00",
+  danger:       "#C0272D",
+  dangerLight:  "#C0272D",
+  text:         "#0B1F30",
+  textMuted:    "#54687A",
+  textDim:      "#93A6B6",
+  white:        "#0B1F30",
+  tagBg:        "#EBF0F5",
 };
 
 const cardStyle = {
   position:"relative", borderRadius:20, overflow:"hidden", isolation:"isolate",
-  background:"rgba(10,24,18,0.42)",
-  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.04) 20%, transparent 44%),radial-gradient(120px 120px at 0% 0%, rgba(210,255,235,0.14), transparent 70%)",
-  backdropFilter:"blur(22px) saturate(1.4)", WebkitBackdropFilter:"blur(22px) saturate(1.4)",
-  border:"1px solid rgba(255,255,255,0.12)",
-  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.30),inset 0 0 30px rgba(255,255,255,0.03),0 10px 30px -10px rgba(0,0,0,0.7)",
+  background:"rgba(255,255,255,0.86)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(245,249,252,0.7) 40%, rgba(240,245,250,0.55) 100%)",
+  backdropFilter:"blur(18px) saturate(1.1)", WebkitBackdropFilter:"blur(18px) saturate(1.1)",
+  border:"1px solid rgba(11,31,48,0.10)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.9),0 8px 24px -12px rgba(11,31,48,0.20),0 2px 6px -2px rgba(11,31,48,0.08)",
 };
 const glassMini = {
   position:"relative", overflow:"hidden",
-  background:"rgba(255,255,255,0.05)",
-  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.10), transparent 50%)",
-  border:"1px solid rgba(255,255,255,0.08)",
-  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.14)",
+  background:"rgba(255,255,255,0.75)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,245,250,0.6) 60%)",
+  border:"1px solid rgba(11,31,48,0.08)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.9),0 2px 8px -4px rgba(11,31,48,0.12)",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1184,7 +1184,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
       {modalEq&&<ModalNotas eq={modalEq} onClose={()=>setModalEq(null)} onSave={salvarNotas}/>}
       {modalObs&&<ModalObservacao eq={modalObs} onClose={()=>setModalObs(null)} onSave={salvarObservacao}/>}
       <button onClick={()=>setSelId(null)} style={{...btnSec,marginBottom:18}}>← Voltar</button>
-      <div style={{position:"relative",background:`linear-gradient(155deg,${dotColor2(eq.status)}12,rgba(7,24,40,0.97))`,border:`1.5px solid ${dotColor2(eq.status)}77`,borderRadius:14,padding:20,boxShadow:`0 4px 28px ${dotColor2(eq.status)}28`,overflow:"hidden"}}>
+      <div style={{position:"relative",background:`linear-gradient(155deg,${dotColor2(eq.status)}12,rgba(255,255,255,0.95))`,border:`1.5px solid ${dotColor2(eq.status)}77`,borderRadius:14,padding:20,boxShadow:`0 4px 28px ${dotColor2(eq.status)}28`,overflow:"hidden"}}>
         <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${dotColor2(eq.status)},transparent)`}}/>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
           <div>
@@ -1420,10 +1420,10 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
         {[{id:"pu",l:"P. ÚMIDA",cor:"#5090FF",glow:"rgba(80,144,255,0.6)"},{id:"cs",l:"CORTADEIRA",cor:"#A855F7",glow:"rgba(168,85,247,0.6)"},{id:"enf",l:"ENFARD.",cor:"#FFB300",glow:"rgba(255,179,0,0.6)"}].map(a=>{const ativo=areaAtiva===a.id;return(
           <button key={a.id} onClick={()=>{setAreaAtiva(a.id);setFiltroSub("M2");setFiltroArea("TODAS");setFiltroStatus("TODOS");setBusca("");}}
             style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.05em",transition:"all .15s",position:"relative",overflow:"hidden",
-              background:ativo?`linear-gradient(135deg,${a.cor}22,${a.cor}0a)`:"rgba(255,255,255,0.05)",
-              border:`1px solid ${ativo?a.cor+"99":"rgba(255,255,255,0.08)"}`,
+              background:ativo?`linear-gradient(135deg, rgba(255,255,255,0.96), ${a.cor}1e)`:"rgba(11,31,48,0.03)",
+              border:`1px solid ${ativo?a.cor+"88":"rgba(11,31,48,0.10)"}`,
               color:ativo?a.cor:C.textMuted,
-              boxShadow:ativo?`0 0 12px ${a.glow},0 0 24px ${a.glow.replace("0.6","0.25")}`:"none"}}>
+              boxShadow:ativo?`0 2px 10px ${a.glow.replace("0.6","0.18")}`:"none"}}>
             {ativo&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${a.cor},transparent)`}}/>}
             {a.l}
           </button>
@@ -1441,14 +1441,14 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
           return(
             <button key={k} onClick={()=>{setFiltroSub(k);setFiltroArea("TODAS");setFiltroStatus("TODOS");setBusca("");}}
               style={{flex:1,padding:"10px 6px",borderRadius:11,cursor:"pointer",transition:"all .15s",position:"relative",overflow:"hidden",
-                background:ativo?`linear-gradient(155deg,${cor}22,rgba(7,24,40,0.97))`:"rgba(255,255,255,0.05)",
-                border:`1px solid ${ativo?cor+"99":"rgba(255,255,255,0.08)"}`,
-                boxShadow:ativo?`0 0 14px ${glow},0 0 28px ${glow.replace("0.6","0.25")}`:"none",
+                background:ativo?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":"rgba(11,31,48,0.03)",
+                border:`1px solid ${ativo?"rgba(0,199,102,0.55)":"rgba(11,31,48,0.10)"}`,
+                boxShadow:ativo?"0 2px 10px rgba(0,199,102,0.20)":"none",
                 display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-              {ativo&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${cor},transparent)`}}/>}
+              {ativo&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,#00975A,transparent)"}}/>}
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <span style={{width:8,height:8,borderRadius:"50%",background:ok?C.success:al>0?C.warning:C.warningLight,boxShadow:`0 0 5px ${ok?C.success:C.warning}`}}/>
-                <span style={{color:ativo?cor:C.textMuted,fontWeight:900,fontSize:13,letterSpacing:"0.04em"}}>{label}</span>
+                <span style={{color:ativo?"#00975A":C.textMuted,fontWeight:900,fontSize:13,letterSpacing:"0.04em"}}>{label}</span>
               </div>
               <div style={{display:"flex",gap:4,minHeight:16}}>
                 {al>0&&<span style={{background:"rgba(255,193,7,0.15)",border:`1px solid ${C.warningLight}55`,color:C.warningLight,borderRadius:10,padding:"0 6px",fontSize:9,fontWeight:800}}>{al}</span>}
@@ -1476,7 +1476,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
         if(ult){for(let i=0;i<11;i++){const n=parseFloat(String(ult.valores?.[`${itemId}_${i}`]||"").replace(",","."));if(!isNaN(n)){if(n>maxBar)maxBar=n;if(n>=3.5)critico++;else if(n>=2.5)atencao++;}}}
         return(
           <button onClick={()=>setSubModulo("facas")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",
-            background:`linear-gradient(155deg,${C.blueLight}18,rgba(7,24,40,0.97))`,border:`2px solid ${C.blueLight}66`,borderRadius:12,padding:"13px 16px",
+            background:`linear-gradient(155deg,${C.blueLight}18,rgba(255,255,255,0.95))`,border:`2px solid ${C.blueLight}66`,borderRadius:12,padding:"13px 16px",
             cursor:"pointer",marginBottom:14,boxShadow:`0 0 14px ${C.blueLight}22`}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <span style={{width:8,height:8,borderRadius:2,background:C.blueLight,boxShadow:`0 0 6px ${C.blueLight}`}}/>
@@ -1503,7 +1503,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
       <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:4,marginBottom:12}}>
         {["TODOS","OP","ALERTA","MANUTENÇÃO"].map(s=>(<button key={s} onClick={()=>setFiltroStatus(s)} style={{padding:"4px 10px",borderRadius:20,cursor:"pointer",whiteSpace:"nowrap",fontSize:10,fontWeight:700,textTransform:"uppercase",background:filtroStatus===s?C.accent:C.tagBg,border:`1px solid ${filtroStatus===s?C.accent:C.border}`,color:filtroStatus===s?"#fff":C.textMuted}}>{s}</button>))}
         <div style={{width:1,background:C.border,margin:"0 3px"}}/>
-        {areas.map(a=>(<button key={a} onClick={()=>setFiltroArea(a)} style={{padding:"4px 10px",borderRadius:20,cursor:"pointer",whiteSpace:"nowrap",fontSize:10,fontWeight:600,background:filtroArea===a?"#0d2810":C.tagBg,border:`1px solid ${filtroArea===a?C.accentLight:C.border}`,color:filtroArea===a?C.accentLight:C.textMuted}}>{a}</button>))}
+        {areas.map(a=>(<button key={a} onClick={()=>setFiltroArea(a)} style={{padding:"4px 10px",borderRadius:20,cursor:"pointer",whiteSpace:"nowrap",fontSize:10,fontWeight:600,background:filtroArea===a?"rgba(0,199,102,0.14)":C.tagBg,border:`1px solid ${filtroArea===a?C.accentLight:C.border}`,color:filtroArea===a?C.accentLight:C.textMuted}}>{a}</button>))}
       </div>
       <div style={{color:C.textDim,fontSize:11,marginBottom:8}}>{filtrados.length} equipamento{filtrados.length!==1?"s":""}</div>
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
@@ -1520,7 +1520,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
             </div>
             <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
               {eq.notas.length>0&&<button onClick={()=>setModalEq(eq)} style={{background:"#2a080833",border:`1px solid ${C.dangerLight}55`,color:C.dangerLight,borderRadius:20,padding:"2px 7px",fontSize:10,fontWeight:800,cursor:"pointer"}}>{eq.notas.length}</button>}
-              {(eq.obsRotaHistorico||[]).length>0&&<button onClick={()=>setSelId(eq.id)} style={{background:"#0a2015",border:`1px solid ${C.accentLight}44`,color:C.accentLight,borderRadius:20,padding:"2px 7px",fontSize:10,fontWeight:800,cursor:"pointer"}}>{(eq.obsRotaHistorico||[]).length}</button>}
+              {(eq.obsRotaHistorico||[]).length>0&&<button onClick={()=>setSelId(eq.id)} style={{background:"rgba(0,199,102,0.10)",border:`1px solid ${C.accentLight}44`,color:C.accentLight,borderRadius:20,padding:"2px 7px",fontSize:10,fontWeight:800,cursor:"pointer"}}>{(eq.obsRotaHistorico||[]).length}</button>}
               <button onClick={e=>{e.stopPropagation();setModalObs(eq);}} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:20,padding:"2px 8px",fontSize:10,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accentLight;e.currentTarget.style.color=C.accentLight;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.textMuted;}}></button>
               <Badge color={statusColor(eq.status)}>{eq.status}</Badge>
               <span style={{color:C.textDim,fontSize:15,cursor:"pointer"}} onClick={()=>setSelId(eq.id)}>›</span>
@@ -1624,7 +1624,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
           <span>{fmtData(sel.dataAbertura)} {sel.horaAbertura}</span>
           <span>{sel.operador||"—"}</span>
         </div>
-        {sel.status==="encerrado"&&sel.resolucao&&<div style={{marginTop:10,background:"#002810",border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 12px"}}><p style={{color:C.textDim,fontSize:10,margin:"0 0 3px",textTransform:"uppercase"}}>Resolução</p><p style={{color:C.accentLight,fontSize:12,margin:0}}>{sel.resolucao}</p><p style={{color:C.textMuted,fontSize:10,margin:"4px 0 0"}}>{fmtData(sel.dataEncerramento)} {sel.horaEncerramento}</p></div>}
+        {sel.status==="encerrado"&&sel.resolucao&&<div style={{marginTop:10,background:"rgba(0,199,102,0.12)",border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 12px"}}><p style={{color:C.textDim,fontSize:10,margin:"0 0 3px",textTransform:"uppercase"}}>Resolução</p><p style={{color:C.accentLight,fontSize:12,margin:0}}>{sel.resolucao}</p><p style={{color:C.textMuted,fontSize:10,margin:"4px 0 0"}}>{fmtData(sel.dataEncerramento)} {sel.horaEncerramento}</p></div>}
         {(sel.fotosAbertura?.length>0||sel.fotosEncerramento?.length>0)&&(
           <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:8}}>
             {sel.fotosAbertura?.length>0&&(
@@ -1694,7 +1694,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
               ))}
             </div>
           )}
-          {eqSel&&<div style={{background:"#002810",border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 12px",marginTop:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{color:C.accentLight,fontWeight:700,fontSize:12}}>{eqSel.nome}</div><code style={{color:C.textMuted,fontSize:10}}>{eqSel.tag}</code></div><button onClick={()=>{setEqSel(null);setBuscarEq("");}} style={{...btnSec,padding:"3px 8px",fontSize:11}}>✕</button></div>}
+          {eqSel&&<div style={{background:"rgba(0,199,102,0.12)",border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 12px",marginTop:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{color:C.accentLight,fontWeight:700,fontSize:12}}>{eqSel.nome}</div><code style={{color:C.textMuted,fontSize:10}}>{eqSel.tag}</code></div><button onClick={()=>{setEqSel(null);setBuscarEq("");}} style={{...btnSec,padding:"3px 8px",fontSize:11}}>✕</button></div>}
         </div>
         <div>
           <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>Nota SAP (opcional)</label>
@@ -1802,7 +1802,7 @@ function ChamadosTela({ eqState, setEqState, areaAtiva, onVoltar }) {
                   <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>Equipamento</label>
                   <input value={regEq?`${regEq.tag} — ${regEq.nome}`:regBusca} onChange={e=>{setRegBusca(e.target.value);setRegEq(null);}} placeholder="TAG ou nome (mín. 3 letras)..." style={inputStyle}/>
                   {sugs.length>0&&!regEq&&<div style={{...glassMini,border:`1px solid ${C.border}`,borderRadius:8,marginTop:4,overflow:"hidden"}}>{sugs.map(eq=>(<button key={eq.id} onClick={()=>{setRegEq(eq);setRegBusca("");}} style={{width:"100%",background:"none",border:"none",borderBottom:`1px solid ${C.border}`,padding:"10px 12px",textAlign:"left",cursor:"pointer",color:C.text}}><div style={{fontWeight:600,fontSize:12}}>{eq.nome}</div><div style={{display:"flex",gap:8,marginTop:2}}><code style={{color:C.textMuted,fontSize:10}}>{eq.tag}</code><span style={{color:C.textDim,fontSize:10}}>{eq.sub} · {eq.area}</span></div></button>))}</div>}
-                  {regEq&&<div style={{background:"#002810",border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 12px",marginTop:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{color:C.accentLight,fontWeight:700,fontSize:12}}>{regEq.nome}</div><code style={{color:C.textMuted,fontSize:10}}>{regEq.tag} · {regEq.sub} · {regEq.area}</code></div><button onClick={()=>{setRegEq(null);setRegBusca("");}} style={{...btnSec,padding:"3px 8px",fontSize:11}}>✕</button></div>}
+                  {regEq&&<div style={{background:"rgba(0,199,102,0.12)",border:`1px solid ${C.accentLight}33`,borderRadius:8,padding:"8px 12px",marginTop:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{color:C.accentLight,fontWeight:700,fontSize:12}}>{regEq.nome}</div><code style={{color:C.textMuted,fontSize:10}}>{regEq.tag} · {regEq.sub} · {regEq.area}</code></div><button onClick={()=>{setRegEq(null);setRegBusca("");}} style={{...btnSec,padding:"3px 8px",fontSize:11}}>✕</button></div>}
                 </div>
                 <div><label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>Número da Nota SAP</label><input value={regNum} onChange={e=>setRegNum(e.target.value)} placeholder="Ex: MNT-2025-1234" style={inputStyle}/></div>
                 <div><label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:5}}>Descrição</label><textarea value={regDesc} onChange={e=>setRegDesc(e.target.value)} rows={2} placeholder="Descreva o problema..." style={{...inputStyle,resize:"vertical",fontFamily:"inherit"}}/></div>
