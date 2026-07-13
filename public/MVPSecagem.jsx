@@ -2491,7 +2491,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
       {/* Seletor de área */}
       <div style={{display:"flex",gap:6,marginBottom:14}}>
         {AREAS.filter(a=>!a.disabled).map(a=>(
-          <button key={a.id} onClick={()=>{setAreaFiltro(a.id);const primeiro=CATALOGO.find(c=>c.area===a.id);if(primeiro)setTipoId(primeiro.id);setValores({});setFotos({});setSalvo(false);}} style={{flex:1,padding:"8px 6px",borderRadius:10,cursor:"pointer",background:areaFiltro===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${areaFiltro===a.id?"rgba(255,255,255,0.55)":C.border}`,color:areaFiltro===a.id?C.white:C.textMuted,fontWeight:700,fontSize:11,textAlign:"center",boxShadow:areaFiltro===a.id?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
+          <button key={a.id} onClick={()=>{setAreaFiltro(a.id);const primeiro=CATALOGO.find(c=>c.area===a.id);if(primeiro)setTipoId(primeiro.id);setValores({});setFotos({});setSalvo(false);}} style={{flex:1,padding:"8px 6px",borderRadius:10,cursor:"pointer",background:areaFiltro===a.id?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":C.tagBg,border:`2px solid ${areaFiltro===a.id?"rgba(0,199,102,0.55)":C.border}`,color:areaFiltro===a.id?"#00975A":C.textMuted,fontWeight:700,fontSize:11,textAlign:"center",boxShadow:areaFiltro===a.id?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
             <div style={{fontSize:9,marginTop:2}}>{a.label}</div>
           </button>
         ))}
