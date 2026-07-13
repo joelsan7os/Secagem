@@ -969,6 +969,9 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
           </Sec>
 
           <Sec num="01b" titulo="CRONOGRAMA DE ATIVIDADES">
+            <div style={{fontFamily:"monospace",fontSize:9,color:C.warning,background:"rgba(255,193,7,.08)",border:`1px solid ${C.warning}44`,borderRadius:6,padding:"6px 8px",marginBottom:8,wordBreak:"break-all"}}>
+              DIAG · periodoPG = {JSON.stringify(periodoPG)}
+            </div>
             {(()=>{
               const env = envelopePeriodo(periodoPG);
               if(!env) return (
