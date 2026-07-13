@@ -7,18 +7,18 @@ import * as React from "react";
 import { COL, doc, setDoc, getDoc } from "./firebase";
 
 const C = {
-  bg:"#04111D", surface:"#071828", card:"#0A1929",
-  accent:"#00E676", accentLight:"#00E676", accentDark:"#006B2E",
-  blue:"#0E2847", blueLight:"#1A5CCC",
-  warning:"#b87d00", warningLight:"#FFC107",
-  danger:"#c0272d", dangerLight:"#FF5252",
-  text:"#FFFFFF", textMuted:"#B5C6DA", textDim:"#3A5880",
-  border:"rgba(60,255,140,0.15)", tagBg:"rgba(255,255,255,0.04)",
+  bg:"#EEF2F6", surface:"#FFFFFF", card:"#FFFFFF",
+  accent:"#00C766", accentLight:"#00975A", accentDark:"#006B2E",
+  blue:"#1A5CCC", blueLight:"#1A5CCC",
+  warning:"#B87D00", warningLight:"#B87D00",
+  danger:"#C0272D", dangerLight:"#C0272D",
+  text:"#0B1F30", textMuted:"#54687A", textDim:"#93A6B6",
+  border:"rgba(11,31,48,0.12)", tagBg:"#EBF0F5",
 };
 
 const cardStyle = {
   position:"relative", borderRadius:20, overflow:"hidden", isolation:"isolate",
-  background:"rgba(10,24,18,0.42)",
+  background:"rgba(255,255,255,0.86)",
   backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.04) 20%, transparent 44%),radial-gradient(120px 120px at 0% 0%, rgba(210,255,235,0.14), transparent 70%)",
   backdropFilter:"blur(22px) saturate(1.4)", WebkitBackdropFilter:"blur(22px) saturate(1.4)",
   border:"1px solid rgba(255,255,255,0.12)",
@@ -26,9 +26,9 @@ const cardStyle = {
 };
 const glassMini = {
   position:"relative", overflow:"hidden",
-  background:"rgba(255,255,255,0.05)",
+  background:"rgba(11,31,48,0.03)",
   backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.10), transparent 50%)",
-  border:"1px solid rgba(255,255,255,0.08)",
+  border:"1px solid rgba(11,31,48,0.10)",
   boxShadow:"inset 0 1px 0 rgba(255,255,255,0.14)",
 };
 const inputStyle={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",color:"#fff",fontSize:14,outline:"none"};
@@ -97,7 +97,7 @@ function scorePrioridade(p) {
 const STYLES = `
 @keyframes mural-led { 0%,100%{opacity:1;filter:brightness(1.3);} 50%{opacity:.55;filter:brightness(1);} }
 @keyframes mural-stagger { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:none;} }
-@keyframes mural-breathe { 0%,100%{box-shadow:0 0 18px var(--gc),inset 0 0 14px rgba(255,255,255,0.03);} 50%{box-shadow:0 0 34px var(--gc),inset 0 0 22px rgba(255,255,255,0.05);} }
+@keyframes mural-breathe { 0%,100%{box-shadow:0 0 18px var(--gc),inset 0 0 14px rgba(255,255,255,0.03);} 50%{box-shadow:0 0 34px var(--gc),inset 0 0 22px rgba(11,31,48,0.03);} }
 .mural-led { animation: mural-led 1.6s ease-in-out infinite; }
 .mural-item { animation: mural-stagger .3s ease backwards; }
 .mural-breathe { animation: mural-breathe 2.8s ease-in-out infinite; }
@@ -487,7 +487,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
               return (
                 <button key={mq} onClick={()=>setSelMaq(ativo?null:mq)}
                   className={ativo?"mural-breathe":""} style={{ "--gc":`${corM}55`, flex:1, cursor:"pointer", textAlign:"left", position:"relative", overflow:"hidden",
-                    background: `linear-gradient(155deg, ${corM}12, rgba(7,24,40,0.97))`,
+                    background: `linear-gradient(155deg, ${corM}12, rgba(255,255,255,0.95))`,
                     border:`1.5px solid ${ativo?corM:corM+"44"}`,
                     borderRadius:16, padding:"14px 15px", transition:"all .18s",
                     boxShadow: ativo?`0 8px 28px ${corM}33`:`0 4px 16px ${corM}11` }}>
@@ -572,7 +572,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
             const paradaM3 = proximaParadaLabel(paradas[`${sel}:M3`]);
             return (
               <div className="mural-breathe" style={{ "--gc":`${janSel.cor}33`, position:"relative", overflow:"hidden", borderRadius:18, padding:18, marginBottom:16,
-                background:`linear-gradient(155deg, ${janSel.cor}12, rgba(7,24,40,0.97))`, border:`1.5px solid ${janSel.cor}77` }}>
+                background:`linear-gradient(155deg, ${janSel.cor}12, rgba(255,255,255,0.95))`, border:`1.5px solid ${janSel.cor}77` }}>
                 <div style={{ position:"absolute", inset:0, pointerEvents:"none", opacity:0.4, backgroundImage:`radial-gradient(${janSel.cor}18 1px, transparent 1px)`, backgroundSize:"18px 18px" }}/>
                 <div style={{ position:"relative" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
