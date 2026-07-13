@@ -72,7 +72,11 @@ export function gerarCronograma(periodo) {
   });
   Object.values(grupos).forEach(lista => {
     lista.forEach((a, i) => {
-      const data = clamp(ancoraDaAtividade(a, periodo, env, i), env);
+      // RETOMADA recua do fim: a última atividade do grupo ancora no último dia
+      // e as anteriores recuam, preservando a ordem cronológica do array
+      // (vestimenta → teste água → teste massa → passagem de ponta).
+      const offset = a.fase === "RETOMADA" ? (lista.length - 1 - i) : i;
+      const data = clamp(ancoraDaAtividade(a, periodo, env, offset), env);
       itens.push({ atividadeId: a.id, data });
     });
   });
