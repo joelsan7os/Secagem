@@ -1520,7 +1520,7 @@ function BarcodeSeletorTela() {
           {linhas.map(l=>{
             const ativo=linha===l;const maq=maqDaLinha(l);
             return(
-              <button key={l} onClick={()=>setLinha(l)} style={{flex:1,padding:"10px 4px",borderRadius:10,cursor:"pointer",border:`1px solid ${ativo?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,background:ativo?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",color:ativo?"#fff":"#B5C6DA",fontWeight:ativo?800:500,fontSize:13,transition:"all .15s",boxShadow:ativo?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35)":"none"}}>
+              <button key={l} onClick={()=>setLinha(l)} style={{flex:1,padding:"10px 4px",borderRadius:10,cursor:"pointer",border:`1px solid ${ativo?"rgba(0,199,102,0.55)":"rgba(11,31,48,0.10)"}`,background:ativo?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":"rgba(11,31,48,0.03)",color:ativo?"#00975A":C.textMuted,fontWeight:ativo?800:500,fontSize:13,transition:"all .15s",boxShadow:ativo?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
                 {l}<div style={{fontSize:8,opacity:.6,marginTop:2,fontWeight:400}}>{maq}</div>
               </button>
             );
@@ -1723,9 +1723,9 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
           {["M2","M3"].map(m=>(
             <button key={m} onClick={()=>{setMaquina(m);setLinha(m==="M2"?"L4":"L6");setRespostas({});setSalvo(false);}}
               style={{flex:1,padding:"7px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",
-                background:maquina===m?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${maquina===m?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,
-                color:maquina===m?"#fff":C.textMuted,
-                boxShadow:maquina===m?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
+                background:maquina===m?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":"rgba(11,31,48,0.03)",border:`1px solid ${maquina===m?"rgba(0,199,102,0.55)":"rgba(11,31,48,0.10)"}`,
+                color:maquina===m?"#00975A":C.textMuted,
+                boxShadow:maquina===m?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
               M{m.replace("M","")}<span style={{fontSize:9,fontWeight:400,opacity:.7,marginLeft:4}}>{m==="M2"?"L4·L5":"L6·L7·L8"}</span>
             </button>
           ))}
@@ -1752,7 +1752,7 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
           <div style={{display:"flex",gap:6}}>
             {linhasFiltradas.map(l=>{
               const ativo=linha===l.id;
-              return <button key={l.id} onClick={()=>{setLinha(l.id);setRespostas({});setSalvo(false);}} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:ativo?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${ativo?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:ativo?"#fff":C.textMuted,boxShadow:ativo?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
+              return <button key={l.id} onClick={()=>{setLinha(l.id);setRespostas({});setSalvo(false);}} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:ativo?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":"rgba(11,31,48,0.03)",border:`1px solid ${ativo?"rgba(0,199,102,0.55)":"rgba(11,31,48,0.10)"}`,color:ativo?"#00975A":C.textMuted,boxShadow:ativo?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
                 {l.id}
               </button>;
             })}
@@ -1907,7 +1907,7 @@ function RejeicaoTela({ onSalvar, turno, letra, opPU, opPainel, data }) {
     <div>
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:14,marginBottom:14}}>
         <div style={{display:"flex",gap:8,marginBottom:10}}>
-          {["M2","M3"].map(m=>(<button key={m} onClick={()=>setMaquina(m)} style={{flex:1,padding:"7px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:13,background:maquina===m?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${maquina===m?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:maquina===m?"#fff":C.textMuted,boxShadow:maquina===m?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>Máquina {m.replace("M","")}</button>))}
+          {["M2","M3"].map(m=>(<button key={m} onClick={()=>setMaquina(m)} style={{flex:1,padding:"7px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:13,background:maquina===m?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":"rgba(11,31,48,0.03)",border:`1px solid ${maquina===m?"rgba(0,199,102,0.55)":"rgba(11,31,48,0.10)"}`,color:maquina===m?"#00975A":C.textMuted,boxShadow:maquina===m?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>Máquina {m.replace("M","")}</button>))}
         </div>
         <div style={{background:`linear-gradient(135deg,${C.blue}88,${C.blueDark})`,border:`1px solid ${C.blueLight}55`,borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:22,flexShrink:0}}>🚶</span>
@@ -2019,7 +2019,7 @@ function WFTTela({ onSalvar, turno, letra, opPU:opPUProp, opPainel:opPainelProp,
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:12}}>
         <div style={{display:"flex",gap:8,marginBottom:14}}>
           {["M2","M3"].map(m=>(
-            <button key={m} onClick={()=>setMaquina(m)} style={{flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,transition:"all .15s",background:maquina===m?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${maquina===m?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:maquina===m?"#fff":C.textMuted,boxShadow:maquina===m?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
+            <button key={m} onClick={()=>setMaquina(m)} style={{flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,transition:"all .15s",background:maquina===m?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":"rgba(11,31,48,0.03)",border:`1px solid ${maquina===m?"rgba(0,199,102,0.55)":"rgba(11,31,48,0.10)"}`,color:maquina===m?"#00975A":C.textMuted,boxShadow:maquina===m?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
               Máquina {m.replace("M","")}<div style={{fontSize:10,fontWeight:400,opacity:.8,marginTop:1}}>{m==="M2"?"32-xx":"33-xx"}</div>
             </button>
           ))}
@@ -2214,7 +2214,7 @@ function RitmoVaporTela({ onSalvar, turno, letra, opPU:opPUProp, opPainel:opPain
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:12}}>
         <div style={{display:"flex",gap:8,marginBottom:14}}>
           {["M2","M3"].map(m=>(
-            <button key={m} onClick={()=>trocar(m)} style={{flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,transition:"all .15s",background:maquina===m?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${maquina===m?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:maquina===m?"#fff":C.textMuted,boxShadow:maquina===m?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35)":"none"}}>
+            <button key={m} onClick={()=>trocar(m)} style={{flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,transition:"all .15s",background:maquina===m?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":"rgba(11,31,48,0.03)",border:`1px solid ${maquina===m?"rgba(0,199,102,0.55)":"rgba(11,31,48,0.10)"}`,color:maquina===m?"#00975A":C.textMuted,boxShadow:maquina===m?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
               Máquina {m.replace("M","")}<div style={{fontSize:10,fontWeight:400,opacity:.8,marginTop:1}}>{m==="M2"?"32-xx":"33-xx"}</div>
             </button>
           ))}
@@ -2491,7 +2491,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
       {/* Seletor de área */}
       <div style={{display:"flex",gap:6,marginBottom:14}}>
         {AREAS.filter(a=>!a.disabled).map(a=>(
-          <button key={a.id} onClick={()=>{setAreaFiltro(a.id);const primeiro=CATALOGO.find(c=>c.area===a.id);if(primeiro)setTipoId(primeiro.id);setValores({});setFotos({});setSalvo(false);}} style={{flex:1,padding:"8px 6px",borderRadius:10,cursor:"pointer",background:areaFiltro===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${areaFiltro===a.id?"rgba(255,255,255,0.55)":C.border}`,color:areaFiltro===a.id?C.white:C.textMuted,fontWeight:700,fontSize:11,textAlign:"center",boxShadow:areaFiltro===a.id?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
+          <button key={a.id} onClick={()=>{setAreaFiltro(a.id);const primeiro=CATALOGO.find(c=>c.area===a.id);if(primeiro)setTipoId(primeiro.id);setValores({});setFotos({});setSalvo(false);}} style={{flex:1,padding:"8px 6px",borderRadius:10,cursor:"pointer",background:areaFiltro===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${areaFiltro===a.id?"rgba(255,255,255,0.55)":C.border}`,color:areaFiltro===a.id?C.white:C.textMuted,fontWeight:700,fontSize:11,textAlign:"center",boxShadow:areaFiltro===a.id?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
             <div style={{fontSize:9,marginTop:2}}>{a.label}</div>
           </button>
         ))}
@@ -2546,7 +2546,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
         {tipo?.porMaquina&&(
           <div style={{display:"flex",gap:8,marginBottom:14}}>
             {["M2","M3"].map(m=>(
-              <button key={m} onClick={()=>trocar(m)} style={{flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,transition:"all .15s",background:maquina===m?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${maquina===m?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:maquina===m?"#fff":C.textMuted,boxShadow:maquina===m?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
+              <button key={m} onClick={()=>trocar(m)} style={{flex:1,padding:"9px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,transition:"all .15s",background:maquina===m?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":"rgba(11,31,48,0.03)",border:`1px solid ${maquina===m?"rgba(0,199,102,0.55)":"rgba(11,31,48,0.10)"}`,color:maquina===m?"#00975A":C.textMuted,boxShadow:maquina===m?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
                 Máquina {m.replace("M","")}<div style={{fontSize:10,fontWeight:400,opacity:.8,marginTop:1}}>{m==="M2"?"32-xx":"33-xx"}</div>
               </button>
             ))}
@@ -3473,9 +3473,9 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
           {["M2","M3"].map(m=>(
             <button key={m} onClick={()=>{setMaquina(m);setLinha(m==="M2"?"L4":"L6");setRespostas({});setSalvo(false);}}
               style={{flex:1,padding:"7px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",
-                background:maquina===m?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${maquina===m?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,
-                color:maquina===m?"#fff":C.textMuted,
-                boxShadow:maquina===m?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
+                background:maquina===m?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":"rgba(11,31,48,0.03)",border:`1px solid ${maquina===m?"rgba(0,199,102,0.55)":"rgba(11,31,48,0.10)"}`,
+                color:maquina===m?"#00975A":C.textMuted,
+                boxShadow:maquina===m?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
               M{m.replace("M","")}<span style={{fontSize:9,fontWeight:400,opacity:.7,marginLeft:4}}>{m==="M2"?"L4·L5":"L6·L7·L8"}</span>
             </button>
           ))}
@@ -3502,7 +3502,7 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
           <div style={{display:"flex",gap:6}}>
             {linhasFiltradas.map(l=>{
               const ativo=linha===l.id;
-              return <button key={l.id} onClick={()=>{setLinha(l.id);setRespostas({});setSalvo(false);}} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:ativo?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${ativo?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:ativo?"#fff":C.textMuted,boxShadow:ativo?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
+              return <button key={l.id} onClick={()=>{setLinha(l.id);setRespostas({});setSalvo(false);}} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:ativo?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":"rgba(11,31,48,0.03)",border:`1px solid ${ativo?"rgba(0,199,102,0.55)":"rgba(11,31,48,0.10)"}`,color:ativo?"#00975A":C.textMuted,boxShadow:ativo?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
                 {l.id}
               </button>;
             })}
@@ -3616,7 +3616,7 @@ function RotaEnfardamentoTela({ onSalvar }) {
           <label style={{color:C.textMuted,fontSize:10,textTransform:"uppercase",display:"block",marginBottom:6}}>Linha</label>
           <div style={{display:"flex",gap:6}}>
             {LINHAS.map(l=>{const ativo=linha===l.id;return(
-              <button key={l.id} onClick={()=>{setLinha(l.id);setResp({});setObsMap({});setTempMap({});setSalvo(false);}} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:ativo?"linear-gradient(135deg,#00E676,#00B85E)":"rgba(255,255,255,0.05)",border:`1px solid ${ativo?"rgba(0,230,118,0.7)":"rgba(255,255,255,0.08)"}`,color:ativo?"#fff":C.textMuted,boxShadow:ativo?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>
+              <button key={l.id} onClick={()=>{setLinha(l.id);setResp({});setObsMap({});setTempMap({});setSalvo(false);}} style={{flex:1,padding:"7px 4px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:13,transition:"all .15s",background:ativo?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":"rgba(11,31,48,0.03)",border:`1px solid ${ativo?"rgba(0,199,102,0.55)":"rgba(11,31,48,0.10)"}`,color:ativo?"#00975A":C.textMuted,boxShadow:ativo?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
                 {l.id}<div style={{fontSize:8,fontWeight:400,opacity:.8,marginTop:1}}>{l.maquina}</div>
               </button>);})}
           </div>
@@ -3880,7 +3880,7 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
       <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"8px 0 12px"}}/>
       <div style={{display:"flex",gap:6,marginBottom:14}}>
         {[{id:"reg",l:"REGISTROS"},{id:"ana",l:"EFICIENCIA"},{id:"avarias",l:"AVARIAS"}].map(a=>(
-          <button key={a.id} onClick={()=>setAbaHist(a.id)} style={{flex:1,padding:"8px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.03em",background:abaHist===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${abaHist===a.id?"rgba(255,255,255,0.55)":C.border}`,color:abaHist===a.id?"#fff":C.textMuted,boxShadow:abaHist===a.id?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35)":"none"}}>{a.l}</button>
+          <button key={a.id} onClick={()=>setAbaHist(a.id)} style={{flex:1,padding:"8px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.03em",background:abaHist===a.id?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${abaHist===a.id?"rgba(255,255,255,0.55)":C.border}`,color:abaHist===a.id?"#fff":C.textMuted,boxShadow:abaHist===a.id?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>{a.l}</button>
         ))}
       </div>
       {abaHist==="ana"?(
@@ -3930,10 +3930,10 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
         </div>
       </div>
       <div style={{display:"flex",gap:8,marginBottom:10}}>
-        {["M2","M3"].map(m=>(<button key={m} onClick={()=>{setFiltroMaq(m);setFiltroTipo("TODOS");}} style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:filtroMaq===m?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${filtroMaq===m?"rgba(255,255,255,0.55)":C.border}`,color:filtroMaq===m?"#fff":C.textMuted,boxShadow:filtroMaq===m?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>Máquina {m.replace("M","")}<div style={{fontSize:9,fontWeight:400,marginTop:2,opacity:.7}}>{m==="M2"?"L4 · L5":"L6 · L7 · L8"}</div></button>))}
+        {["M2","M3"].map(m=>(<button key={m} onClick={()=>{setFiltroMaq(m);setFiltroTipo("TODOS");}} style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14,background:filtroMaq===m?`linear-gradient(135deg,${C.blue},${C.blueLight})`:C.tagBg,border:`2px solid ${filtroMaq===m?"rgba(255,255,255,0.55)":C.border}`,color:filtroMaq===m?"#fff":C.textMuted,boxShadow:filtroMaq===m?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>Máquina {m.replace("M","")}<div style={{fontSize:9,fontWeight:400,marginTop:2,opacity:.7}}>{m==="M2"?"L4 · L5":"L6 · L7 · L8"}</div></button>))}
       </div>
       <div style={{display:"flex",gap:6,marginBottom:10}}>
-        {AREAS_HIST.map(a=>(<button key={a.id} onClick={()=>{setFiltroArea(a.id);setFiltroTipo("TODOS");}} style={{flex:1,padding:"8px 6px",borderRadius:9,cursor:"pointer",background:filtroArea===a.id?C.card:C.tagBg,border:`2px solid ${filtroArea===a.id?C.accentLight:C.border}`,color:filtroArea===a.id?C.accentLight:C.textMuted,fontWeight:700,fontSize:10,textAlign:"center",boxShadow:filtroArea===a.id?"0 0 8px rgba(0,230,118,0.6),0 0 20px rgba(0,230,118,0.35),0 0 40px rgba(0,230,118,0.18)":"none"}}>{a.label}</button>))}
+        {AREAS_HIST.map(a=>(<button key={a.id} onClick={()=>{setFiltroArea(a.id);setFiltroTipo("TODOS");}} style={{flex:1,padding:"8px 6px",borderRadius:9,cursor:"pointer",background:filtroArea===a.id?C.card:C.tagBg,border:`2px solid ${filtroArea===a.id?C.accentLight:C.border}`,color:filtroArea===a.id?C.accentLight:C.textMuted,fontWeight:700,fontSize:10,textAlign:"center",boxShadow:filtroArea===a.id?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>{a.label}</button>))}
       </div>
       <div style={{marginBottom:14}}>
         <select value={filtroTipo} onChange={e=>setFiltroTipo(e.target.value)} style={{...inputStyle,fontWeight:filtroTipo==="TODOS"?400:700,color:filtroTipo==="TODOS"?C.textMuted:C.accentLight,borderColor:filtroTipo==="TODOS"?C.border:C.accentLight}}>
@@ -4533,9 +4533,9 @@ export default function App() {
           const ativo=tela===n.id;
           return (
             <button key={n.id} onClick={()=>setTela(n.id)} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"3px 0"}}>
-              <span style={{fontSize:17,lineHeight:1,opacity:ativo?1:0.38,transition:"opacity .15s"}}>{n.icon}</span>
-              <span style={{fontSize:9,fontWeight:ativo?800:400,color:ativo?"#00E676":"rgba(255,255,255,0.38)",letterSpacing:"0.05em",textTransform:"uppercase"}}>{n.label}</span>
-              {ativo&&<div style={{width:18,height:2.5,background:"#00E676",borderRadius:2,marginTop:1,boxShadow:"0 0 6px #009A4488"}}/>}
+              <span style={{fontSize:17,lineHeight:1,opacity:ativo?1:0.5,transition:"opacity .15s"}}>{n.icon}</span>
+              <span style={{fontSize:9,fontWeight:ativo?800:500,color:ativo?"#00975A":"rgba(11,31,48,0.45)",letterSpacing:"0.05em",textTransform:"uppercase"}}>{n.label}</span>
+              {ativo&&<div style={{width:18,height:2.5,background:"#00975A",borderRadius:2,marginTop:1,boxShadow:"0 0 6px #00975A55"}}/>}
             </button>
           );
         })}
