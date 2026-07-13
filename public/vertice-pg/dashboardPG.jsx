@@ -582,8 +582,15 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
 
   // Período editável da PG (bloco 01). Semente = PG_PERIODO do book; overlay em pg_config.periodo.
   const periodoPG = { ...{ MQ3:PG_PERIODO.MQ3, MQ2:PG_PERIODO.MQ2 }, ...(cfgPG.periodo||{}) };
-  const gravaPeriodo = (maq, campo, valor) => setDoc(doc(db,"pg_checklist_h2","pg_config"),
-    { periodo:{ [maq]:{ ...periodoPG[maq], [campo]:valor } }, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
+  const gravaPeriodo = (maq, campo, valor) => {
+    const novoPeriodo = {
+      MQ3: { ...periodoPG.MQ3 },
+      MQ2: { ...periodoPG.MQ2 },
+    };
+    novoPeriodo[maq] = { ...novoPeriodo[maq], [campo]: valor };
+    return setDoc(doc(db,"pg_checklist_h2","pg_config"),
+      { periodo:novoPeriodo, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
+  };
 
   // Cronograma (atividade → data). Vive em pg_checklist_h2/cronograma.
   const cronograma = (estados["cronograma"] && estados["cronograma"].itens) || [];
@@ -935,7 +942,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
                 const dataCampo = (lbl,campoId,ref)=>(
                   <label style={{display:"flex",flexDirection:"column",gap:2}}>
                     <span style={{fontFamily:"monospace",fontSize:8,color:C.textDim,letterSpacing:".08em"}}>{lbl} <span style={{color:`${CORMAQ[m]}99`}}>· book {ref}</span></span>
-                    <input type="date" defaultValue={isoDe(p[campoId])} onBlur={e=>{ if(e.target.value!==isoDe(p[campoId])) gravaPeriodo(m,campoId,e.target.value); }}
+                    <input key={`${m}-${campoId}-${isoDe(p[campoId])}`} type="date" defaultValue={isoDe(p[campoId])} onBlur={e=>{ if(e.target.value!==isoDe(p[campoId])) gravaPeriodo(m,campoId,e.target.value); }}
                       style={{background:C.bg,border:`1px solid ${CORMAQ[m]}44`,color:"#FFFFFF",borderRadius:6,padding:"5px 6px",fontSize:11,colorScheme:"dark"}}/>
                   </label>
                 );
@@ -947,7 +954,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
                       {dataCampo("TÉRMINO","fim",book.fim||"—")}
                       <label style={{display:"flex",flexDirection:"column",gap:2}}>
                         <span style={{fontFamily:"monospace",fontSize:8,color:C.textDim,letterSpacing:".08em"}}>PARADA</span>
-                        <input type="text" defaultValue={p.parada||book.parada||""} onBlur={e=>{ if(e.target.value!==(p.parada||book.parada||"")) gravaPeriodo(m,"parada",e.target.value); }}
+                        <input key={`${m}-parada-${p.parada||book.parada||""}`} type="text" defaultValue={p.parada||book.parada||""} onBlur={e=>{ if(e.target.value!==(p.parada||book.parada||"")) gravaPeriodo(m,"parada",e.target.value); }}
                           style={{background:C.bg,border:`1px solid ${CORMAQ[m]}44`,color:"#FFFFFF",borderRadius:6,padding:"5px 6px",fontSize:11}}/>
                       </label>
                     </div>
