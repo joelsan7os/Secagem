@@ -586,7 +586,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
     { prioridade:v, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
 
   // Período editável da PG (bloco 01). Semente = PG_PERIODO do book; overlay em pg_config.periodo.
-  const periodoPG = { ...{ MQ3:PG_PERIODO.MQ3, MQ2:PG_PERIODO.MQ2 }, ...((cfgEscala["config_periodo"]||{}).periodo||{}) };
+  const periodoPG = { ...{ MQ3:PG_PERIODO.MQ3, MQ2:PG_PERIODO.MQ2 }, ...((cfgEscala["registro"]||{}).periodo||{}) };
   const [gravaLog, setGravaLog] = useState("nenhuma gravação ainda");
   const gravaPeriodo = (maq, campo, valor) => {
     const novoPeriodo = {
@@ -595,17 +595,17 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
     };
     novoPeriodo[maq] = { ...novoPeriodo[maq], [campo]: valor };
     setGravaLog(`gravando ${maq}.${campo}=${valor}...`);
-    return setDoc(doc(db,"pg_escala_h2","config_periodo"),
+    return setDoc(doc(db,"pg_escala_h2","registro"),
       { periodo:novoPeriodo, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true})
       .then(()=>setGravaLog(`OK ${maq}.${campo}=${valor} às ${new Date().toLocaleTimeString()}`))
       .catch(e=>setGravaLog(`ERRO ${maq}.${campo}: ${String(e&&e.message||e)}`));
   };
 
   // Cronograma (atividade → data). Vive em pg_checklist_h2/cronograma.
-  const cronograma = (cfgEscala["cronograma"] && cfgEscala["cronograma"].itens) || [];
+  const cronograma = (cfgEscala["registro"] && cfgEscala["registro"].cronograma) || [];
   const _bibNome = Object.fromEntries(PG_BIBLIOTECA.map(a=>[a.id, a.nome]));
-  const salvarCronograma = itens => setDoc(doc(db,"pg_escala_h2","cronograma"),
-    { itens, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
+  const salvarCronograma = itens => setDoc(doc(db,"pg_escala_h2","registro"),
+    { cronograma:itens, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
   const gerarCron = () => { const it = gerarCronograma(periodoPG); if(it.length) salvarCronograma(it); };
   const moverItem = (idx, dias) => {
     const novo = cronograma.map((it,i)=>{ if(i!==idx) return it;
