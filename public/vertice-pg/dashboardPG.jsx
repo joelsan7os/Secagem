@@ -587,18 +587,14 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
 
   // Período editável da PG (bloco 01). Semente = PG_PERIODO do book; overlay em pg_config.periodo.
   const periodoPG = { ...{ MQ3:PG_PERIODO.MQ3, MQ2:PG_PERIODO.MQ2 }, ...((cfgEscala["registro"]||{}).periodo||{}) };
-  const [gravaLog, setGravaLog] = useState("nenhuma gravação ainda");
   const gravaPeriodo = (maq, campo, valor) => {
     const novoPeriodo = {
       MQ3: { ...periodoPG.MQ3 },
       MQ2: { ...periodoPG.MQ2 },
     };
     novoPeriodo[maq] = { ...novoPeriodo[maq], [campo]: valor };
-    setGravaLog(`gravando ${maq}.${campo}=${valor}...`);
     return setDoc(doc(db,"pg_escala_h2","registro"),
-      { periodo:novoPeriodo, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true})
-      .then(()=>setGravaLog(`OK ${maq}.${campo}=${valor} às ${new Date().toLocaleTimeString()}`))
-      .catch(e=>setGravaLog(`ERRO ${maq}.${campo}: ${String(e&&e.message||e)}`));
+      { periodo:novoPeriodo, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
   };
 
   // Cronograma (atividade → data). Vive em pg_checklist_h2/cronograma.
@@ -978,10 +974,6 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
           </Sec>
 
           <Sec num="01b" titulo="CRONOGRAMA DE ATIVIDADES">
-            <div style={{fontFamily:"monospace",fontSize:9,color:C.warning,background:"rgba(255,193,7,.08)",border:`1px solid ${C.warning}44`,borderRadius:6,padding:"6px 8px",marginBottom:8,wordBreak:"break-all"}}>
-              DIAG · periodoPG = {JSON.stringify(periodoPG)}
-              <br/>DIAG · última gravação: {gravaLog}
-            </div>
             {(()=>{
               const env = envelopePeriodo(periodoPG);
               if(!env) return (
