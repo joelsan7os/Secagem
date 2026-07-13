@@ -502,6 +502,7 @@ function FormAtivEdit({ v, set, onSalvar, onCancelar }) {
 
 export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
   const [estados, setEstados] = useState({});
+  const [cfgEscala, setCfgEscala] = useState({}); // pg_escala_h2/config_periodo + cronograma (collection gravável)
   const [agora, setAgora] = useState(Date.now());
   const [aba, setAba] = useState(()=> tv ? "exec" : (Date.now() < new Date(PG_MARCOS[0][1]).getTime() ? "plan" : "exec"));
   const [modoExec, setModoExec] = useState(tv ? "tv" : "comando");
@@ -520,8 +521,12 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
       const m = {}; snap.forEach(d=>{ m[d.id] = d.data(); });
       setEstados(m);
     }, ()=>{});
+    const unsub2 = onSnapshot(collection(db,"pg_escala_h2"), snap=>{
+      const m = {}; snap.forEach(d=>{ m[d.id] = d.data(); });
+      setCfgEscala(m);
+    }, ()=>{});
     const t = setInterval(()=>setAgora(Date.now()), 30000);
-    return ()=>{ unsub(); clearInterval(t); };
+    return ()=>{ unsub(); unsub2(); clearInterval(t); };
   },[]);
 
   const ativEstado = (estados["plano_atividades"] && estados["plano_atividades"].ativ) || {};
@@ -581,7 +586,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
     { prioridade:v, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
 
   // Período editável da PG (bloco 01). Semente = PG_PERIODO do book; overlay em pg_config.periodo.
-  const periodoPG = { ...{ MQ3:PG_PERIODO.MQ3, MQ2:PG_PERIODO.MQ2 }, ...(cfgPG.periodo||{}) };
+  const periodoPG = { ...{ MQ3:PG_PERIODO.MQ3, MQ2:PG_PERIODO.MQ2 }, ...((cfgEscala["config_periodo"]||{}).periodo||{}) };
   const [gravaLog, setGravaLog] = useState("nenhuma gravação ainda");
   const gravaPeriodo = (maq, campo, valor) => {
     const novoPeriodo = {
@@ -590,16 +595,16 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
     };
     novoPeriodo[maq] = { ...novoPeriodo[maq], [campo]: valor };
     setGravaLog(`gravando ${maq}.${campo}=${valor}...`);
-    return setDoc(doc(db,"pg_checklist_h2","pg_config"),
+    return setDoc(doc(db,"pg_escala_h2","config_periodo"),
       { periodo:novoPeriodo, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true})
       .then(()=>setGravaLog(`OK ${maq}.${campo}=${valor} às ${new Date().toLocaleTimeString()}`))
       .catch(e=>setGravaLog(`ERRO ${maq}.${campo}: ${String(e&&e.message||e)}`));
   };
 
   // Cronograma (atividade → data). Vive em pg_checklist_h2/cronograma.
-  const cronograma = (estados["cronograma"] && estados["cronograma"].itens) || [];
+  const cronograma = (cfgEscala["cronograma"] && cfgEscala["cronograma"].itens) || [];
   const _bibNome = Object.fromEntries(PG_BIBLIOTECA.map(a=>[a.id, a.nome]));
-  const salvarCronograma = itens => setDoc(doc(db,"pg_checklist_h2","cronograma"),
+  const salvarCronograma = itens => setDoc(doc(db,"pg_escala_h2","cronograma"),
     { itens, op:(perfil&&perfil.nome)||"—", ts:Date.now() },{merge:true}).catch(()=>{});
   const gerarCron = () => { const it = gerarCronograma(periodoPG); if(it.length) salvarCronograma(it); };
   const moverItem = (idx, dias) => {
