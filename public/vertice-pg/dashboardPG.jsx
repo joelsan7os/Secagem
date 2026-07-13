@@ -942,7 +942,7 @@ export default function DashboardPG({ onChecklist, onOperacao, onSair, tv }) {
                 const dataCampo = (lbl,campoId,ref)=>(
                   <label style={{display:"flex",flexDirection:"column",gap:2}}>
                     <span style={{fontFamily:"monospace",fontSize:8,color:C.textDim,letterSpacing:".08em"}}>{lbl} <span style={{color:`${CORMAQ[m]}99`}}>· book {ref}</span></span>
-                    <input key={`${m}-${campoId}-${isoDe(p[campoId])}`} type="date" defaultValue={isoDe(p[campoId])} onBlur={e=>{ if(e.target.value!==isoDe(p[campoId])) gravaPeriodo(m,campoId,e.target.value); }}
+                    <input key={`${m}-${campoId}-${isoDe(p[campoId])}`} type="date" defaultValue={isoDe(p[campoId])} onChange={e=>{ if(e.target.value!==isoDe(p[campoId])) gravaPeriodo(m,campoId,e.target.value); }}
                       style={{background:C.bg,border:`1px solid ${CORMAQ[m]}44`,color:"#FFFFFF",borderRadius:6,padding:"5px 6px",fontSize:11,colorScheme:"dark"}}/>
                   </label>
                 );
