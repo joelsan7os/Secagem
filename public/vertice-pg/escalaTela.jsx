@@ -7,6 +7,9 @@ import { PG_ESCALA } from "./pgPlano";
 import { PG_EQUIPE, anotarPessoa, resolverNome, skillsDe } from "./pgEquipe";
 import { letraNoTurno } from "./pgRotacao";
 import { PG_POSTOS } from "./pgBiblioteca";
+import { bloqueiosDoDia } from "./pgCronograma";
+import { BLOQUEIO_CAIXAS } from "./pgBloqueioData";
+const _CAIXA_NOME = Object.fromEntries(BLOQUEIO_CAIXAS.map(c=>[c.id, c.nome]));
 
 const C = {
   bg:"#04111D", card:"#0A1929", surface:"#071828",
@@ -61,6 +64,7 @@ function gerarEscala(iniISO, fimISO){
 
 export default function EscalaTela(){
   const [escala, setEscala] = useState(PG_ESCALA);
+  const [cronograma, setCronograma] = useState([]);
   const [idx, setIdx] = useState(()=>{ const h=new Date().toISOString().slice(0,10); const i=PG_ESCALA.findIndex(e=>e.d===h); return i>=0?i:0; });
   const [addTurno, setAddTurno] = useState(null); // índice do turno em modo "adicionar"
   const [novoNome, setNovoNome] = useState(""); const [novaFn, setNovaFn] = useState("");
@@ -72,6 +76,7 @@ export default function EscalaTela(){
   useEffect(()=>{
     const unsub = onSnapshot(doc(db,"pg_escala_h2","registro"), snap=>{
       const d = snap.data(); if(d?.escala?.length) setEscala(d.escala);
+      if(Array.isArray(d?.cronograma)) setCronograma(d.cronograma);
     }, ()=>{});
     return unsub;
   },[]);
@@ -179,6 +184,25 @@ export default function EscalaTela(){
         </div>
         <button onClick={()=>setIdx(Math.min(escala.length-1,idx+1))} disabled={idx===escala.length-1} style={navBtn(idx===escala.length-1)}>›</button>
       </div>
+
+      {(()=>{
+        const bloqs = bloqueiosDoDia(cronograma, dia.d);
+        if(!bloqs.length) return null;
+        return (
+          <div style={{marginBottom:10,border:`1px solid ${C.warning}55`,background:"rgba(255,193,7,.07)",borderRadius:10,padding:"9px 11px"}}>
+            <div style={{fontFamily:"monospace",fontSize:9,color:C.warning,letterSpacing:".12em",marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
+              <span>🔒</span> BLOQUEIOS EXIGIDOS HOJE
+            </div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {bloqs.map(id=>(
+                <span key={id} style={{fontSize:11,fontWeight:700,color:C.white,background:"rgba(255,255,255,.05)",border:`1px solid ${C.warning}66`,borderRadius:14,padding:"3px 10px"}}>
+                  {_CAIXA_NOME[id] || id}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {dia.t.map(([h,pessoas],ti)=>{
