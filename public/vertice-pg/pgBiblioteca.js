@@ -140,7 +140,7 @@ export const PG_BIBLIOTECA = [
     fase: "PARADA",
     duracaoHoras: 5,
     minOperadores: 2,
-    bloqueios: [],
+    bloqueios: ["m3_bloqueio_geral_acion_p_u"],
     skills: [],
     restricao: "Rolo de tração e acionamento da fita de passagem ficam desbloqueados quando houver troca de fita.",
     evidencia: {
@@ -156,7 +156,7 @@ export const PG_BIBLIOTECA = [
     fase: "PARADA",
     duracaoHoras: 4,
     minOperadores: 4,
-    bloqueios: [],
+    bloqueios: ["m3_u_h_s_e_troca_da_manta"],
     skills: [],
     restricao: "Se possível, painel solicita caçamba roll on no vão da ponte para descarte.",
     evidencia: {
@@ -238,7 +238,7 @@ export const PG_BIBLIOTECA = [
     fase: "PARADA",
     duracaoHoras: 4,
     minOperadores: 2,
-    bloqueios: [],
+    bloqueios: ["m2_bloqueio_geral"],
     skills: [],
     restricao: null,
     evidencia: {
@@ -254,7 +254,7 @@ export const PG_BIBLIOTECA = [
     fase: "PARADA",
     duracaoHoras: 4,
     minOperadores: 4,
-    bloqueios: [],
+    bloqueios: ["m2_unidade_troca_manta"],
     skills: [],
     restricao: null,
     evidencia: {
@@ -368,7 +368,7 @@ export const PG_BIBLIOTECA = [
     fase: "EXECUCAO",
     duracaoHoras: 16,
     minOperadores: 4,
-    bloqueios: [],
+    bloqueios: ["m3_secador_e_ventiladores"],
     skills: [],
     restricao: "Rolo de tração e acionamento da fita ficam desbloqueados. Máquina varia por PG (2025: M3; 2026: M2).",
     evidencia: {
@@ -402,7 +402,7 @@ export const PG_BIBLIOTECA = [
     fase: "RETOMADA",
     duracaoHoras: 10,
     minOperadores: 4,
-    bloqueios: [],
+    bloqueios: ["m3_u_h_s_e_troca_da_manta"],
     skills: [],
     restricao: "Manta da shoe press instalada pela CBTI em paralelo (acompanhamento da operação).",
     evidencia: {
@@ -468,7 +468,7 @@ export const PG_BIBLIOTECA = [
     fase: "RETOMADA",
     duracaoHoras: 10,
     minOperadores: 4,
-    bloqueios: [],
+    bloqueios: ["m2_unidade_troca_manta"],
     skills: [],
     restricao: "Manta da shoe press instalada pela CBTI em paralelo (acompanhamento da operação).",
     evidencia: {
