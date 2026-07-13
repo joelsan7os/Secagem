@@ -3,29 +3,29 @@ import { useState, useRef, useCallback } from "react";
 import { COL, doc, setDoc } from "./firebase";
 
 const C = {
-  bg:"#04111D", surface:"#071828", card:"#0A1929",
-  accent:"#00E676", accentDark:"#006B2E", accentLight:"#00E676",
-  blue:"#0E2847", blueLight:"#1A5CCC",
-  warning:"#b87d00", warningLight:"#FFC107",
-  danger:"#c0272d", dangerLight:"#FF5252",
-  text:"#FFFFFF", textMuted:"#B5C6DA", textDim:"#3A5880",
-  border:"rgba(60,255,140,0.15)", tagBg:"rgba(255,255,255,0.04)",
+  bg:"#EEF2F6", surface:"#FFFFFF", card:"#FFFFFF",
+  accent:"#00C766", accentDark:"#006B2E", accentLight:"#00975A",
+  blue:"#1A5CCC", blueLight:"#1A5CCC",
+  warning:"#B87D00", warningLight:"#B87D00",
+  danger:"#C0272D", dangerLight:"#C0272D",
+  text:"#0B1F30", textMuted:"#54687A", textDim:"#93A6B6",
+  border:"rgba(11,31,48,0.12)", tagBg:"#EBF0F5",
 };
 
 const cardStyle = {
   position:"relative", borderRadius:20, overflow:"hidden", isolation:"isolate",
-  background:"rgba(10,24,18,0.42)",
-  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.04) 20%, transparent 44%),radial-gradient(120px 120px at 0% 0%, rgba(210,255,235,0.14), transparent 70%)",
-  backdropFilter:"blur(22px) saturate(1.4)", WebkitBackdropFilter:"blur(22px) saturate(1.4)",
-  border:"1px solid rgba(255,255,255,0.12)",
-  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.30),inset 0 0 30px rgba(255,255,255,0.03),0 10px 30px -10px rgba(0,0,0,0.7)",
+  background:"rgba(255,255,255,0.86)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(245,249,252,0.7) 40%, rgba(240,245,250,0.55) 100%)",
+  backdropFilter:"blur(18px) saturate(1.1)", WebkitBackdropFilter:"blur(18px) saturate(1.1)",
+  border:"1px solid rgba(11,31,48,0.10)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.9),0 8px 24px -12px rgba(11,31,48,0.20),0 2px 6px -2px rgba(11,31,48,0.08)",
 };
 const glassMini = {
   position:"relative", overflow:"hidden",
-  background:"rgba(255,255,255,0.05)",
-  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.10), transparent 50%)",
-  border:"1px solid rgba(255,255,255,0.08)",
-  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.14)",
+  background:"rgba(255,255,255,0.75)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,245,250,0.6) 60%)",
+  border:"1px solid rgba(11,31,48,0.08)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.9),0 2px 8px -4px rgba(11,31,48,0.12)",
 };
 
 const storageGet = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
@@ -603,7 +603,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
         {[["tipos","Por motivo"],["linhas","Por linha"]].map(([key,label])=>(
           <button key={key} onClick={()=>setAba(key)}
             style={{flex:1,padding:"10px",cursor:"pointer",fontWeight:700,fontSize:12,border:"none",
-              background:aba===key?C.blue:C.tagBg,color:aba===key?C.text:C.textMuted,
+              background:aba===key?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":C.tagBg,color:aba===key?"#00975A":C.textMuted,
               borderRight:key==="tipos"?`1px solid ${C.border}`:"none"}}>
             {label}
           </button>
@@ -622,7 +622,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
                 </div>
                 <span style={{fontFamily:"monospace",fontSize:15,fontWeight:900,color:t.total>0?t.cor:C.textDim}}>{t.total}</span>
               </div>
-              <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.05)",overflow:"hidden"}}>
+              <div style={{height:6,borderRadius:3,background:"rgba(11,31,48,0.03)",overflow:"hidden"}}>
                 <div style={{height:"100%",width:`${(t.total/maxTipo)*100}%`,borderRadius:3,
                   background:t.cor,transition:"width .5s",boxShadow:t.total>0?`0 0 8px ${t.cor}88`:"none"}}/>
               </div>
@@ -646,7 +646,7 @@ export function AvariasAnalytics({ avariasData, perfil }) {
                 <span style={{fontFamily:"monospace",fontSize:18,fontWeight:900,color:l.total>0?l.cor:C.textDim,
                   textShadow:l.total>0?`0 0 10px ${l.cor}88`:"none"}}>{l.total}</span>
               </div>
-              <div style={{height:8,borderRadius:4,background:"rgba(255,255,255,0.05)",overflow:"hidden"}}>
+              <div style={{height:8,borderRadius:4,background:"rgba(11,31,48,0.03)",overflow:"hidden"}}>
                 <div style={{height:"100%",width:`${(l.total/maxLinha)*100}%`,borderRadius:4,
                   background:l.cor,transition:"width .6s",boxShadow:l.total>0?`0 0 10px ${l.cor}77`:"none"}}/>
               </div>
@@ -739,7 +739,7 @@ export function PainelAvariasTV({ avariasData, setTela }) {
               <span style={{fontSize:9,color:l.total>0?l.cor:C.textDim,fontFamily:"monospace",fontWeight:700}}>#{i+1} {l.linha}</span>
               <span style={{fontFamily:"monospace",fontSize:10,fontWeight:900,color:l.total>0?l.cor:C.textDim}}>{l.total}</span>
             </div>
-            <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.05)",overflow:"hidden"}}>
+            <div style={{height:4,borderRadius:2,background:"rgba(11,31,48,0.03)",overflow:"hidden"}}>
               <div style={{height:"100%",width:`${(l.total/maxL)*100}%`,borderRadius:2,
                 background:l.cor,boxShadow:l.total>0?`0 0 5px ${l.cor}88`:"none",transition:"width .5s"}}/>
             </div>
