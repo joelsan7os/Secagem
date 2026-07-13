@@ -4,52 +4,52 @@ import { EquipamentosTela, equipamentosComum, equipamentosM2, equipamentosM3, eq
 
 // ─── Paleta Suzano Oficial ────────────────────────────────────────────────────
 const C = {
-  bg:           "#04111D",
-  surface:      "#071828",
-  card:         "#0A1929",
-  cardHover:    "#0E2847",
-  border:       "rgba(60,255,140,0.15)",
-  borderLight:  "rgba(60,255,140,0.3)",
-  accent:       "#00E676",
-  accentHover:  "#52FF9C",
+  bg:           "#EEF2F6",
+  surface:      "#FFFFFF",
+  card:         "#FFFFFF",
+  cardHover:    "#F2F6FA",
+  border:       "rgba(11,31,48,0.12)",
+  borderLight:  "rgba(11,31,48,0.22)",
+  accent:       "#00C766",
+  accentHover:  "#00A855",
   accentDark:   "#006B2E",
-  accentLight:  "#00E676",
-  blue:         "#0E2847",
+  accentLight:  "#00975A",
+  blue:         "#1A5CCC",
   blueLight:    "#1A5CCC",
-  blueDark:     "#020C16",
-  success:      "#00E676",
-  successLight: "#52FF9C",
-  warning:      "#b87d00",
-  warningLight: "#FFC107",
-  danger:       "#c0272d",
-  dangerLight:  "#FF5252",
-  text:         "#FFFFFF",
-  textMuted:    "#B5C6DA",
-  textDim:      "#3A5880",
-  white:        "#ffffff",
-  tagBg:        "rgba(10,25,45,0.9)",
-  bgDeep:       "#03100A",
-  cardGrad:     "linear-gradient(180deg, rgba(18,34,27,0.92), rgba(8,20,14,0.96))",
-  cardBorder:   "rgba(0,230,118,0.14)",
+  blueDark:     "#0E3C8C",
+  success:      "#00A855",
+  successLight: "#00975A",
+  warning:      "#B87D00",
+  warningLight: "#B87D00",
+  danger:       "#C0272D",
+  dangerLight:  "#C0272D",
+  text:         "#0B1F30",
+  textMuted:    "#54687A",
+  textDim:      "#93A6B6",
+  white:        "#0B1F30",
+  tagBg:        "#EBF0F5",
+  bgDeep:       "#E4EAF0",
+  cardGrad:     "linear-gradient(180deg, #FFFFFF, #F5F8FB)",
+  cardBorder:   "rgba(11,31,48,0.10)",
   heroGrad:     "linear-gradient(150deg,#00C766,#00A555 55%,#00863f)",
-  waveColor:    "#00E676",
+  waveColor:    "#00C766",
 };
 
 // ─── Primitivos visuais (layout flutuante VÉRTICE) ──────────────────────────
 const cardStyle = {
   position:"relative", borderRadius:20, overflow:"hidden", isolation:"isolate",
-  background:"rgba(10,24,18,0.42)",
-  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.04) 20%, transparent 44%),radial-gradient(120px 120px at 0% 0%, rgba(210,255,235,0.14), transparent 70%)",
-  backdropFilter:"blur(22px) saturate(1.4)", WebkitBackdropFilter:"blur(22px) saturate(1.4)",
-  border:"1px solid rgba(255,255,255,0.12)",
-  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.30),inset 0 0 30px rgba(255,255,255,0.03),0 10px 30px -10px rgba(0,0,0,0.7)",
+  background:"rgba(255,255,255,0.86)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(245,249,252,0.7) 40%, rgba(240,245,250,0.55) 100%)",
+  backdropFilter:"blur(18px) saturate(1.1)", WebkitBackdropFilter:"blur(18px) saturate(1.1)",
+  border:"1px solid rgba(11,31,48,0.10)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.9),0 8px 24px -12px rgba(11,31,48,0.20),0 2px 6px -2px rgba(11,31,48,0.08)",
 };
 const glassMini = {
   position:"relative", overflow:"hidden",
-  background:"rgba(255,255,255,0.05)",
-  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.10), transparent 50%)",
-  border:"1px solid rgba(255,255,255,0.08)",
-  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.14)",
+  background:"rgba(255,255,255,0.75)",
+  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,245,250,0.6) 60%)",
+  border:"1px solid rgba(11,31,48,0.08)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.9),0 2px 8px -4px rgba(11,31,48,0.12)",
 };
 function Waves() {
   return (
@@ -596,9 +596,9 @@ import { PainelCarrossel } from "./carrossel";
 const DashboardTV = React.lazy(() =>
   import("./Dashboard").catch(() => ({
     default: ({ setModoVisao }) => (
-      <div style={{background:"#04111D",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,color:"#B5C6DA",fontFamily:"'Segoe UI',system-ui,sans-serif",padding:24,textAlign:"center"}}>
+      <div style={{background:"#EEF2F6",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,color:"#54687A",fontFamily:"'Segoe UI',system-ui,sans-serif",padding:24,textAlign:"center"}}>
         <div style={{fontSize:40}}>🖥️</div>
-        <div style={{color:"#fff",fontWeight:800,fontSize:16}}>Dashboard ainda não publicado</div>
+        <div style={{color:"#0B1F30",fontWeight:800,fontSize:16}}>Dashboard ainda não publicado</div>
         <div style={{fontSize:13,maxWidth:340,lineHeight:1.5}}>O arquivo Dashboard.jsx precisa ser enviado ao repositório. Assim que subir, este modo passa a funcionar.</div>
         <button onClick={()=>setModoVisao("app")} style={{background:"rgba(80,144,255,0.12)",border:"1px solid #1A5CCC55",color:"#1A5CCC",borderRadius:9,padding:"10px 18px",cursor:"pointer",fontSize:13,fontWeight:800}}>← Voltar ao App</button>
       </div>
@@ -1658,7 +1658,7 @@ function UnitBarcodeInput({ lote, setLote, unidade, setUnidade, unitFoto, setUni
         </div>
       )}
       {erro&&(
-        <div style={{background:"#2a080833",border:`1px solid ${C.dangerLight}44`,borderRadius:8,padding:"6px 10px",marginBottom:6}}>
+        <div style={{background:"rgba(192,39,45,0.10)",border:`1px solid ${C.dangerLight}44`,borderRadius:8,padding:"6px 10px",marginBottom:6}}>
           <span style={{color:C.dangerLight,fontSize:11}}>{erro}</span>
         </div>
       )}
@@ -1731,7 +1731,7 @@ function EnfardamentoTela({ onSalvar, turno, letra:letraProp, opPU, opPainel, da
           ))}
         </div>
         {/* Chips automáticos */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",background:"rgba(4,17,29,0.88)",border:"1px solid rgba(80,144,255,0.18)",borderRadius:10,padding:"7px 12px",marginBottom:12,boxShadow:"inset 0 0 20px rgba(0,0,0,0.45),0 0 8px rgba(80,144,255,0.07)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",background:"rgba(255,255,255,0.96)",border:"1px solid rgba(80,144,255,0.18)",borderRadius:10,padding:"7px 12px",marginBottom:12,boxShadow:"inset 0 0 20px rgba(0,0,0,0.45),0 0 8px rgba(80,144,255,0.07)"}}>
           {[
             {label:"TURNO", value:getAutoTurno(), bg:"rgba(14,40,71,0.9)",  border:"rgba(26,92,204,0.4)",  color:"#5090FF"},
             {label:"LETRA", value:letra,           bg:"rgba(0,40,20,0.9)",   border:"rgba(0,230,118,0.35)", color:"#00E676"},
@@ -2024,7 +2024,7 @@ function WFTTela({ onSalvar, turno, letra, opPU:opPUProp, opPainel:opPainelProp,
             </button>
           ))}
         </div>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",background:"rgba(4,17,29,0.88)",border:"1px solid rgba(80,144,255,0.18)",borderRadius:10,padding:"7px 12px",marginBottom:12,boxShadow:"inset 0 0 20px rgba(0,0,0,0.45),0 0 8px rgba(80,144,255,0.07)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",background:"rgba(255,255,255,0.96)",border:"1px solid rgba(80,144,255,0.18)",borderRadius:10,padding:"7px 12px",marginBottom:12,boxShadow:"inset 0 0 20px rgba(0,0,0,0.45),0 0 8px rgba(80,144,255,0.07)"}}>
           {[
             {label:"TURNO",value:turno,bg:"rgba(14,40,71,0.9)",border:"rgba(26,92,204,0.4)",color:"#5090FF"},
             {label:"LETRA",value:letra,bg:"rgba(0,40,20,0.9)",border:"rgba(0,230,118,0.35)",color:"#00E676"},
@@ -2106,7 +2106,7 @@ function WFTTela({ onSalvar, turno, letra, opPU:opPUProp, opPainel:opPainelProp,
               {temRejeicao===false&&<VerificacoesWFT respostas={respostas} setResp={setResp} fotos={fotos} addFoto={addFoto} remFoto={remFoto}/>}
             </div>
           ):(
-            <div style={{background:"#00280f",border:`1px solid ${C.accentLight}44`,borderRadius:12,padding:16,marginBottom:14,textAlign:"center"}}>
+            <div style={{background:"rgba(0,199,102,0.12)",border:`1px solid ${C.accentLight}44`,borderRadius:12,padding:16,marginBottom:14,textAlign:"center"}}>
               <div style={{fontSize:32,marginBottom:6}}>✅</div>
               <p style={{color:C.accentLight,fontWeight:800,fontSize:15,margin:"0 0 4px"}}>Consumo dentro da meta!</p>
               <p style={{color:C.textMuted,fontSize:12,margin:0}}>{WFT_META_H2} m³/h H2 · Atual: {consumoNum} m³/h</p>
@@ -2219,7 +2219,7 @@ function RitmoVaporTela({ onSalvar, turno, letra, opPU:opPUProp, opPainel:opPain
             </button>
           ))}
         </div>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",background:"rgba(4,17,29,0.88)",border:"1px solid rgba(80,144,255,0.18)",borderRadius:10,padding:"7px 12px",marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",background:"rgba(255,255,255,0.96)",border:"1px solid rgba(80,144,255,0.18)",borderRadius:10,padding:"7px 12px",marginBottom:12}}>
           {[
             {label:"TURNO",value:turno,color:"#5090FF"},
             {label:"LETRA",value:letra,color:"#00E676"},
@@ -2553,7 +2553,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
           </div>
         )}
         {/* Zona 1 — Sistema (automático) */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",background:"rgba(4,17,29,0.88)",border:"1px solid rgba(80,144,255,0.18)",borderRadius:10,padding:"7px 12px",marginBottom:12,boxShadow:"inset 0 0 20px rgba(0,0,0,0.45),0 0 8px rgba(80,144,255,0.07)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",background:"rgba(255,255,255,0.96)",border:"1px solid rgba(80,144,255,0.18)",borderRadius:10,padding:"7px 12px",marginBottom:12,boxShadow:"inset 0 0 20px rgba(0,0,0,0.45),0 0 8px rgba(80,144,255,0.07)"}}>
           {[
             {label:"TURNO", value:turno,  bg:"rgba(14,40,71,0.9)",  border:"rgba(26,92,204,0.4)",  color:"#5090FF"},
             {label:"LETRA", value:letra,  bg:"rgba(0,40,20,0.9)",   border:"rgba(0,230,118,0.35)", color:"#00E676"},
@@ -2665,7 +2665,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                       </div>
                       {item.ref!=="—"&&<div style={{color:C.textMuted,fontSize:10,marginTop:1}}>Ref: <span style={{color:C.warningLight,fontWeight:700}}>{item.ref}</span><span style={{color:C.textDim}}> · {item.unit}</span></div>}
                       {item.hint&&<div style={{color:C.textDim,fontSize:10,marginTop:3,lineHeight:1.3,fontStyle:"italic"}}>{item.hint}</div>}
-                      {(isAlert||isValNok)&&valores[item.id]&&<div style={{marginTop:4,background:"#2a080833",border:`1px solid ${C.dangerLight}44`,borderRadius:6,padding:"3px 8px",display:"inline-flex"}}><span style={{color:C.dangerLight,fontSize:10,fontWeight:700}}>{isAlert?"🔴 Abaixo do mínimo!":"⚠ Valor fora do padrão"}</span></div>}
+                      {(isAlert||isValNok)&&valores[item.id]&&<div style={{marginTop:4,background:"rgba(192,39,45,0.10)",border:`1px solid ${C.dangerLight}44`,borderRadius:6,padding:"3px 8px",display:"inline-flex"}}><span style={{color:C.dangerLight,fontSize:10,fontWeight:700}}>{isAlert?"🔴 Abaixo do mínimo!":"⚠ Valor fora do padrão"}</span></div>}
                       {/* Faquinhas rendering com cor por faixa */}
                       {item.tipo==="faquinhas"&&(
                         <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:8}}>
@@ -2977,7 +2977,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
       })}
 
       {noks>0&&(
-        <div style={{background:"#2a080833",border:`1px solid ${C.dangerLight}55`,borderRadius:10,padding:"12px 14px",marginBottom:14}}>
+        <div style={{background:"rgba(192,39,45,0.10)",border:`1px solid ${C.dangerLight}55`,borderRadius:10,padding:"12px 14px",marginBottom:14}}>
           <p style={{color:C.dangerLight,fontWeight:700,fontSize:12,margin:"0 0 6px"}}>⚠ {noks} item{noks>1?"s":""} não conforme{noks>1?"s":""}</p>
           {items.filter(i=>isItemNok(i,valores[i.id])).map(i=>(<div key={i.id} style={{color:C.textMuted,fontSize:11,marginBottom:2}}>· {i.secao} — {i.item}</div>))}
         </div>
@@ -3481,7 +3481,7 @@ function RotinaH2Tela({ onSalvar, opPU, opPainel, data }) {
           ))}
         </div>
         {/* Chips automáticos */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",background:"rgba(4,17,29,0.88)",border:"1px solid rgba(80,144,255,0.18)",borderRadius:10,padding:"7px 12px",marginBottom:12,boxShadow:"inset 0 0 20px rgba(0,0,0,0.45),0 0 8px rgba(80,144,255,0.07)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",background:"rgba(255,255,255,0.96)",border:"1px solid rgba(80,144,255,0.18)",borderRadius:10,padding:"7px 12px",marginBottom:12,boxShadow:"inset 0 0 20px rgba(0,0,0,0.45),0 0 8px rgba(80,144,255,0.07)"}}>
           {[
             {label:"TURNO", value:getAutoTurno(), bg:"rgba(14,40,71,0.9)",  border:"rgba(26,92,204,0.4)",  color:"#5090FF"},
             {label:"LETRA", value:letra,           bg:"rgba(0,40,20,0.9)",   border:"rgba(0,230,118,0.35)", color:"#00E676"},
@@ -3806,7 +3806,7 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
               </div>
               <div style={{color:C.white,fontWeight:800,fontSize:16}}>{fmtData(reg.data)}</div>
             </div>
-            {reg.noks>0?<span style={{background:"#2a080833",border:`1px solid ${C.dangerLight}55`,color:C.dangerLight,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:800}}>⚠ {reg.noks} alerta{reg.noks>1?"s":""}</span>:<span style={{background:"#002810",border:`1px solid ${C.accentLight}55`,color:C.accentLight,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:800}}>✓ OK</span>}
+            {reg.noks>0?<span style={{background:"rgba(192,39,45,0.10)",border:`1px solid ${C.dangerLight}55`,color:C.dangerLight,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:800}}>⚠ {reg.noks} alerta{reg.noks>1?"s":""}</span>:<span style={{background:"rgba(0,199,102,0.12)",border:`1px solid ${C.accentLight}55`,color:C.accentLight,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:800}}>✓ OK</span>}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             {[["Op. Parte Úmida",reg.opPU||"—"],["Op. Painel",reg.opPainel||"—"]].map(([lbl,val])=>(<div key={lbl} style={{background:C.surface,borderRadius:8,padding:"7px 10px"}}><div style={{color:C.textMuted,fontSize:9,textTransform:"uppercase",marginBottom:1}}>{lbl}</div><div style={{color:C.text,fontSize:12,fontWeight:600}}>{val}</div></div>))}
@@ -3819,7 +3819,7 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
               <div key={idx} style={{padding:"6px 0",borderBottom:idx<noksItems.length-1?`1px solid ${C.border}`:"none"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                   <div><span style={{color:C.textMuted,fontSize:10,marginRight:6}}>{i.secao}</span><span style={{color:C.text,fontSize:12}}>{i.item}</span>{i.resp&&!["nok","nao"].includes(i.resp)&&<span style={{color:C.dangerLight,fontSize:11,marginLeft:6,fontWeight:700}}>→ {i.resp}</span>}</div>
-                  <span style={{color:i.resp==="critico"?C.dangerLight:i.resp==="atencao"?C.warningLight:C.dangerLight,borderRadius:6,padding:"1px 7px",fontSize:10,fontWeight:800,flexShrink:0,marginLeft:8,background:"#2a080833",border:`1px solid ${i.resp==="atencao"?C.warningLight:C.dangerLight}44`}}>{i.resp==="critico"?"🔴 Crítico":i.resp==="atencao"?"⚠ Atenção":i.resp==="desvio"?"🟡 Desvio":"⚠"}</span>
+                  <span style={{color:i.resp==="critico"?C.dangerLight:i.resp==="atencao"?C.warningLight:C.dangerLight,borderRadius:6,padding:"1px 7px",fontSize:10,fontWeight:800,flexShrink:0,marginLeft:8,background:"rgba(192,39,45,0.10)",border:`1px solid ${i.resp==="atencao"?C.warningLight:C.dangerLight}44`}}>{i.resp==="critico"?"🔴 Crítico":i.resp==="atencao"?"⚠ Atenção":i.resp==="desvio"?"🟡 Desvio":"⚠"}</span>
                 </div>
                 {i.valorPassagem&&<p style={{color:C.warningLight,fontSize:11,margin:"4px 0 0",fontWeight:700}}>Valor utilizado: {i.valorPassagem}</p>}{i.obs&&<p style={{color:C.textMuted,fontSize:11,margin:"2px 0 0",fontStyle:"italic",lineHeight:1.4}}>"{i.obs}"</p>}
                 {i.fotos?.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>{i.fotos.map((src,fi)=>(<img key={fi} src={src} alt="" onClick={()=>setFotoAmp(src)} style={{width:60,height:60,objectFit:"cover",borderRadius:7,border:`2px solid ${C.dangerLight}55`,cursor:"pointer"}}/>))}</div>}
@@ -4199,7 +4199,7 @@ function RotasTela({ historico, onVoltar }) {
           <h2 style={{color:C.white,fontSize:19,fontWeight:800,margin:0}}>Rotas do Turno</h2>
           <div style={{display:"flex",gap:8,marginTop:4}}>
             {[{label:"TURNO",value:turno,color:"#5090FF"},{label:"LETRA",value:letra,color:"#00E676"}].map(({label,value,color})=>(
-              <div key={label} style={{background:"rgba(10,25,45,0.9)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:6,padding:"3px 10px",display:"flex",gap:6,alignItems:"center"}}>
+              <div key={label} style={{background:"#EBF0F5",border:"1px solid rgba(255,255,255,0.08)",borderRadius:6,padding:"3px 10px",display:"flex",gap:6,alignItems:"center"}}>
                 <span style={{color:"rgba(255,255,255,0.3)",fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase"}}>{label}</span>
                 <span style={{color,fontSize:12,fontWeight:700}}>{value}</span>
               </div>
@@ -4247,7 +4247,7 @@ function RotasTela({ historico, onVoltar }) {
                 <span style={{color:cor,fontSize:9,fontWeight:800,letterSpacing:"0.08em"}}>{label}</span>
                 {st!=="feito"&&(
                   <button onClick={()=>setModalAberto({rotaId:rota.id,area:areaAtiva,label:rota.label,maquina:rota.maquina,todas:false})}
-                    style={{background:"rgba(10,25,45,0.9)",border:`1px solid rgba(255,255,255,0.1)`,color:C.textMuted,borderRadius:6,padding:"4px 9px",cursor:"pointer",fontSize:9,letterSpacing:"0.06em"}}>JUST.</button>
+                    style={{background:"#EBF0F5",border:`1px solid rgba(255,255,255,0.1)`,color:C.textMuted,borderRadius:6,padding:"4px 9px",cursor:"pointer",fontSize:9,letterSpacing:"0.06em"}}>JUST.</button>
                 )}
               </div>
             </div>
@@ -4378,8 +4378,8 @@ export default function App() {
   if(adminAberto && perfil.funcao==="dev") return <PainelAdmin onVoltar={()=>setAdminAberto(false)}/>;
   if(modoVisao==="dashboard") return <React.Suspense fallback={<div style={{background:C.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",color:C.accentLight,fontFamily:"monospace",fontSize:14}}>Carregando dashboard…</div>}><DashboardTV setTela={(t)=>{setModoVisao("app");setTela(t);}} setModoVisao={setModoVisao}/></React.Suspense>;
   return (
-    <div style={{background:"#03100A",minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text,position:"relative"}}>
-      <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",background:"radial-gradient(42% 22% at 8% 0%, rgba(210,255,235,0.16), transparent 60%),radial-gradient(70% 34% at 10% 2%, rgba(0,230,118,0.24), transparent 62%),radial-gradient(75% 45% at 92% 30%, rgba(0,220,140,0.12), transparent 60%),linear-gradient(180deg,#062018 0%,#04140E 40%,#03100A 100%)"}}/>
+    <div style={{background:"#EEF2F6",minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:C.text,position:"relative"}}>
+      <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",background:"radial-gradient(50% 26% at 10% 0%, rgba(0,199,102,0.10), transparent 62%),radial-gradient(60% 34% at 92% 8%, rgba(26,92,204,0.07), transparent 60%),linear-gradient(180deg,#FFFFFF 0%,#F1F5F8 45%,#E7EDF2 100%)"}}/>
       <div style={{maxWidth:860,margin:"0 auto",position:"relative",zIndex:1}}>
       <style>{`
         @keyframes trava-pulse {
@@ -4528,7 +4528,7 @@ export default function App() {
       </div>
       <div style={{padding:"20px 16px 100px"}}>{renderTela()}</div>
       {/* Nav */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:200,background:"rgba(4,17,29,0.92)",backdropFilter:"blur(25px)",WebkitBackdropFilter:"blur(25px)",borderTop:"1px solid rgba(0,230,118,0.2)",display:"flex",padding:"8px 0 16px",boxShadow:"0 -4px 40px rgba(0,0,0,0.7)"}}>
+      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:200,background:"rgba(255,255,255,0.94)",backdropFilter:"blur(25px)",WebkitBackdropFilter:"blur(25px)",borderTop:"1px solid rgba(11,31,48,0.10)",display:"flex",padding:"8px 0 16px",boxShadow:"0 -4px 30px rgba(11,31,48,0.10)"}}>
         {nav.map(n=>{
           const ativo=tela===n.id;
           return (
