@@ -7,13 +7,13 @@ const UCOL = collection(db, "usuarios_h2");
 
 // ─── Paleta ───────────────────────────────────────────────────────────────────
 const C = {
-  bg:"#04111D", surface:"#071828", card:"#0A1929", cardHover:"#0E2847",
-  accent:"#00E676", accentLight:"#00E676", accentDark:"#006B2E",
-  blue:"#0E2847", blueLight:"#1A5CCC",
-  warning:"#b87d00", warningLight:"#FFC107",
-  danger:"#c0272d", dangerLight:"#FF5252",
-  text:"#FFFFFF", textMuted:"#B5C6DA", textDim:"#3A5880", white:"#ffffff",
-  border:"rgba(60,255,140,0.15)", tagBg:"rgba(255,255,255,0.04)",
+  bg:"#EEF2F6", surface:"#FFFFFF", card:"#FFFFFF", cardHover:"#F2F6FA",
+  accent:"#00C766", accentLight:"#00975A", accentDark:"#006B2E",
+  blue:"#1A5CCC", blueLight:"#1A5CCC",
+  warning:"#B87D00", warningLight:"#B87D00",
+  danger:"#C0272D", dangerLight:"#C0272D",
+  text:"#0B1F30", textMuted:"#54687A", textDim:"#93A6B6", white:"#0B1F30",
+  border:"rgba(11,31,48,0.12)", tagBg:"#EBF0F5",
 };
 
 const inputStyle = {
@@ -288,7 +288,7 @@ export function TelaAuth({ onEntrar }) {
   return (
     <div style={{
       minHeight:"100vh", background:
-        "radial-gradient(80% 60% at 50% 0%,#0a1622,#04080e 70%,#01040a)",
+        "radial-gradient(80% 60% at 50% 0%,#FFFFFF,#F1F5F8 60%,#E7EDF2)",
       display:"flex", flexDirection:"column", alignItems:"center",
       overflowY:"auto", position:"relative",
     }}>
@@ -304,7 +304,7 @@ export function TelaAuth({ onEntrar }) {
       {/* Grid blueprint de fundo */}
       <div style={{
         position:"fixed", inset:0, pointerEvents:"none", zIndex:0,
-        backgroundImage:"linear-gradient(rgba(0,230,118,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,.04) 1px,transparent 1px)",
+        backgroundImage:"linear-gradient(rgba(0,150,90,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,120,180,.05) 1px,transparent 1px)",
         backgroundSize:"34px 34px",
         WebkitMaskImage:"radial-gradient(ellipse 80% 70% at 50% 38%,#000 36%,transparent 100%)",
         maskImage:"radial-gradient(ellipse 80% 70% at 50% 38%,#000 36%,transparent 100%)",
@@ -340,12 +340,12 @@ export function TelaAuth({ onEntrar }) {
         {/* Wordmark */}
         <div className="vx-wordmark-anim" style={{
           fontFamily:"system-ui,sans-serif", fontWeight:800, fontSize:30,
-          color:"#fff", letterSpacing:".42em", paddingLeft:".42em",
-          textShadow:"0 0 18px rgba(0,230,118,.45),0 0 2px rgba(0,230,118,.6)",
+          color:"#0B1F30", letterSpacing:".42em", paddingLeft:".42em",
+          textShadow:"0 1px 1px rgba(0,199,102,.20)",
           marginTop:14,
         }}>VÉRTICE</div>
 
-        <div className="vx-tagline-anim" style={{marginTop:10,fontSize:13,color:"#C8DCEE",letterSpacing:".04em"}}>
+        <div className="vx-tagline-anim" style={{marginTop:10,fontSize:13,color:"#54687A",letterSpacing:".04em"}}>
           Antecipe. Decida. Execute.
         </div>
 
@@ -504,7 +504,7 @@ function FormCadastro({ onPronto }) {
       <Campo label="Área">
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {AREAS.map(a=>(
-            <button key={a.id} onClick={()=>setArea(a.id)} style={{flex:"1 1 45%",padding:"9px 6px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,border:`2px solid ${area===a.id?C.blueLight:C.border}`,background:area===a.id?C.blue:C.tagBg,color:area===a.id?C.white:C.textMuted}}>{a.label}</button>
+            <button key={a.id} onClick={()=>setArea(a.id)} style={{flex:"1 1 45%",padding:"9px 6px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,border:`2px solid ${area===a.id?"rgba(0,199,102,0.55)":C.border}`,background:area===a.id?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":C.tagBg,color:area===a.id?"#00975A":C.textMuted}}>{a.label}</button>
           ))}
         </div>
       </Campo>
