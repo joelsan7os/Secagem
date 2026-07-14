@@ -4442,7 +4442,7 @@ export default function App() {
             </svg>
             <div style={{minWidth:0}}>
               <div style={{fontWeight:800,fontSize:15,color:"#FFFFFF",letterSpacing:"0.28em",paddingLeft:"0.28em",lineHeight:1,textShadow:"0 0 12px rgba(0,230,118,0.5)"}}>VÉRTICE</div>
-              <div style={{fontFamily:"ui-monospace,Menlo,Consolas,monospace",fontSize:8,color:"#5E7A99",letterSpacing:"0.22em",marginTop:3,whiteSpace:"nowrap"}}>DECIDA MELHOR</div>
+              <div style={{fontFamily:"ui-monospace,Menlo,Consolas,monospace",fontSize:8,color:"#5E7A99",letterSpacing:"0.22em",marginTop:3,whiteSpace:"nowrap"}}>ANTECIPE · DECIDA · EXECUTE</div>
             </div>
           </div>
           {/* Camada de radar: sinais cruzam o header e convergem no núcleo do logo */}
