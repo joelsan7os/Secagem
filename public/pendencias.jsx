@@ -18,18 +18,16 @@ const C = {
 
 const cardStyle = {
   position:"relative", borderRadius:20, overflow:"hidden", isolation:"isolate",
-  background:"rgba(255,255,255,0.86)",
-  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.04) 20%, transparent 44%),radial-gradient(120px 120px at 0% 0%, rgba(210,255,235,0.14), transparent 70%)",
-  backdropFilter:"blur(22px) saturate(1.4)", WebkitBackdropFilter:"blur(22px) saturate(1.4)",
-  border:"1px solid rgba(255,255,255,0.12)",
-  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.30),inset 0 0 30px rgba(255,255,255,0.03),0 10px 30px -10px rgba(0,0,0,0.7)",
+  background:"#FFFFFF",
+  backgroundImage:"linear-gradient(180deg, #FFFFFF, #F6F9FB)",
+  border:"1px solid rgba(11,31,48,0.10)",
+  boxShadow:"0 8px 24px -14px rgba(11,31,48,0.22),0 2px 6px -2px rgba(11,31,48,0.06)",
 };
 const glassMini = {
   position:"relative", overflow:"hidden",
-  background:"rgba(11,31,48,0.03)",
-  backgroundImage:"linear-gradient(135deg, rgba(255,255,255,0.10), transparent 50%)",
-  border:"1px solid rgba(11,31,48,0.10)",
-  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.14)",
+  background:"#F5F8FA",
+  border:"1px solid rgba(11,31,48,0.08)",
+  boxShadow:"inset 0 1px 0 rgba(255,255,255,0.6)",
 };
 const inputStyle={width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",color:"#fff",fontSize:14,outline:"none"};
 
@@ -103,7 +101,7 @@ const STYLES = `
 .mural-breathe { animation: mural-breathe 2.8s ease-in-out infinite; }
 `;
 // glow helper para números neon
-const neon = (cor) => ({ textShadow:`0 0 8px ${cor}99, 0 0 18px ${cor}55` });
+const neon = (cor) => ({ textShadow:`0 1px 1px ${cor}22` });
 
 // ── Donut gauge ────────────────────────────────────────────────────────────────
 function DonutGauge({ total, segs, cor, size=104, anelExterno=false }) {
@@ -369,7 +367,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
     return (
       <div onClick={(e)=>{ e.stopPropagation(); setSelMaq(evidencia?null:mq); setTabOrigem("Todas"); }}
         style={{ flex:1, minWidth:0, cursor:"pointer", transition:"all .18s",
-          background: evidencia?`${jan.cor}14`:"rgba(4,17,29,0.5)",
+          background: evidencia?`${jan.cor}14`:"#EEF3F7",
           border:`1.5px solid ${evidencia?jan.cor:C.border}`, borderRadius:11, padding:"11px 12px",
           boxShadow: evidencia?`0 0 20px ${jan.cor}55, 0 4px 16px ${jan.cor}33`:"none", transform: evidencia?"translateY(-2px)":"none" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
@@ -415,7 +413,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
     const cor = modoGeral ? "#FFFFFF" : jan.cor;
     return (
       <div style={{ position:"relative", overflow:"hidden",
-          background:`linear-gradient(155deg, ${cor}10, rgba(7,24,40,0.96))`,
+          background:`linear-gradient(155deg, ${cor}10, #FFFFFF)`,
           border:`1.5px solid ${cor}88`, borderRadius:16, padding:15,
           boxShadow:`0 8px 28px ${cor}22` }}>
         <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:`linear-gradient(90deg, ${cor}, transparent)` }}/>
@@ -472,7 +470,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
         <>
           {/* ════ TELA GERAL ════ */}
           {/* Cards de máquina M2/M3 no topo (somam todas as áreas, ou filtra ao escolher) */}
-          <div style={{ background:"rgba(7,24,40,0.55)", border:`1px solid ${C.border}`, borderRadius:18, padding:8, marginBottom:14, boxShadow:"inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 22px rgba(0,0,0,0.35)" }}>
+          <div style={{ background:"#F5F8FA", border:`1px solid ${C.border}`, borderRadius:18, padding:8, marginBottom:14, boxShadow:"inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 22px rgba(0,0,0,0.35)" }}>
           <div style={{ display:"flex", gap:8 }}>
             {MAQUINAS.map(mq => {
               const arr = todasPendencias.filter(p => p.maquina===mq || (!p.maquina && mq==="M2"));
@@ -530,7 +528,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
               return (
                 <button key={jan.id} onClick={()=>{ setSel(jan.id); setModoGeral(false); setTabOrigem("Todas"); setTela("area"); }}
                   style={{ position:"relative", overflow:"hidden", cursor:"pointer", textAlign:"left",
-                    background:`linear-gradient(150deg, ${jan.cor}0e, rgba(10,25,41,0.8))`,
+                    background:`linear-gradient(150deg, ${jan.cor}0e, #FFFFFF)`,
                     border:`1.5px solid ${arr.length>0?jan.cor+"77":C.border}`, borderRadius:14, padding:"13px 14px",
                     boxShadow:arr.length>0?`0 0 16px ${jan.cor}22`:"none", transition:"all .18s" }}>
                   <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:`linear-gradient(90deg, ${jan.cor}, transparent)` }}/>
@@ -540,7 +538,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
                   </div>
                   <div style={{ display:"flex", gap:8 }}>
                     {[["Alta",cc.crit,"#FF5252"],["Méd",cc.med,"#FFC107"],["Bax",cc.baixa,"#00E676"]].map(([l,v,co])=>(
-                      <div key={l} style={{ flex:1, background:"rgba(4,17,29,0.5)", borderRadius:7, padding:"5px 4px", textAlign:"center" }}>
+                      <div key={l} style={{ flex:1, background:"#EEF3F7", borderRadius:7, padding:"5px 4px", textAlign:"center" }}>
                         <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:3 }}>
                           <span style={{ width:6, height:6, borderRadius:"50%", background:co, boxShadow:v>0?`0 0 6px ${co}`:"none" }}/>
                           <span style={{ color:v>0?C.text:C.textDim, fontSize:13, fontWeight:800 }}>{v}</span>
@@ -585,7 +583,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
                   {/* criticidade resumo */}
                   <div style={{ display:"flex", gap:10, marginBottom:14 }}>
                     {[["Alta",cc.crit,"#FF5252"],["Média",cc.med,"#FFC107"],["Baixa",cc.baixa,"#00E676"]].map(([l,v,co])=>(
-                      <div key={l} style={{ flex:1, background:"rgba(4,17,29,0.45)", border:`1px solid ${co}33`, borderRadius:10, padding:"9px", textAlign:"center" }}>
+                      <div key={l} style={{ flex:1, background:"#F5F8FA", border:`1px solid ${co}33`, borderRadius:10, padding:"9px", textAlign:"center" }}>
                         <div style={{ fontSize:22, fontWeight:900, fontFamily:"monospace", color:v>0?co:C.textDim, ...(v>0?neon(co):{}) }}>{v}</div>
                         <div style={{ color:C.textMuted, fontSize:9, marginTop:2 }}>{l}</div>
                       </div>
@@ -594,7 +592,7 @@ function MuralInterno({ eqState = {}, onVoltar }) {
                   {/* data prevista de parada */}
                   <div style={{ display:"flex", gap:10, marginBottom:14 }}>
                     {[["M2",paradaM2],["M3",paradaM3]].map(([mq,pl])=>(
-                      <div key={mq} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-between", background:"rgba(4,17,29,0.45)", borderRadius:9, padding:"8px 11px" }}>
+                      <div key={mq} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"space-between", background:"#F5F8FA", borderRadius:9, padding:"8px 11px" }}>
                         <span style={{ color:C.textDim, fontSize:10, fontWeight:700, fontFamily:"monospace" }}>{mq} parada</span>
                         {pl ? <span style={{ color:janSel.cor, fontSize:11, fontWeight:700 }}>{pl}</span> : <span style={{ color:C.textDim, fontSize:10, fontStyle:"italic" }}>—</span>}
                       </div>
