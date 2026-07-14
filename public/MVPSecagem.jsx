@@ -109,8 +109,8 @@ const checklistM2 = [
   { id:"m2c21", secao:"Prensas",  item:"Pressão WED ZONE – zonas 1 a 5",                        ref:"2/1,5/1/1,5/2", unit:"ok/ñok",  tipo:"ok_nok"  },
   { id:"m2c22", secao:"Prensas",  item:"Pressão régua vedação COUCH",                           ref:"0,85 e 0,5",    unit:"bar",     tipo:"valor"   },
   { id:"m2c23", secao:"Prensas",  item:"Pressão régua vedação PICK UP",                         ref:"0,75 e 0,75",   unit:"bar",     tipo:"valor"   },
-  { id:"m2c24", secao:"Prensas",  item:"Vazão água rolo COUCH",                                 ref:"—",             unit:"m³/h",    tipo:"valor"   , medidaSempre:true },
-  { id:"m2c25", secao:"Prensas",  item:"Vazão água rolo PICK UP",                               ref:"—",             unit:"m³/h",    tipo:"valor"   , medidaSempre:true },
+  { id:"m2c24", secao:"Prensas",  item:"Vazão água rolo COUCH",                                 ref:"—",             unit:"m³/h",    tipo:"valor"   , step:0.2, min:0, max:10, medidaSempre:true },
+  { id:"m2c25", secao:"Prensas",  item:"Vazão água rolo PICK UP",                               ref:"—",             unit:"m³/h",    tipo:"valor"   , step:0.2, min:0, max:10, medidaSempre:true },
   { id:"m2c26", secao:"Prensas",  item:"Pressão Lump Breaker",                                  ref:"25",            unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
   { id:"m2c27", secao:"Prensas",  item:"Pressão 1ª prensa",                                     ref:"55",            unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
   { id:"m2c28", secao:"Prensas",  item:"Pressão 2ª prensa",                                     ref:"151",           unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
@@ -149,8 +149,8 @@ const checklistM3 = [
   { id:"m3c21", secao:"Prensas",  item:"Pressão WED ZONE – zonas 1 a 5",                        ref:"2/1,5/1/1,5/2", unit:"ok/ñok",  tipo:"ok_nok"  },
   { id:"m3c22", secao:"Prensas",  item:"Pressão régua vedação COUCH",                           ref:"0,9 e 0,7",     unit:"bar",     tipo:"valor"   },
   { id:"m3c23", secao:"Prensas",  item:"Pressão régua vedação PICK UP",                         ref:"0,75 e 0,7",    unit:"bar",     tipo:"valor"   },
-  { id:"m3c24", secao:"Prensas",  item:"Vazão água rolo COUCH",                                 ref:"—",             unit:"m³/h",    tipo:"valor"   , medidaSempre:true },
-  { id:"m3c25", secao:"Prensas",  item:"Vazão água rolo PICK UP",                               ref:"—",             unit:"m³/h",    tipo:"valor"   , medidaSempre:true },
+  { id:"m3c24", secao:"Prensas",  item:"Vazão água rolo COUCH",                                 ref:"—",             unit:"m³/h",    tipo:"valor"   , step:0.2, min:0, max:10, medidaSempre:true },
+  { id:"m3c25", secao:"Prensas",  item:"Vazão água rolo PICK UP",                               ref:"—",             unit:"m³/h",    tipo:"valor"   , step:0.2, min:0, max:10, medidaSempre:true },
   { id:"m3c26", secao:"Prensas",  item:"Pressão Lump Breaker",                                  ref:"25",            unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
   { id:"m3c27", secao:"Prensas",  item:"Pressão 1ª prensa",                                     ref:"55",            unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
   { id:"m3c28", secao:"Prensas",  item:"Pressão 2ª prensa",                                     ref:"150",           unit:"kN/m",    tipo:"valor"   , medidaSempre:true },
@@ -2643,14 +2643,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                 const leftColor=isNok||isAlert||isValNok?nokColor:preen?C.accentLight:"transparent";
                 return (
                   <div key={item.id}
-                    onClick={item.tipo==="valor_stepper"?()=>{
-                      setVerificados(prev=>{
-                        const s=new Set(prev);
-                        if(s.has(item.id)) s.delete(item.id); else s.add(item.id);
-                        return s;
-                      });
-                    }:undefined}
-                    style={{...glassMini,borderRadius:10,padding:"11px 14px",display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap",border:`1px solid ${borderColor}`,borderLeft:`3px solid ${leftColor}`,cursor:item.tipo==="valor_stepper"?"pointer":"default"}}>
+                    style={{...glassMini,borderRadius:10,padding:"11px 14px",display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap",border:`1px solid ${borderColor}`,borderLeft:`3px solid ${leftColor}`,cursor:"default"}}>
                     <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,background:isNok||isAlert||isValNok||stepperNok?(isCritico?C.danger:isAtencao?C.warning:C.danger):stepperWarn?C.warning:preen?C.success:C.tagBg,border:`2px solid ${isNok||isAlert||isValNok||stepperNok||stepperWarn?nokColor:preen?C.accentLight:C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:800,marginTop:2}}>
                       {isNok||isAlert||isValNok||stepperNok||stepperWarn?"⚠":preen?"✓":i+1}
                     </div>
@@ -2768,8 +2761,9 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                     )}
                       {item.tipo==="sim_nao"&&<><Btn id={item.id} opcao="sim" label="SIM" isOk={item.respostaOk==="nao"?false:true}/><Btn id={item.id} opcao="nao" label="NÃO" isOk={item.respostaOk==="nao"?true:false}/></>}
                       {item.tipo==="valor"&&(item.medidaSempre?(()=>{
-                        const{step,min,max}=getStepRange(item.ref);
-                        const dec=step<1?1:0;
+                        const r=getStepRange(item.ref);
+                        const step=item.step??r.step, min=item.min??r.min, max=item.max??r.max;
+                        const dec=step<1?(step<0.1?2:1):0;
                         const rawMed=medidas[item.id]||"";
                         const numMed=parseFloat((rawMed||"").replace(",","."))||parseRefNum(item.ref);
                         const adj=(d)=>{
@@ -2924,7 +2918,13 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                           setVal(item.id,String(next).replace(".",","));
                         };
                         return(
-                          <div onClick={e=>e.stopPropagation()} style={{display:"flex",alignItems:"center",gap:4}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                            <button onClick={()=>setVerificados(prev=>{const s=new Set(prev);if(s.has(item.id))s.delete(item.id);else s.add(item.id);return s;})}
+                              style={{padding:"6px 13px",borderRadius:7,fontSize:12,fontWeight:800,cursor:"pointer",transition:"all .15s",
+                                border:isVerif?"none":`1px solid ${C.border}`,
+                                background:isVerif?C.success:C.tagBg,
+                                color:isVerif?"#fff":C.textMuted}}>OK</button>
+                            <div style={{display:"flex",alignItems:"center",gap:4}}>
                             <button onClick={()=>adj(-step)} style={{width:30,height:30,borderRadius:7,border:`1px solid ${C.border}`,background:C.tagBg,color:C.text,fontSize:18,fontWeight:700,cursor:"pointer",lineHeight:1}}>-</button>
                             {editandoValor===item.id?(
                               <input autoFocus type="text" inputMode="decimal"
@@ -2944,6 +2944,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                               </button>
                             )}
                             <button onClick={()=>adj(+step)} style={{width:30,height:30,borderRadius:7,border:`1px solid ${C.border}`,background:C.tagBg,color:C.text,fontSize:18,fontWeight:700,cursor:"pointer",lineHeight:1}}>+</button>
+                            </div>
                           </div>
                         );
                       })()}
