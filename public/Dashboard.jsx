@@ -7,11 +7,11 @@ import { COL, doc, onSnapshot, setDoc } from "./firebase";
 import { CarrosselViewer } from "./carrossel";
 
 const C = {
-  void:"#020A12", deep:"#04111D", panel:"#071826", panelHi:"#0A2032",
-  line:"rgba(0,230,118,0.15)", lineHi:"rgba(0,230,118,0.38)",
+  void:"#040B12", deep:"#07141F", panel:"#0B1C29", panelHi:"#10283A",
+  line:"rgba(130,170,205,0.14)", lineHi:"rgba(0,230,118,0.32)",
   green:"#00E676", greenDim:"#00A152", cyan:"#00F0FF", blue:"#5090FF",
   purple:"#C77DFF", amber:"#FFC107", orange:"#FF8C00", red:"#FF5252",
-  ink:"#FFFFFF", mute:"#C8DCEE", dim:"#607B9A", faint:"#2A3F58",
+  ink:"#F3F8FC", mute:"#A9BFD4", dim:"#5E7690", faint:"#28394E",
 };
 const mono = "'SF Mono','Roboto Mono',ui-monospace,monospace";
 const sans = "'Inter','Segoe UI',system-ui,sans-serif";
@@ -51,28 +51,27 @@ const GlobalFX = () => (
     @keyframes cmd-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
     @keyframes cmd-marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
     @keyframes cmd-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-    .cmd-card{position:relative;background:linear-gradient(180deg,rgba(18,52,78,.88),rgba(5,17,28,.96));backdrop-filter:blur(16px);border-radius:16px;overflow:hidden;border:1px solid rgba(0,230,118,.3);box-shadow:0 0 24px rgba(0,230,118,.06),0 14px 34px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.09) inset,0 0 0 1px rgba(0,230,118,.05) inset}
-    .cmd-card::after{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(140deg,rgba(0,230,118,.9),rgba(0,240,255,.22) 40%,transparent 70%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
-    .cmd-corner{position:absolute;width:9px;height:9px;pointer-events:none;z-index:2}
-    .cmd-grid{background-color:rgba(0,0,0,.24);background-image:linear-gradient(rgba(0,230,118,.085) 1px,transparent 1px),linear-gradient(90deg,rgba(0,230,118,.085) 1px,transparent 1px);background-size:16px 16px;box-shadow:inset 0 0 18px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,230,118,.07);border-radius:8px}
+    .cmd-card{position:relative;background:linear-gradient(180deg,rgba(16,34,52,.72),rgba(6,16,26,.94));backdrop-filter:blur(16px);border-radius:14px;overflow:hidden;border:1px solid rgba(130,170,205,.14);box-shadow:0 10px 30px -12px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.05) inset}
+    .cmd-card::after{content:'';position:absolute;inset:0;border-radius:14px;padding:1px;background:linear-gradient(140deg,rgba(0,230,118,.38),rgba(0,240,255,.10) 34%,transparent 62%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+    .cmd-corner{position:absolute;width:8px;height:8px;pointer-events:none;z-index:2}
+    .cmd-grid{background-color:rgba(0,0,0,.22);background-image:linear-gradient(rgba(130,170,205,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(130,170,205,.06) 1px,transparent 1px);background-size:18px 18px;box-shadow:inset 0 0 22px rgba(0,0,0,.5);border-radius:8px}
   `}</style>
 );
 
 const Corners = ({c=C.green}) => (
   <>
-    <div className="cmd-corner" style={{top:7,left:7,borderTop:`1.5px solid ${c}88`,borderLeft:`1.5px solid ${c}88`}}/>
-    <div className="cmd-corner" style={{top:7,right:7,borderTop:`1.5px solid ${c}88`,borderRight:`1.5px solid ${c}88`}}/>
-    <div className="cmd-corner" style={{bottom:7,left:7,borderBottom:`1.5px solid ${c}88`,borderLeft:`1.5px solid ${c}88`}}/>
-    <div className="cmd-corner" style={{bottom:7,right:7,borderBottom:`1.5px solid ${c}88`,borderRight:`1.5px solid ${c}88`}}/>
+    <div className="cmd-corner" style={{top:7,left:7,borderTop:`1.5px solid ${c}55`,borderLeft:`1.5px solid ${c}55`}}/>
+    <div className="cmd-corner" style={{top:7,right:7,borderTop:`1.5px solid ${c}55`,borderRight:`1.5px solid ${c}55`}}/>
+    <div className="cmd-corner" style={{bottom:7,left:7,borderBottom:`1.5px solid ${c}55`,borderLeft:`1.5px solid ${c}55`}}/>
+    <div className="cmd-corner" style={{bottom:7,right:7,borderBottom:`1.5px solid ${c}55`,borderRight:`1.5px solid ${c}55`}}/>
   </>
 );
 
 const PanelHead = ({ code, title, accent=C.green, right }) => (
-  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-    <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
-      <span style={{fontFamily:mono,fontSize:10,fontWeight:700,color:accent,opacity:.95,letterSpacing:"0.1em"}}>{code}</span>
-      <span style={{width:3,height:3,borderRadius:"50%",background:accent,boxShadow:`0 0 6px ${accent}`}}/>
-      <span style={{fontFamily:sans,fontSize:13,fontWeight:800,color:C.ink,letterSpacing:"0.16em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{title}</span>
+  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:13}}>
+    <div style={{display:"flex",alignItems:"center",gap:9,minWidth:0}}>
+      <span style={{fontFamily:mono,fontSize:9,fontWeight:800,color:accent,letterSpacing:"0.08em",background:`${accent}14`,border:`1px solid ${accent}30`,borderRadius:5,padding:"2px 6px"}}>{code}</span>
+      <span style={{fontFamily:sans,fontSize:12.5,fontWeight:700,color:C.ink,letterSpacing:"0.13em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{title}</span>
     </div>
     {right}
   </div>
@@ -114,7 +113,7 @@ function RadialGauge({ value, max=100, size=120, stroke=9, color, label, sub="",
           style={{transition:"stroke-dasharray .8s cubic-bezier(.4,0,.2,1)"}}/>
       </svg>
       <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-        <span style={{fontFamily:mono,fontSize:size*0.27,fontWeight:900,color:danger?C.red:C.ink,lineHeight:1,textShadow:`0 0 16px ${color}99`}}>
+        <span style={{fontFamily:mono,fontSize:size*0.27,fontWeight:900,color:danger?C.red:C.ink,lineHeight:1,textShadow:`0 0 9px ${color}99`}}>
           {value}<span style={{fontSize:size*0.13,color:C.dim}}>{sub}</span>
         </span>
         {label&&<span style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginTop:3,textTransform:"uppercase"}}>{label}</span>}
@@ -159,7 +158,7 @@ function CmdClock() {
         <div style={{fontFamily:mono,fontSize:9,color:C.dim,letterSpacing:"0.1em"}}>{dataFmt}</div>
         <div style={{fontFamily:mono,fontSize:9,color:C.green,letterSpacing:"0.1em"}}>TURNO {autoTurno()}</div>
       </div>
-      <div style={{fontFamily:mono,fontSize:30,fontWeight:900,color:C.green,letterSpacing:"0.04em",textShadow:`0 0 20px ${C.green}77`,lineHeight:1}}>
+      <div style={{fontFamily:mono,fontSize:30,fontWeight:900,color:C.green,letterSpacing:"0.04em",textShadow:`0 0 11px ${C.green}77`,lineHeight:1}}>
         {hh}<span style={{animation:"cmd-pulse 1s infinite"}}>:</span>{mm}<span style={{fontSize:16,color:C.dim}}>:{ss}</span>
       </div>
     </div>
@@ -190,7 +189,7 @@ function HeroBar({ historico, seguranca, cleaners, cleanersHist, avarias, onEdit
       </div>
       <div style={{minWidth:0}}>
         <div style={{display:"flex",alignItems:"baseline",gap:3}}>
-          <span style={{fontFamily:mono,fontSize:36,fontWeight:900,color,lineHeight:1,textShadow:`0 0 16px ${color}66`}}>{val??"--"}</span>
+          <span style={{fontFamily:mono,fontSize:36,fontWeight:900,color,lineHeight:1,textShadow:`0 0 9px ${color}66`}}>{val??"--"}</span>
           <span style={{fontFamily:mono,fontSize:11,color:C.dim}}>{unit}</span>
         </div>
         <div style={{fontFamily:sans,fontSize:10.5,color:C.dim,letterSpacing:"0.1em",textTransform:"uppercase",marginTop:2,whiteSpace:"nowrap"}}>{label}</div>
@@ -212,7 +211,7 @@ function HeroBar({ historico, seguranca, cleaners, cleanersHist, avarias, onEdit
   const GBox=(c)=>(<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>);
 
   return (
-    <div className="cmd-card" style={{display:"flex",alignItems:"stretch",height:74,flexShrink:0,margin:"0 0 12px"}}>
+    <div className="cmd-card" style={{display:"flex",alignItems:"stretch",height:74,flexShrink:0,margin:"0 0 8px"}}>
       <Corners/>
       <Metric val={dAcid} unit="dias" label="Sem Acidente" color={cAcid} glyph={GShield(cAcid)} onClick={onEditAcid}/>
       <Sep/>
@@ -293,7 +292,7 @@ function PanelMural({ pendencias, chamados, chamadosRaw, cleaners, historicoRaw,
             ?"linear-gradient(145deg,rgba(192,39,45,0.18),rgba(7,24,38,0.7))"
             :"linear-gradient(145deg,rgba(10,32,50,0.5),rgba(7,24,38,0.65))",
           border:`1px solid ${critico?C.red+"77":cor+"44"}`,
-          boxShadow:critico?`0 0 28px ${C.red}33, inset 0 0 40px ${C.red}0c`:`0 0 18px ${cor}11`,
+          boxShadow:critico?`0 0 28px ${C.red}33, inset 0 0 40px ${C.red}0c`:`0 0 10px ${cor}11`,
           transition:"all .3s",overflow:"hidden"}}>
         {/* borda superior animada */}
         <div style={{position:"absolute",top:0,left:0,right:0,height:2,
@@ -328,7 +327,7 @@ function PanelMural({ pendencias, chamados, chamadosRaw, cleaners, historicoRaw,
             </div>
             <div>
               <div style={{fontFamily:sans,fontSize:15,fontWeight:900,color:C.ink,
-                letterSpacing:"0.06em",textShadow:critico?`0 0 12px ${C.red}66`:"none"}}>
+                letterSpacing:"0.06em",textShadow:critico?`0 0 8px ${C.red}66`:"none"}}>
                 MAQUINA {mq.replace("M","")}
               </div>
               <div style={{fontFamily:mono,fontSize:10,color:C.dim,marginTop:1,letterSpacing:"0.1em"}}>{linhas}</div>
@@ -337,7 +336,7 @@ function PanelMural({ pendencias, chamados, chamadosRaw, cleaners, historicoRaw,
           {/* total destaque */}
           <div style={{textAlign:"right"}}>
             <div style={{fontFamily:mono,fontSize:42,fontWeight:900,color:cor,lineHeight:1,
-              textShadow:`0 0 18px ${cor}88`}}>{d.total}</div>
+              textShadow:`0 0 10px ${cor}88`}}>{d.total}</div>
             <div style={{fontFamily:sans,fontSize:7,color:C.dim,letterSpacing:"0.12em",marginTop:2}}>PENDENCIAS</div>
           </div>
         </div>
@@ -623,7 +622,7 @@ function PanelAlturaChecklists({ historico, chamados, cleaners, avarias, setTela
               <span style={{fontFamily:mono,fontSize:9,color:C.dim,letterSpacing:"0.1em"}}>05 · SAP</span>
               <span style={{width:3,height:3,borderRadius:"50%",background:cSap,boxShadow:`0 0 4px ${cSap}`}}/>
               <span style={{fontFamily:mono,fontSize:22,fontWeight:900,color:cSap,lineHeight:1,
-                textShadow:`0 0 12px ${cSap}66`}}>{total}</span>
+                textShadow:`0 0 8px ${cSap}66`}}>{total}</span>
               <span style={{fontFamily:sans,fontSize:9,color:C.dim}}>abertos</span>
             </div>
             <div style={{flex:1,display:"flex",gap:5}}>
@@ -671,7 +670,7 @@ function PanelSaude({ cleaners, historico, chamados, avarias }) {
       <Corners c={cScore}/>
       <div style={{flexShrink:0,textAlign:"center",minWidth:76}}>
         <div style={{fontFamily:mono,fontSize:34,fontWeight:900,color:cScore,lineHeight:1,
-          textShadow:`0 0 20px ${cScore}88`}}>{score}%</div>
+          textShadow:`0 0 11px ${cScore}88`}}>{score}%</div>
         <div style={{fontFamily:mono,fontSize:9,color:cScore,letterSpacing:"0.14em",marginTop:3}}>{label}</div>
         <div style={{fontFamily:sans,fontSize:7,color:C.dim,letterSpacing:"0.1em",marginTop:1}}>08 · SAUDE DO TURNO</div>
       </div>
@@ -748,7 +747,7 @@ function PanelAvarias({ avarias, setTela }) {
     <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}} onClick={()=>setTela&&setTela("historico")}>
       <Corners c={cTop}/>
       <PanelHead code="04" title="Avarias por Turno" accent={cTop}
-        right={<span style={{fontFamily:mono,fontSize:22,fontWeight:900,color:cTop,textShadow:`0 0 12px ${cTop}66`}}>{totalMes}<span style={{fontSize:8,color:C.dim}}>/mes</span></span>}/>
+        right={<span style={{fontFamily:mono,fontSize:22,fontWeight:900,color:cTop,textShadow:`0 0 8px ${cTop}66`}}>{totalMes}<span style={{fontSize:8,color:C.dim}}>/mes</span></span>}/>
       {/* grafico de linha por turno */}
       <div style={{marginBottom:10}}>
         <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginBottom:4}}>AVARIAS POR TURNO · 10 DIAS</div>
@@ -818,7 +817,7 @@ function PanelChamados({ chamados, setTela }) {
       <PanelHead code="05" title="Chamados / SAP" accent={cTop}/>
       <div style={{display:"flex",alignItems:"center",gap:14,flex:1}}>
         <div style={{textAlign:"center",flexShrink:0}}>
-          <div style={{fontFamily:mono,fontSize:52,fontWeight:900,color:cTop,lineHeight:1,textShadow:`0 0 20px ${cTop}66`}}>{total}</div>
+          <div style={{fontFamily:mono,fontSize:52,fontWeight:900,color:cTop,lineHeight:1,textShadow:`0 0 11px ${cTop}66`}}>{total}</div>
           <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>ABERTOS</div>
         </div>
         <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
@@ -914,7 +913,7 @@ export default function DashboardTV({ setTela, setModoVisao }) {
   const critico=ocM2?.cor==="vermelho"||ocM3?.cor==="vermelho";
 
   return (
-    <div style={{position:"relative",minHeight:"100vh",width:"100vw",background:"radial-gradient(130% 85% at 50% -12%,rgba(0,230,118,0.20),transparent 48%),radial-gradient(85% 60% at 100% 0%,rgba(0,240,255,0.10),transparent 45%),radial-gradient(70% 55% at 0% 100%,rgba(0,230,118,0.07),transparent 48%),radial-gradient(120% 120% at 50% 48%,transparent 42%,rgba(0,0,0,0.78)),linear-gradient(180deg,#0a1f30,#05121e 45%,#010810)",color:C.ink,fontFamily:sans,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+    <div style={{position:"relative",minHeight:"100vh",width:"100vw",background:"radial-gradient(120% 80% at 50% -15%,rgba(0,230,118,0.10),transparent 46%),radial-gradient(80% 55% at 100% 0%,rgba(0,240,255,0.05),transparent 44%),radial-gradient(120% 120% at 50% 50%,transparent 46%,rgba(0,0,0,0.72)),linear-gradient(180deg,#08182600,#06131f 45%,#020a12)",color:C.ink,fontFamily:sans,overflow:"hidden",display:"flex",flexDirection:"column"}}>
       <GlobalFX/>
       {/* grid de fundo */}
       <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,230,118,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,.045) 1px,transparent 1px)",backgroundSize:"38px 38px",maskImage:"radial-gradient(ellipse 85% 75% at 50% 32%,#000 38%,transparent 100%)",WebkitMaskImage:"radial-gradient(ellipse 85% 75% at 50% 32%,#000 38%,transparent 100%)",pointerEvents:"none"}}/>
