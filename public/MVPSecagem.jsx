@@ -2445,8 +2445,8 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
         </div>
       )}
       {nokAlerta&&(
-        <div onClick={()=>{setNokAlerta(null);setNokGravidade(null);setNokObs("");}} style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:C.surface,border:`1px solid ${nokGravidade==="critico"?C.dangerLight:nokGravidade==="atencao"?C.warningLight:C.dangerLight}66`,borderRadius:"18px 18px 0 0",padding:24,width:"100%",maxWidth:600}}>
+        <div onClick={()=>{setNokAlerta(null);setNokGravidade(null);setNokObs("");}} style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:C.surface,border:`1px solid ${nokGravidade==="critico"?C.dangerLight:nokGravidade==="atencao"?C.warningLight:C.dangerLight}66`,borderRadius:18,padding:24,width:"100%",maxWidth:460,boxShadow:"0 20px 60px -12px rgba(11,31,48,0.45)"}}>
             <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"flex-start"}}>
               <span style={{fontSize:22}}>{nokGravidade==="critico"?"🔴":nokGravidade==="atencao"?"🟡":"⚠️"}</span>
               <div>
