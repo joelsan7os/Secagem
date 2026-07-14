@@ -3351,19 +3351,19 @@ function GraficoEficiencia({ historico }) {
       {/* Seletor de área */}
       <div style={{display:"flex",gap:5,marginBottom:8,flexWrap:"wrap"}}>
         {opcoes.map(o=>(
-          <button key={o.id} onClick={()=>setVisao(o.id)} style={{flex:"1 1 auto",padding:"7px 10px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${visao===o.id?C.accent:C.border}`,background:visao===o.id?`linear-gradient(135deg,${C.accentDark},${C.accent}44)`:C.tagBg,color:visao===o.id?C.white:C.textMuted,whiteSpace:"nowrap",transition:"all .15s"}}>{o.label}</button>
+          <button key={o.id} onClick={()=>setVisao(o.id)} style={{flex:"1 1 auto",padding:"7px 10px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${visao===o.id?"#00915C":C.border}`,background:visao===o.id?"#00A855":C.tagBg,color:visao===o.id?"#fff":C.textMuted,boxShadow:visao===o.id?"0 1px 3px rgba(0,145,80,0.25)":"none",whiteSpace:"nowrap",transition:"all .15s"}}>{o.label}</button>
         ))}
       </div>
       {/* Seletor de máquina */}
       <div style={{display:"flex",gap:5,marginBottom:8}}>
         {[{id:"ambas",l:"Ambas"},{id:"M2",l:"Máq. 2"},{id:"M3",l:"Máq. 3"}].map(m=>(
-          <button key={m.id} onClick={()=>setMaqFiltro(m.id)} style={{flex:1,padding:"6px 8px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${maqFiltro===m.id?"rgba(0,199,102,0.55)":C.border}`,background:maqFiltro===m.id?`linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))`:C.tagBg,color:maqFiltro===m.id?"#00975A":C.textMuted,transition:"all .15s"}}>{m.l}</button>
+          <button key={m.id} onClick={()=>setMaqFiltro(m.id)} style={{flex:1,padding:"6px 8px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,border:`1.5px solid ${maqFiltro===m.id?"#00915C":C.border}`,background:maqFiltro===m.id?"#00A855":C.tagBg,color:maqFiltro===m.id?"#fff":C.textMuted,boxShadow:maqFiltro===m.id?"0 1px 3px rgba(0,145,80,0.25)":"none",transition:"all .15s"}}>{m.l}</button>
         ))}
       </div>
       {/* Seletor de letra */}
       <div style={{display:"flex",gap:5,marginBottom:16}}>
         {[{id:"todas",l:"Todas"},{id:"A",l:"A"},{id:"B",l:"B"},{id:"C",l:"C"},{id:"D",l:"D"},{id:"E",l:"E"}].map(l=>(
-          <button key={l.id} onClick={()=>setLetraFiltro(l.id)} style={{flex:1,padding:"6px 4px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:11,border:`1.5px solid ${letraFiltro===l.id?C.accent:C.border}`,background:letraFiltro===l.id?C.accentDark:C.tagBg,color:letraFiltro===l.id?C.white:C.textMuted,transition:"all .15s"}}>{l.l}</button>
+          <button key={l.id} onClick={()=>setLetraFiltro(l.id)} style={{flex:1,padding:"6px 4px",borderRadius:8,cursor:"pointer",fontWeight:800,fontSize:11,border:`1.5px solid ${letraFiltro===l.id?"#00915C":C.border}`,background:letraFiltro===l.id?"#00A855":C.tagBg,color:letraFiltro===l.id?"#fff":C.textMuted,boxShadow:letraFiltro===l.id?"0 1px 3px rgba(0,145,80,0.25)":"none",transition:"all .15s"}}>{l.l}</button>
         ))}
       </div>
 
@@ -3371,7 +3371,7 @@ function GraficoEficiencia({ historico }) {
       <div style={{position:"relative",paddingLeft:30,marginBottom:8}}>
         {/* Linhas de grade horizontais com rótulos */}
         {[100,75,50,25,0].map(g=>(
-          <div key={g} style={{position:"absolute",left:0,right:0,top:`${(100-g)/100*170}px`,height:1,background:g===0?C.border:"rgba(255,255,255,0.04)",display:"flex",alignItems:"center"}}>
+          <div key={g} style={{position:"absolute",left:0,right:0,top:`${(100-g)/100*170}px`,height:1,background:g===0?C.border:"rgba(11,31,48,0.06)",display:"flex",alignItems:"center"}}>
             <span style={{position:"absolute",left:0,transform:"translateY(-50%)",color:C.textDim,fontSize:8,fontFamily:"monospace",width:26,textAlign:"right"}}>{g}%</span>
           </div>
         ))}
@@ -3393,7 +3393,7 @@ function GraficoEficiencia({ historico }) {
       <div style={{display:"flex",gap:10,paddingLeft:30,marginBottom:14}}>
         {dados.map(d=>(
           <div key={d.letra} style={{flex:1,display:"flex",justifyContent:"center"}}>
-            <div style={{width:32,height:32,borderRadius:9,background:d.efic!==null?`linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))`:C.tagBg,display:"flex",alignItems:"center",justifyContent:"center",color:d.efic!==null?"#fff":C.textDim,fontSize:15,fontWeight:900,boxShadow:d.efic!==null?`0 2px 8px ${C.blueLight}44`:"none"}}>{d.letra}</div>
+            <div style={{width:32,height:32,borderRadius:9,background:d.efic!==null?"#00975A":C.tagBg,display:"flex",alignItems:"center",justifyContent:"center",color:d.efic!==null?"#fff":C.textDim,fontSize:15,fontWeight:900,boxShadow:d.efic!==null?"0 1px 4px rgba(0,151,90,0.30)":"none"}}>{d.letra}</div>
           </div>
         ))}
       </div>
