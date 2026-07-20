@@ -2301,6 +2301,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
   const [editandoValor,setEditandoValor]=useState(null);
   const [salvo,setSalvo]=useState(false);
   const [verificados,setVerificados]=useState(new Set());
+  const [stepperNoks,setStepperNoks]=useState(new Set());
   React.useEffect(()=>{
     const v=getLastValores(tipoId,maquina);
     if(Object.keys(v).length>0) setValores(v);
@@ -2349,8 +2350,8 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
     if(item.tipo==="sim_nao"){const ok=item.respostaOk||"sim";return val!==ok;}
     return["nok","atencao","critico","desvio"].includes(val);
   };
-  const trocar=m=>{setMaquina(m);setValores(getLastValores(tipoId,m));setMedidas(getLastMedidas(tipoId,m));setFotos({});setSalvo(false);setVerificados(new Set());};
-  const trocarTipo=id=>{setTipoId(id);setValores(getLastValores(id,maquina));setMedidas(getLastMedidas(id,maquina));setFotos({});setSalvo(false);setSelectorAberto(false);setVerificados(new Set());};
+  const trocar=m=>{setMaquina(m);setValores(getLastValores(tipoId,m));setMedidas(getLastMedidas(tipoId,m));setFotos({});setSalvo(false);setVerificados(new Set());setStepperNoks(new Set());};
+  const trocarTipo=id=>{setTipoId(id);setValores(getLastValores(id,maquina));setMedidas(getLastMedidas(id,maquina));setFotos({});setSalvo(false);setSelectorAberto(false);setVerificados(new Set());setStepperNoks(new Set());};
   const items=tipo?tipo.getItems(maquina):[];
   const secoes=items.reduce((acc,i)=>{if(!acc[i.secao])acc[i.secao]=[];acc[i.secao].push(i);return acc;},{});
   const setVal=(id,v)=>{setValores(p=>({...p,[id]:v}));setSalvo(false);};
@@ -2368,11 +2369,11 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
     const v=valores[i.id];
     if(v===undefined||v==="")return false;
     if((i.tipo==="valor_direto"||i.velMin!==undefined)&&v!=="ok"){ const n=parseFloat(String(v).replace(",",".")); return !isNaN(n)&&(i.velMin===undefined||n>=i.velMin); }
-    if(i.tipo==="valor_stepper"){ return verificados.has(i.id); }
+    if(i.tipo==="valor_stepper"){ return verificados.has(i.id)||stepperNoks.has(i.id); }
     return true;
   };
   const preenchidos=items.filter(itemPreenchido).length;
-  const noks=items.filter(i=>isItemNok(i,valores[i.id])).length;
+  const noks=items.filter(i=>i.tipo==="valor_stepper"?stepperNoks.has(i.id):isItemNok(i,valores[i.id])).length;
   const total=items.length;
   const totalFotos=Object.values(fotos).reduce((a,f)=>a+f.length,0);
 
@@ -2405,7 +2406,7 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
     if(preenchidos<total)return;
     const agora=new Date();
     const hora=`${String(agora.getHours()).padStart(2,"0")}:${String(agora.getMinutes()).padStart(2,"0")}`;
-    const registro={id:Date.now(),tipoId:tipoId||"rotina",tipoLabel:tipo?.label||"",maquina:tipo?.porMaquina?maquina:"M2/M3",turno,hora,letra,data,opPU,matricula,opPainel,obs,noks,total,valores:{...valores},medidas:{...medidas},fotos:{...fotos},items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:valores[i.id]||"",medida:medidas[i.id]||"",obs:passagemNokDados[i.id]?.obs||obsNok[i.id]||"",valorPassagem:passagemNokDados[i.id]?.valor||"",fotos:(fotos[i.id]||[])}))};
+    const registro={id:Date.now(),tipoId:tipoId||"rotina",tipoLabel:tipo?.label||"",maquina:tipo?.porMaquina?maquina:"M2/M3",turno,hora,letra,data,opPU,matricula,opPainel,obs,noks,total,valores:{...valores},medidas:{...medidas},fotos:{...fotos},items:items.map(i=>({id:i.id,secao:i.secao,item:i.item,ref:i.ref,unit:i.unit,resp:i.tipo==="valor_stepper"?(stepperNoks.has(i.id)?"nok":verificados.has(i.id)?"ok":""):(valores[i.id]||""),medida:i.tipo==="valor_stepper"?(valores[i.id]||""):(medidas[i.id]||""),obs:passagemNokDados[i.id]?.obs||obsNok[i.id]||"",valorPassagem:passagemNokDados[i.id]?.valor||"",fotos:(fotos[i.id]||[])}))};
     onSalvar(registro);setSalvo(true);
   };
 
@@ -2625,22 +2626,38 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                 // cor para valor_stepper
                 const rawVS=valores[item.id]||"";
                 const isVerif=verificados.has(item.id);
+                const isStepNok=stepperNoks.has(item.id);
                 const stepperCor=(()=>{
                   if(item.tipo!=="valor_stepper") return null;
+                  if(isStepNok) return "red"; // operador marcou NOK
                   if(!isVerif) return null; // nao verificado = sem cor
-                  if(!item.faixas) return "green"; // sem regra = verde
                   const numV=parseFloat(String(rawVS).replace(",","."));
-                  if(isNaN(numV)) return "green"; // verificado sem valor digitado = verde
-                  for(const f of item.faixas){const okMin=f.min===undefined||numV>=f.min;const okMax=f.max===undefined||numV<f.max;if(okMin&&okMax)return f.cor;}
-                  return "red";
+                  if(item.faixas){
+                    if(isNaN(numV)) return "green"; // verificado sem valor digitado = verde
+                    for(const f of item.faixas){const okMin=f.min===undefined||numV>=f.min;const okMax=f.max===undefined||numV<f.max;if(okMin&&okMax)return f.cor;}
+                    return "red";
+                  }
+                  // sem faixas: usa comparador do proprio ref (ex: "< 100", "≥150", "> 86")
+                  const m=String(item.ref||"").match(/^\s*(<=|>=|≤|≥|<|>)\s*([\d.,]+)/);
+                  if(m&&!isNaN(numV)){
+                    const lim=parseFloat(m[2].replace(",","."));
+                    if(!isNaN(lim)){
+                      const op=m[1];
+                      const ok = op==="<"?numV<lim : op==="<="||op==="≤"?numV<=lim
+                               : op===">"?numV>lim : numV>=lim; // > = ou ≥
+                      return ok?"green":"red";
+                    }
+                  }
+                  return "green"; // alvo sem tolerancia definida = verde
                 })();
                 const stepperExatoNok=item.tipo==="valor_stepper"&&item.alertaExato&&isVerif&&rawVS&&
                   parseFloat(String(rawVS).replace(",",".")).toFixed(2)!==parseFloat(String(item.alertaExato).replace(",",".")).toFixed(2);
                 const stepperNok=stepperCor==="red"||!!stepperExatoNok;
                 const stepperWarn=stepperCor==="yellow";
                 const nokColor=isCritico?C.dangerLight:isAtencao||isDesvio||stepperWarn?C.warningLight:C.dangerLight;
-                const borderColor=isNok||isAlert||isValNok?nokColor+"66":preen?C.accentLight+"33":C.border;
-                const leftColor=isNok||isAlert||isValNok?nokColor:preen?C.accentLight:"transparent";
+                const alertaGeral=isNok||isAlert||isValNok||stepperNok||stepperWarn;
+                const borderColor=alertaGeral?nokColor+"66":preen?C.accentLight+"33":C.border;
+                const leftColor=alertaGeral?nokColor:preen?C.accentLight:"transparent";
                 return (
                   <div key={item.id}
                     style={{...glassMini,borderRadius:10,padding:"11px 14px",display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap",border:`1px solid ${borderColor}`,borderLeft:`3px solid ${leftColor}`,cursor:"default"}}>
@@ -2919,11 +2936,16 @@ function ChecklistTela({ onSalvar, historico=[], perfil }) {
                         };
                         return(
                           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                            <button onClick={()=>setVerificados(prev=>{const s=new Set(prev);if(s.has(item.id))s.delete(item.id);else s.add(item.id);return s;})}
-                              style={{padding:"6px 13px",borderRadius:7,fontSize:12,fontWeight:800,cursor:"pointer",transition:"all .15s",
+                            <button onClick={()=>{setVerificados(prev=>{const s=new Set(prev);if(s.has(item.id))s.delete(item.id);else{s.add(item.id);setStepperNoks(p=>{const q=new Set(p);q.delete(item.id);return q;});}return s;});}}
+                              style={{padding:"6px 12px",borderRadius:7,fontSize:12,fontWeight:800,cursor:"pointer",transition:"all .15s",
                                 border:isVerif?"none":`1px solid ${C.border}`,
                                 background:isVerif?C.success:C.tagBg,
                                 color:isVerif?"#fff":C.textMuted}}>OK</button>
+                            <button onClick={()=>{setStepperNoks(prev=>{const s=new Set(prev);if(s.has(item.id))s.delete(item.id);else{s.add(item.id);setVerificados(p=>{const q=new Set(p);q.delete(item.id);return q;});}return s;});}}
+                              style={{padding:"6px 12px",borderRadius:7,fontSize:12,fontWeight:800,cursor:"pointer",transition:"all .15s",
+                                border:isStepNok?"none":`1px solid ${C.border}`,
+                                background:isStepNok?C.danger:C.tagBg,
+                                color:isStepNok?"#fff":C.textMuted}}>NOK</button>
                             <div style={{display:"flex",alignItems:"center",gap:4}}>
                             <button onClick={()=>adj(-step)} style={{width:30,height:30,borderRadius:7,border:`1px solid ${C.border}`,background:C.tagBg,color:C.text,fontSize:18,fontWeight:700,cursor:"pointer",lineHeight:1}}>-</button>
                             {editandoValor===item.id?(
@@ -3744,8 +3766,64 @@ function RotaEnfardamentoTela({ onSalvar }) {
 
 // ─── HistoricoTela ────────────────────────────────────────────────────────────
 // ─── RelatorioCleaners — relatórios por turno no Histórico ────────────────────
+// ── Exportação do Histórico para Excel (uma aba por tipo de check-list) ──
+function exportarHistoricoExcel(historico, mesAno, onDone){
+  const gerar=()=>{
+    if(!window.XLSX){ alert("Biblioteca Excel não carregou."); onDone&&onDone(); return; }
+    const regs=historico.filter(h=>(h.data||"").slice(0,7)===mesAno).sort((a,b)=>a.id-b.id);
+    if(regs.length===0){ alert("Nenhum registro em "+mesAno+"."); onDone&&onDone(); return; }
+    const fmtD=d=>{if(!d)return"";const[y,m,dd]=d.split("-");return`${dd}/${m}/${y}`;};
+    const sanit=s=>(s||"Check-list").replace(/[:\\/?*\[\]]/g,"-").slice(0,31);
+    // agrupa por tipoLabel
+    const grupos={};
+    regs.forEach(h=>{(grupos[h.tipoLabel||"Outros"]=grupos[h.tipoLabel||"Outros"]||[]).push(h);});
+    const wb=window.XLSX.utils.book_new();
+    const nomesUsados={};
+    Object.entries(grupos).forEach(([label,lista])=>{
+      // colunas de item: união ordenada dos itens que aparecem no grupo
+      const itemCols=[]; const vistos=new Set();
+      lista.forEach(h=>(h.items||[]).forEach(it=>{ if(!vistos.has(it.item)){vistos.add(it.item);itemCols.push(it.item);} }));
+      const linhas=lista.map(h=>{
+        const base={
+          "Data":fmtD(h.data),"Hora":h.hora||"","Turno":h.turno||"","Letra":h.letra||"",
+          "Máquina/Linha":h.linha||h.maquina||"","Operador":h.opPU||"","Op. Painel":h.opPainel||"",
+          "Progresso":`${(h.total||0)-(h.noks||0)}/${h.total||0}`,"NOKs":h.noks||0,"Observação":h.obs||"",
+        };
+        const porItem={};
+        (h.items||[]).forEach(it=>{ (porItem[it.item]=porItem[it.item]||[]).push(it); });
+        itemCols.forEach(nome=>{
+          const it=(porItem[nome]||[])[0];
+          if(!it){ base[nome]=""; return; }
+          let v = it.medida || it.resp || "";
+          if(v==="ok")v="OK"; else if(v==="nok"||v==="critico")v="NOK"; else if(v==="atencao")v="ATENÇÃO";
+          const extra=[]; if(it.obs)extra.push(it.obs); if((it.fotos||[]).length)extra.push("com foto");
+          base[nome]= v + (extra.length?` (${extra.join("; ")})`:"");
+        });
+        return base;
+      });
+      const ws=window.XLSX.utils.json_to_sheet(linhas);
+      // larguras: metadados fixos + itens
+      ws["!cols"]=[{wch:12},{wch:7},{wch:9},{wch:7},{wch:14},{wch:18},{wch:16},{wch:11},{wch:7},{wch:34},...itemCols.map(()=>({wch:22}))];
+      let nome=sanit(label); let base=nome, i=2;
+      while(nomesUsados[nome]){ nome=sanit(base.slice(0,28)+" "+i); i++; }
+      nomesUsados[nome]=true;
+      window.XLSX.utils.book_append_sheet(wb, ws, nome);
+    });
+    window.XLSX.writeFile(wb, `Historico_H2_${mesAno}.xlsx`);
+    onDone&&onDone();
+  };
+  if(!window.XLSX){
+    const s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload=gerar; s.onerror=()=>{alert("Falha ao carregar Excel.");onDone&&onDone();};
+    document.head.appendChild(s);
+  } else gerar();
+}
+
 function HistoricoTela({ historico, areaAtiva, perfil }) {
   const [abaHist,setAbaHist]=useState("reg");
+  const [mesExport,setMesExport]=useState(()=>new Date().toISOString().slice(0,7));
+  const [exportando,setExportando]=useState(false);
   const [dataSel,setDataSel]=useState(()=>new Date().toISOString().slice(0,10));
   const [filtroMaq,setFiltroMaq]=useState("M2");
   const [filtroArea,setFiltroArea]=useState(areaAtiva||"pu");
@@ -3879,6 +3957,16 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
         <span style={{color:C.textDim,fontSize:10,fontFamily:"monospace"}}>{historico.length} reg.</span>
       </div>
       <div style={{height:1,background:`linear-gradient(90deg,${C.accent}66,transparent)`,margin:"8px 0 12px"}}/>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:3}}>
+          <label style={{color:C.textDim,fontSize:9,textTransform:"uppercase",letterSpacing:"0.06em"}}>Mês</label>
+          <input type="month" value={mesExport} onChange={e=>e.target.value&&setMesExport(e.target.value)} style={{...inputStyle,padding:"7px 10px",fontSize:13,fontFamily:"monospace",colorScheme:"light",cursor:"pointer"}}/>
+        </div>
+        <button onClick={()=>{if(exportando)return;setExportando(true);exportarHistoricoExcel(historico,mesExport,()=>setExportando(false));}}
+          style={{alignSelf:"flex-end",display:"flex",alignItems:"center",gap:7,padding:"9px 16px",borderRadius:9,cursor:exportando?"default":"pointer",fontWeight:800,fontSize:12,border:"none",background:exportando?C.accentDark:"#00A855",color:"#fff",boxShadow:"0 1px 4px rgba(0,145,80,0.30)"}}>
+          <span style={{fontSize:14}}>⬇</span>{exportando?"Gerando…":"Exportar Excel"}
+        </button>
+      </div>
       <div style={{display:"flex",gap:6,marginBottom:14}}>
         {[{id:"reg",l:"REGISTROS"},{id:"ana",l:"EFICIENCIA"},{id:"avarias",l:"AVARIAS"}].map(a=>(
           <button key={a.id} onClick={()=>setAbaHist(a.id)} style={{flex:1,padding:"8px 6px",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:10,letterSpacing:"0.03em",background:abaHist===a.id?`linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))`:C.tagBg,border:`2px solid ${abaHist===a.id?"rgba(0,199,102,0.55)":C.border}`,color:abaHist===a.id?"#00975A":C.textMuted,boxShadow:abaHist===a.id?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>{a.l}</button>
