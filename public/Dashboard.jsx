@@ -7,11 +7,11 @@ import { COL, doc, onSnapshot, setDoc } from "./firebase";
 import { CarrosselViewer } from "./carrossel";
 
 const C = {
-  void:"#040B12", deep:"#07141F", panel:"#0B1C29", panelHi:"#10283A",
-  line:"rgba(130,170,205,0.14)", lineHi:"rgba(0,230,118,0.32)",
-  green:"#00E676", greenDim:"#00A152", cyan:"#00F0FF", blue:"#5090FF",
-  purple:"#C77DFF", amber:"#FFC107", orange:"#FF8C00", red:"#FF5252",
-  ink:"#F3F8FC", mute:"#A9BFD4", dim:"#5E7690", faint:"#28394E",
+  void:"#E9EDF1", deep:"#E1E7EC", panel:"#EDF1F4", panelHi:"#F5F8FA",
+  line:"rgba(26,39,51,0.12)", lineHi:"rgba(0,168,85,0.40)",
+  green:"#00A855", greenDim:"#5B8A6A", cyan:"#0093A8", blue:"#2E6BD6",
+  purple:"#7C4DD4", amber:"#B8860B", orange:"#CC6A1F", red:"#D63A3A",
+  ink:"#1A2733", mute:"#556472", dim:"#8593A0", faint:"#B7C1CB",
 };
 const mono = "'SF Mono','Roboto Mono',ui-monospace,monospace";
 const sans = "'Inter','Segoe UI',system-ui,sans-serif";
@@ -51,10 +51,10 @@ const GlobalFX = () => (
     @keyframes cmd-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
     @keyframes cmd-marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
     @keyframes cmd-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-    .cmd-card{position:relative;background:linear-gradient(180deg,rgba(16,34,52,.72),rgba(6,16,26,.94));backdrop-filter:blur(16px);border-radius:14px;overflow:hidden;border:1px solid rgba(130,170,205,.14);box-shadow:0 10px 30px -12px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.05) inset}
-    .cmd-card::after{content:'';position:absolute;inset:0;border-radius:14px;padding:1px;background:linear-gradient(140deg,rgba(0,230,118,.38),rgba(0,240,255,.10) 34%,transparent 62%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+    .cmd-card{position:relative;background:rgba(255,255,255,0.48);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.6);box-shadow:0 8px 26px -12px rgba(40,55,70,0.28),0 1px 0 rgba(255,255,255,0.85) inset}
+    .cmd-card::after{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(140deg,rgba(0,168,85,.30),rgba(0,147,168,.10) 38%,transparent 62%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
     .cmd-corner{position:absolute;width:8px;height:8px;pointer-events:none;z-index:2}
-    .cmd-grid{background-color:rgba(0,0,0,.22);background-image:linear-gradient(rgba(130,170,205,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(130,170,205,.06) 1px,transparent 1px);background-size:18px 18px;box-shadow:inset 0 0 22px rgba(0,0,0,.5);border-radius:8px}
+    .cmd-grid{background-color:rgba(255,255,255,0.35);background-image:linear-gradient(rgba(26,39,51,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(26,39,51,.05) 1px,transparent 1px);background-size:18px 18px;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5);border-radius:8px}
   `}</style>
 );
 
@@ -94,7 +94,7 @@ function RadialGauge({ value, max=100, size=120, stroke=9, color, label, sub="",
           </linearGradient>
           <filter id={`gf${idk}`}><feGaussianBlur stdDeviation="2.5"/></filter>
         </defs>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.05)"
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(26,39,51,0.10)"
           strokeWidth={stroke} strokeDasharray={`${arc} ${circ}`} strokeLinecap="round"
           transform={`rotate(${rot} ${size/2} ${size/2})`}/>
         {Array.from({length:28}).map((_,i)=>{
@@ -105,7 +105,7 @@ function RadialGauge({ value, max=100, size=120, stroke=9, color, label, sub="",
           return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={on?color:C.faint} strokeWidth="1" opacity={on?0.65:0.28}/>;
         })}
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
-          strokeDasharray={`${fill} ${circ}`} strokeLinecap="round" opacity="0.45"
+          strokeDasharray={`${fill} ${circ}`} strokeLinecap="round" opacity="0.22"
           filter={`url(#gf${idk})`} transform={`rotate(${rot} ${size/2} ${size/2})`}/>
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={`url(#gg${idk})`} strokeWidth={stroke}
           strokeDasharray={`${fill} ${circ}`} strokeLinecap="round"
@@ -113,7 +113,7 @@ function RadialGauge({ value, max=100, size=120, stroke=9, color, label, sub="",
           style={{transition:"stroke-dasharray .8s cubic-bezier(.4,0,.2,1)"}}/>
       </svg>
       <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-        <span style={{fontFamily:mono,fontSize:size*0.27,fontWeight:900,color:danger?C.red:C.ink,lineHeight:1,textShadow:`0 0 9px ${color}99`}}>
+        <span style={{fontFamily:mono,fontSize:size*0.27,fontWeight:900,color:danger?C.red:C.ink,lineHeight:1,textShadow:"none"}}>
           {value}<span style={{fontSize:size*0.13,color:C.dim}}>{sub}</span>
         </span>
         {label&&<span style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginTop:3,textTransform:"uppercase"}}>{label}</span>}
@@ -158,7 +158,7 @@ function CmdClock() {
         <div style={{fontFamily:mono,fontSize:9,color:C.dim,letterSpacing:"0.1em"}}>{dataFmt}</div>
         <div style={{fontFamily:mono,fontSize:9,color:C.green,letterSpacing:"0.1em"}}>TURNO {autoTurno()}</div>
       </div>
-      <div style={{fontFamily:mono,fontSize:30,fontWeight:900,color:C.green,letterSpacing:"0.04em",textShadow:`0 0 11px ${C.green}77`,lineHeight:1}}>
+      <div style={{fontFamily:mono,fontSize:30,fontWeight:900,color:C.green,letterSpacing:"0.04em",textShadow:"none",lineHeight:1}}>
         {hh}<span style={{animation:"cmd-pulse 1s infinite"}}>:</span>{mm}<span style={{fontSize:16,color:C.dim}}>:{ss}</span>
       </div>
     </div>
@@ -189,7 +189,7 @@ function HeroBar({ historico, seguranca, cleaners, cleanersHist, avarias, onEdit
       </div>
       <div style={{minWidth:0}}>
         <div style={{display:"flex",alignItems:"baseline",gap:3}}>
-          <span style={{fontFamily:mono,fontSize:36,fontWeight:900,color,lineHeight:1,textShadow:`0 0 9px ${color}66`}}>{val??"--"}</span>
+          <span style={{fontFamily:mono,fontSize:36,fontWeight:900,color,lineHeight:1,textShadow:"none"}}>{val??"--"}</span>
           <span style={{fontFamily:mono,fontSize:11,color:C.dim}}>{unit}</span>
         </div>
         <div style={{fontFamily:sans,fontSize:10.5,color:C.dim,letterSpacing:"0.1em",textTransform:"uppercase",marginTop:2,whiteSpace:"nowrap"}}>{label}</div>
@@ -321,7 +321,7 @@ function PanelMural({ pendencias, chamados, chamadosRaw, cleaners, historicoRaw,
                 })}
               </svg>
               <span style={{fontFamily:mono,fontSize:12,fontWeight:900,color:C.ink,
-                textShadow:"0 0 8px rgba(255,255,255,0.5)",zIndex:1}}>{mq}</span>
+                textShadow:"none",zIndex:1}}>{mq}</span>
               {critico&&<div style={{position:"absolute",inset:0,borderRadius:"50%",
                 border:`1.5px solid ${C.red}`,animation:"cmd-ring 1.6s ease-out infinite"}}/>}
             </div>
@@ -336,7 +336,7 @@ function PanelMural({ pendencias, chamados, chamadosRaw, cleaners, historicoRaw,
           {/* total destaque */}
           <div style={{textAlign:"right"}}>
             <div style={{fontFamily:mono,fontSize:42,fontWeight:900,color:cor,lineHeight:1,
-              textShadow:`0 0 10px ${cor}88`}}>{d.total}</div>
+              textShadow:"none"}}>{d.total}</div>
             <div style={{fontFamily:sans,fontSize:7,color:C.dim,letterSpacing:"0.12em",marginTop:2}}>PENDENCIAS</div>
           </div>
         </div>
@@ -373,7 +373,7 @@ function PanelMural({ pendencias, chamados, chamadosRaw, cleaners, historicoRaw,
         </div>
 
         {/* severidade rodape */}
-        <div style={{display:"flex",gap:7,marginTop:14,paddingTop:12,borderTop:`1px solid rgba(255,255,255,0.06)`}}>
+        <div style={{display:"flex",gap:7,marginTop:14,paddingTop:12,borderTop:`1px solid rgba(26,39,51,0.07)`}}>
           {[{n:d.nC,l:"CRITICAS",c:C.red},{n:d.nM,l:"MEDIAS",c:C.amber},{n:d.nB,l:"BAIXAS",c:C.green}].map(s=>(
             <div key={s.l} style={{flex:1,textAlign:"center",padding:"7px 0",borderRadius:8,
               background:`${s.c}${s.n>0?"14":"08"}`,
@@ -476,7 +476,7 @@ function PanelCleaners({ cleaners, cleanersHist, sedim, setTela }) {
               <span style={{fontFamily:sans,fontSize:9,color:C.mute}}><span style={{fontFamily:mono,color:C.dim,marginRight:5}}>{i+1}</span>{t.m}</span>
               <span style={{fontFamily:mono,fontSize:13,fontWeight:900,color:motCor(t.m)}}>{t.n}</span>
             </div>
-            <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.04)",overflow:"hidden"}}>
+            <div style={{height:4,borderRadius:2,background:"rgba(26,39,51,0.06)",overflow:"hidden"}}>
               <div style={{height:"100%",width:`${t.n/maxMot*100}%`,background:motCor(t.m),borderRadius:2,boxShadow:`0 0 5px ${motCor(t.m)}`,transition:"width .6s"}}/>
             </div>
           </div>
@@ -622,7 +622,7 @@ function PanelAlturaChecklists({ historico, chamados, cleaners, avarias, setTela
               <span style={{fontFamily:mono,fontSize:9,color:C.dim,letterSpacing:"0.1em"}}>05 · SAP</span>
               <span style={{width:3,height:3,borderRadius:"50%",background:cSap,boxShadow:`0 0 4px ${cSap}`}}/>
               <span style={{fontFamily:mono,fontSize:22,fontWeight:900,color:cSap,lineHeight:1,
-                textShadow:`0 0 8px ${cSap}66`}}>{total}</span>
+                textShadow:"none"}}>{total}</span>
               <span style={{fontFamily:sans,fontSize:9,color:C.dim}}>abertos</span>
             </div>
             <div style={{flex:1,display:"flex",gap:5}}>
@@ -670,7 +670,7 @@ function PanelSaude({ cleaners, historico, chamados, avarias }) {
       <Corners c={cScore}/>
       <div style={{flexShrink:0,textAlign:"center",minWidth:76}}>
         <div style={{fontFamily:mono,fontSize:34,fontWeight:900,color:cScore,lineHeight:1,
-          textShadow:`0 0 11px ${cScore}88`}}>{score}%</div>
+          textShadow:"none"}}>{score}%</div>
         <div style={{fontFamily:mono,fontSize:9,color:cScore,letterSpacing:"0.14em",marginTop:3}}>{label}</div>
         <div style={{fontFamily:sans,fontSize:7,color:C.dim,letterSpacing:"0.1em",marginTop:1}}>08 · SAUDE DO TURNO</div>
       </div>
@@ -747,7 +747,7 @@ function PanelAvarias({ avarias, setTela }) {
     <div className="cmd-card" style={{padding:16,display:"flex",flexDirection:"column"}} onClick={()=>setTela&&setTela("historico")}>
       <Corners c={cTop}/>
       <PanelHead code="04" title="Avarias por Turno" accent={cTop}
-        right={<span style={{fontFamily:mono,fontSize:22,fontWeight:900,color:cTop,textShadow:`0 0 8px ${cTop}66`}}>{totalMes}<span style={{fontSize:8,color:C.dim}}>/mes</span></span>}/>
+        right={<span style={{fontFamily:mono,fontSize:22,fontWeight:900,color:cTop,textShadow:"none"}}>{totalMes}<span style={{fontSize:8,color:C.dim}}>/mes</span></span>}/>
       {/* grafico de linha por turno */}
       <div style={{marginBottom:10}}>
         <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.12em",marginBottom:4}}>AVARIAS POR TURNO · 10 DIAS</div>
@@ -791,7 +791,7 @@ function PanelAvarias({ avarias, setTela }) {
               <span style={{fontFamily:sans,fontSize:11,color:t.total>0?C.mute:C.dim}}><span style={{fontFamily:mono,color:C.dim,marginRight:5}}>{i+1}</span>{t.label}</span>
               <span style={{fontFamily:mono,fontSize:14,fontWeight:900,color:t.total>0?t.cor:C.dim}}>{t.total}</span>
             </div>
-            <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.04)",overflow:"hidden"}}>
+            <div style={{height:4,borderRadius:2,background:"rgba(26,39,51,0.06)",overflow:"hidden"}}>
               <div style={{height:"100%",width:`${t.total/maxTop*100}%`,background:t.cor,borderRadius:2,boxShadow:t.total>0?`0 0 5px ${t.cor}`:"none",transition:"width .6s"}}/>
             </div>
           </div>
@@ -817,7 +817,7 @@ function PanelChamados({ chamados, setTela }) {
       <PanelHead code="05" title="Chamados / SAP" accent={cTop}/>
       <div style={{display:"flex",alignItems:"center",gap:14,flex:1}}>
         <div style={{textAlign:"center",flexShrink:0}}>
-          <div style={{fontFamily:mono,fontSize:52,fontWeight:900,color:cTop,lineHeight:1,textShadow:`0 0 11px ${cTop}66`}}>{total}</div>
+          <div style={{fontFamily:mono,fontSize:52,fontWeight:900,color:cTop,lineHeight:1,textShadow:"none"}}>{total}</div>
           <div style={{fontFamily:sans,fontSize:8,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>ABERTOS</div>
         </div>
         <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
@@ -847,7 +847,7 @@ function ModalAcid({ valor, onSave, onClose }) {
         <input type="number" value={v} onChange={e=>setV(e.target.value)} placeholder="42" autoFocus
           style={{width:"100%",background:C.void,border:`1px solid ${C.line}`,borderRadius:10,padding:14,color:C.green,fontFamily:mono,fontSize:30,fontWeight:900,textAlign:"center",outline:"none",boxSizing:"border-box"}}/>
         <div style={{display:"flex",gap:8,marginTop:16}}>
-          <button onClick={onClose} style={{flex:1,padding:11,borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:12,background:"rgba(255,255,255,0.05)",border:`1px solid ${C.line}`,color:C.mute,fontFamily:sans}}>Cancelar</button>
+          <button onClick={onClose} style={{flex:1,padding:11,borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:12,background:"rgba(26,39,51,0.07)",border:`1px solid ${C.line}`,color:C.mute,fontFamily:sans}}>Cancelar</button>
           <button onClick={()=>{const n=parseInt(v,10);if(!isNaN(n)&&n>=0)onSave(n);}} style={{flex:2,padding:11,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:12,background:C.greenDim,border:"none",color:"#fff",fontFamily:sans}}>Salvar</button>
         </div>
       </div>
@@ -913,7 +913,7 @@ export default function DashboardTV({ setTela, setModoVisao }) {
   const critico=ocM2?.cor==="vermelho"||ocM3?.cor==="vermelho";
 
   return (
-    <div style={{position:"relative",minHeight:"100vh",width:"100vw",background:"radial-gradient(120% 80% at 50% -15%,rgba(0,230,118,0.10),transparent 46%),radial-gradient(80% 55% at 100% 0%,rgba(0,240,255,0.05),transparent 44%),radial-gradient(120% 120% at 50% 50%,transparent 46%,rgba(0,0,0,0.72)),linear-gradient(180deg,#08182600,#06131f 45%,#020a12)",color:C.ink,fontFamily:sans,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+    <div style={{position:"relative",minHeight:"100vh",width:"100vw",background:"radial-gradient(120% 80% at 50% -12%,rgba(0,168,85,0.08),transparent 46%),radial-gradient(80% 55% at 100% 0%,rgba(0,147,168,0.05),transparent 44%),linear-gradient(180deg,#DBE1E6,#CDD5DB 48%,#C1C9D0)",color:C.ink,fontFamily:sans,overflow:"hidden",display:"flex",flexDirection:"column"}}>
       <GlobalFX/>
       {/* grid de fundo */}
       <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,230,118,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,.045) 1px,transparent 1px)",backgroundSize:"38px 38px",maskImage:"radial-gradient(ellipse 85% 75% at 50% 32%,#000 38%,transparent 100%)",WebkitMaskImage:"radial-gradient(ellipse 85% 75% at 50% 32%,#000 38%,transparent 100%)",pointerEvents:"none"}}/>
@@ -1027,7 +1027,7 @@ export default function DashboardTV({ setTela, setModoVisao }) {
               </circle>
             </svg>
             <div>
-              <div style={{fontFamily:sans,fontSize:15,fontWeight:900,color:C.ink,letterSpacing:"0.28em",textShadow:`0 0 14px ${C.green}80`}}>VÉRTICE</div>
+              <div style={{fontFamily:sans,fontSize:15,fontWeight:900,color:C.ink,letterSpacing:"0.28em",textShadow:"none"}}>VÉRTICE</div>
               <div style={{fontFamily:mono,fontSize:8,color:C.dim,letterSpacing:"0.2em"}}>SECAGEM H2 · SUZANO · INDUSTRIA 5.0</div>
             </div>
           </div>
