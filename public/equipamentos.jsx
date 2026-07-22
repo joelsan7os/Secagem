@@ -112,8 +112,9 @@ function BotaoFoto({ fotos=[], onAdd, onRemove, compact=false }) {
           ))}
         </div>
       )}
-      <button onClick={()=>inputRef.current.click()} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4,background:fotos.length>0?"#0a2015":C.tagBg,border:`1px solid ${fotos.length>0?C.accentLight+"55":C.border}`,color:fotos.length>0?C.accentLight:C.textMuted,borderRadius:8,padding:compact?"4px 8px":"7px 12px",cursor:"pointer",fontSize:compact?14:16,transition:"all .15s",position:"relative"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accentLight;e.currentTarget.style.color=C.accentLight;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=fotos.length>0?C.accentLight+"55":C.border;e.currentTarget.style.color=fotos.length>0?C.accentLight:C.textMuted;}}>
-        
+      <button onClick={()=>inputRef.current.click()} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4,background:fotos.length>0?"rgba(0,199,102,0.10)":C.tagBg,border:`1px solid ${fotos.length>0?C.accentLight+"55":C.border}`,color:fotos.length>0?C.accentLight:C.textMuted,borderRadius:8,padding:compact?"4px 8px":"7px 12px",cursor:"pointer",fontSize:compact?14:16,transition:"all .15s",position:"relative"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accentLight;e.currentTarget.style.color=C.accentLight;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=fotos.length>0?C.accentLight+"55":C.border;e.currentTarget.style.color=fotos.length>0?C.accentLight:C.textMuted;}}>
+        <span style={{fontSize:compact?13:15,lineHeight:1}}>📷</span>
+        <span style={{fontSize:compact?10:11,fontWeight:700,whiteSpace:"nowrap"}}>{fotos.length>0?"Adicionar outra":"Adicionar foto"}</span>
         {fotos.length>0&&<span style={{background:C.accent,color:"#fff",borderRadius:"50%",width:14,height:14,fontSize:9,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",position:"absolute",top:-5,right:-5}}>{fotos.length}</span>}
       </button>
     </div>
@@ -151,9 +152,9 @@ function ModalObservacao({ eq, onClose, onSave }) {
   const addFoto=(src)=>setFotos(p=>[...p,src]);
   const removeFoto=(i)=>setFotos(p=>p.filter((_,j)=>j!==i));
   return (
-    <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={e=>e.target===e.currentTarget&&onClose()}>
       {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"#000000dd",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={fotoAmpliada} alt="amp" style={{maxWidth:"95vw",maxHeight:"90vh",borderRadius:12}}/></div>}
-      <div style={{...glassMini,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600,maxHeight:"90vh",overflowY:"auto"}}>
+      <div style={{...glassMini,border:`1px solid ${C.border}`,borderRadius:18,padding:22,width:"100%",maxWidth:520,maxHeight:"90vh",overflowY:"auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
           <div>
             <p style={{color:C.textMuted,fontSize:10,margin:"0 0 3px",textTransform:"uppercase"}}>Observação de Rota</p>
@@ -198,7 +199,10 @@ function ModalObservacao({ eq, onClose, onSave }) {
           )}
           <BotaoFoto fotos={[]} onAdd={addFoto}/>
         </div>
-        <button onClick={()=>onSave(eq.id,{obs,fotos,status,data:dataAtual,hora})} style={{...btnPrim,width:"100%",padding:13}}>✓ Salvar Observação</button>
+        <div style={{display:"flex",gap:9}}>
+          <button onClick={onClose} style={{...btnSec,flex:"0 0 38%",padding:13,fontWeight:700}}>Cancelar</button>
+          <button onClick={()=>onSave(eq.id,{obs,fotos,status,data:dataAtual,hora})} style={{...btnPrim,flex:1,padding:13}}>✓ Salvar</button>
+        </div>
       </div>
     </div>
   );
@@ -214,8 +218,8 @@ function ModalNotas({ eq, onClose, onSave }) {
   const del=(id)=>setNotas(p=>p.filter(n=>n._id!==id));
   const upd=(id,f,v)=>setNotas(p=>p.map(n=>n._id===id?{...n,[f]:v}:n));
   return (
-    <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{...glassMini,border:`1px solid ${C.border}`,borderRadius:"18px 18px 0 0",padding:24,width:"100%",maxWidth:600,maxHeight:"85vh",overflowY:"auto"}}>
+    <div style={{position:"fixed",inset:0,background:"#00000099",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{...glassMini,border:`1px solid ${C.border}`,borderRadius:18,padding:24,width:"100%",maxWidth:520,maxHeight:"85vh",overflowY:"auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18}}>
           <div>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
@@ -1310,7 +1314,7 @@ function EquipamentosTela({ eqState, setEqState, areaAtiva, setAreaAtiva, histor
       {modalObs&&<ModalObservacao eq={modalObs} onClose={()=>setModalObs(null)} onSave={salvarObservacao}/>}
       {modalPendencia&&(
         <div onClick={()=>{setModalPendencia(null);setNotaInput("");}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div onClick={e=>e.stopPropagation()} style={{...glassMini,border:`1px solid ${C.accentLight}33`,borderRadius:"18px 18px 0 0",padding:22,width:"100%",maxWidth:600}}>
+          <div onClick={e=>e.stopPropagation()} style={{...glassMini,border:`1px solid ${C.accentLight}33`,borderRadius:18,padding:22,width:"100%",maxWidth:520}}>
             <div style={{color:C.accentLight,fontWeight:800,fontSize:14,marginBottom:3}}>Abrir chamado / nota</div>
             <div style={{color:C.textDim,fontSize:11,marginBottom:12}}>{modalPendencia.nome}</div>
             <input value={notaInput} onChange={e=>setNotaInput(e.target.value)} placeholder="Nº nota SAP ou chamado..." style={{...inputStyle,marginBottom:14,fontSize:15,fontFamily:"monospace",fontWeight:700}} autoFocus/>
