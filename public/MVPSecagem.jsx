@@ -696,11 +696,51 @@ const temMarcadores = (registro) => {
   return false;
 };
 
-// Salva os grupos de fotos de um registro extraido, um doc por dono.
+// Salva as fotos de um registro: UM DOCUMENTO POR FOTO.
+// Antes era um doc por item, o que estourava o limite de 1MB do Firestore
+// quando o operador tirava 2-3 fotos no mesmo item (a gravacao falhava e a
+// foto sumia, deixando o marcador orfao).
 const salvarGruposFotos = async (registroId, grupos) => {
   for(const dono of Object.keys(grupos)){
-    try{ await setDoc(doc(COL,"fotos_"+registroId+"_"+dono),{val:grupos[dono],ts:Date.now()}); }catch(e){ console.error("Falha ao salvar fotos do item",dono,e); }
+    const grupo=grupos[dono];
+    for(const ref of Object.keys(grupo)){
+      try{ await setDoc(doc(COL,"fotos_"+registroId+"_"+dono+"_"+ref),{val:grupo[ref],ts:Date.now()}); }
+      catch(e){ console.error("Falha ao salvar foto",dono,ref,e); }
+    }
   }
+};
+
+// Lista os marcadores "dono::ref" presentes num registro desidratado.
+const listarMarcadores = (registro) => {
+  const out=new Set();
+  const scan=(arr)=>Array.isArray(arr)&&arr.forEach(s=>{ if(typeof s==="string"&&s.startsWith("@@")) out.add(s.slice(2)); });
+  if(Array.isArray(registro.items)) registro.items.forEach(it=>scan(it.fotos));
+  if(registro.unit) scan(registro.unit.foto);
+  scan(registro.fotos);
+  if(registro.fotos&&typeof registro.fotos==="object"&&!Array.isArray(registro.fotos)) Object.values(registro.fotos).forEach(scan);
+  return [...out];
+};
+
+// Busca as fotos de um registro. Tenta o esquema novo (uma foto por doc) e,
+// se nao achar, cai no esquema anterior (um doc por item) para nao perder
+// registros gravados antes desta correcao.
+const buscarFotosRegistro = async (registroId, marcadores) => {
+  const porDono={};
+  const cacheItem={};
+  for(const m of marcadores){
+    const [dono,ref]=m.split("::");
+    if(!dono||!ref) continue;
+    let val=null;
+    try{ val=await cloudGet("fotos_"+registroId+"_"+dono+"_"+ref); }catch{}
+    if(val==null){
+      if(!(dono in cacheItem)){
+        try{ cacheItem[dono]=await cloudGet("fotos_"+registroId+"_"+dono); }catch{ cacheItem[dono]=null; }
+      }
+      val=cacheItem[dono]?.[ref] ?? null;
+    }
+    if(val!=null){ (porDono[dono]=porDono[dono]||{})[ref]=val; }
+  }
+  return porDono;
 };
 
 // ─── Escala Operacional — estrutura preparada para implementação futura ───────
@@ -3855,11 +3895,9 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
   // Reidrata fotos sob demanda ao abrir um registro com marcadores
   React.useEffect(()=>{
     if(regBase&&temMarcadores(regBase)&&!fotosCarregadas[regBase.id]){
-      const donos=listarDonos(regBase);
-      Promise.all(donos.map(d=>cloudGet("fotos_"+regBase.id+"_"+d).then(fmap=>[d,fmap]))).then(pares=>{
-        const agregado={};
-        pares.forEach(([d,fmap])=>{ if(fmap) agregado[d]=fmap; });
-        setFotosCarregadas(prev=>({...prev,[regBase.id]:agregado}));
+      const marcadores=listarMarcadores(regBase);
+      buscarFotosRegistro(regBase.id,marcadores).then(mapa=>{
+        setFotosCarregadas(prev=>({...prev,[regBase.id]:mapa}));
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4486,6 +4524,23 @@ export default function App() {
       }
     });
     cloudGet("eqstate_h2").then(data=>{if(data&&data.comum)setEqState(data);eqCarregado.current=true;});
+  },[]);
+  // Recuperacao de fotos: reenvia para a nuvem (um doc por foto) qualquer foto
+  // que ainda exista em base64 no armazenamento local. Serve para registros que
+  // falharam ao subir por estourar o limite de 1MB do esquema antigo.
+  React.useEffect(()=>{
+    (async()=>{
+      let lista=null;
+      try{ lista=JSON.parse(localStorage.getItem("historico_h2")||"null"); }catch{}
+      if(!Array.isArray(lista)) return;
+      for(const r of lista){
+        if(!r||temMarcadores(r)) continue; // sem base64 aqui
+        try{
+          const ex=extrairFotos(r);
+          if(ex.temFotos) await salvarGruposFotos(r.id,ex.grupos);
+        }catch(e){ console.error("Falha ao recuperar fotos do registro",r?.id,e); }
+      }
+    })();
   },[]);
   // Migracao automatica: corrige registros antigos de WFT / Consumo de Vapor
   // que foram salvos com resp invertido. Roda ate nao haver mais nada a migrar.
