@@ -2008,7 +2008,7 @@ function WFTTela({ onSalvar, turno, letra, opPU:opPUProp, opPainel:opPainelProp,
   const totalVerif=WFT_VERIFICACOES_SEM_REJEICAO.length;
   const respondidas=WFT_VERIFICACOES_SEM_REJEICAO.filter(v=>respostas[v.id]).length;
   const handleSalvar=()=>{
-    const registro={id:Date.now(),tipoId:"wft",tipoLabel:"Consumo WFT",maquina,turno,letra,data,opPU,opPainel,consumoAtual:consumoNum,metaH2:WFT_META_H2,acima,temRejeicao,respostas:{...respostas},fotos:{...fotos},obs,noks:0,total:totalVerif,items:WFT_VERIFICACOES_SEM_REJEICAO.map(v=>({id:v.id,secao:"WFT",item:v.item,ref:"—",unit:"sim/não",resp:respostas[v.id]||"",fotos:fotos[v.id]||[]}))};
+    const registro={id:Date.now(),tipoId:"wft",tipoLabel:"Consumo WFT",maquina,turno,letra,data,opPU,opPainel,consumoAtual:consumoNum,metaH2:WFT_META_H2,acima,temRejeicao,respostas:{...respostas},fotos:{...fotos},obs,noks:WFT_VERIFICACOES_SEM_REJEICAO.filter(v=>respostas[v.id]==="sim").length,total:totalVerif,items:WFT_VERIFICACOES_SEM_REJEICAO.map(v=>({id:v.id,secao:"WFT",item:v.item,ref:"—",unit:"sim/não",resp:respostas[v.id]==="sim"?"nok":respostas[v.id]==="nao"?"ok":"",fotos:fotos[v.id]||[]}))};
     onSalvar(registro);setSalvo(true);
   };
   const corMeta=acima?C.dangerLight:C.accentLight;
@@ -2174,7 +2174,7 @@ function RitmoVaporTela({ onSalvar, turno, letra, opPU:opPUProp, opPainel:opPain
   const noks=TODOS.filter(v=>respostas[v.id]==="sim").length;
   const handleSalvar=()=>{
     const registro={id:Date.now(),tipoId:"ritmo_vapor",tipoLabel:"Consumo de Vapor",maquina,turno,letra,data,opPU,opPainel,respostas:{...respostas},fotos:{...fotos},obs,noks,total:TODOS.length,
-      items:TODOS.map(v=>({id:v.id,secao:RITMO_VAPOR_PROCESSO.some(p=>p.id===v.id)?"Processo":"Equipamentos",item:v.item,ref:"—",unit:"sim/não",resp:respostas[v.id]||"",fotos:fotos[v.id]||[]}))};
+      items:TODOS.map(v=>({id:v.id,secao:RITMO_VAPOR_PROCESSO.some(p=>p.id===v.id)?"Processo":"Equipamentos",item:v.item,ref:"—",unit:"sim/não",resp:respostas[v.id]==="sim"?"nok":respostas[v.id]==="nao"?"ok":"",fotos:fotos[v.id]||[]}))};
     onSalvar(registro);setSalvo(true);
   };
   const Grupo=({titulo,num,itens})=>(
@@ -4076,11 +4076,11 @@ function HistoricoTela({ historico, areaAtiva, perfil }) {
 }
 
 // ─── ConfiguracoesTela ───────────────────────────────────────────────────────
-function ConfiguracoesTela({ perfil, onLogout, onAbrirAdmin }) {
+function ConfiguracoesTela({ perfil, onLogout, onAbrirAdmin, onAreaChange }) {
   const [cfg,setCfg]=useState(()=>storageGet('op_config')||{});
   const [salvo,setSalvo]=useState(false);
   const set=(k,v)=>{setCfg(p=>({...p,[k]:v}));setSalvo(false);};
-  const salvar=()=>{storageSet('op_config',cfg);setSalvo(true);setTimeout(()=>setSalvo(false),2500);};
+  const salvar=()=>{if(!cfg.area)return;storageSet('op_config',cfg);onAreaChange&&onAreaChange(cfg.area);setSalvo(true);setTimeout(()=>setSalvo(false),2500);};
   const ehDev=perfil?.funcao==="dev";
   const [resetAberto,setResetAberto]=useState(false);
   const [resetPin,setResetPin]=useState("");
@@ -4129,19 +4129,20 @@ function ConfiguracoesTela({ perfil, onLogout, onAbrirAdmin }) {
             {AREAS_CFG.map(a=>(
               <button key={a.id} onClick={()=>set("area",a.id)}
                 style={{padding:"10px 14px",borderRadius:9,cursor:"pointer",fontWeight:cfg.area===a.id?700:400,fontSize:13,textAlign:"left",
-                  background:cfg.area===a.id?C.blue:C.tagBg,
-                  border:`2px solid ${cfg.area===a.id?C.accentLight:C.border}`,
-                  color:cfg.area===a.id?"#fff":C.textMuted,
-                  boxShadow:cfg.area===a.id?"0 0 10px rgba(0,230,118,0.5),0 0 30px rgba(0,230,118,0.3)":"none"}}>
+                  background:cfg.area===a.id?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":C.tagBg,
+                  border:`2px solid ${cfg.area===a.id?"rgba(0,199,102,0.55)":C.border}`,
+                  color:cfg.area===a.id?"#00975A":C.textMuted,
+                  boxShadow:cfg.area===a.id?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
                 {a.label}
               </button>
             ))}
           </div>
         </div>
       </div>
-      <button onClick={salvar} style={{...btnPrim,width:"100%",padding:13,fontSize:14,
-        background:salvo?C.accentDark:C.accent,
-        boxShadow:salvo?"none":"0 0 10px rgba(0,230,118,0.5),0 0 30px rgba(0,230,118,0.3)"}}>
+      {!cfg.area&&<p style={{color:C.warning,fontSize:11.5,fontWeight:700,margin:"0 0 8px",textAlign:"center"}}>⚠ Selecione sua área para salvar</p>}
+      <button onClick={salvar} disabled={!cfg.area} style={{...btnPrim,width:"100%",padding:13,fontSize:14,cursor:cfg.area?"pointer":"not-allowed",
+        background:!cfg.area?C.tagBg:salvo?C.accentDark:"#00A855",color:!cfg.area?C.textDim:"#fff",
+        boxShadow:!cfg.area?"none":"0 2px 10px rgba(0,145,80,0.28)"}}>
         {salvo?"✓ Configuração salva!":"Salvar Configurações"}
       </button>
       {perfil&&(
@@ -4354,6 +4355,72 @@ function RotasTela({ historico, onVoltar }) {
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
+// ── Boas-vindas: escolha obrigatória da área no 1º acesso ──
+function TelaEscolhaArea({ perfil, onConfirmar }) {
+  const [area,setArea]=useState(null);
+  const AREAS=[
+    {id:"pu", label:"Parte Úmida",            desc:"Formação, prensas, feltros, vácuo"},
+    {id:"cs", label:"Parte Seca / Cortadeira", desc:"Secador, cortadeira, layboy, faquinhas"},
+    {id:"enf",label:"Enfardamento",            desc:"Linhas L4 · L5 · L6 · L7 · L8"},
+  ];
+  const primeiroNome=(perfil?.nome||"").split(" ")[0]||"operador";
+  return (
+    <div style={{minHeight:"100vh",background:"radial-gradient(80% 60% at 50% 0%,#FFFFFF,#F1F5F8 60%,#E7EDF2)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
+      <div style={{width:"100%",maxWidth:440,background:"#fff",border:`1px solid ${C.border}`,borderRadius:18,padding:"26px 22px",boxShadow:"0 20px 60px -18px rgba(11,31,48,0.28)"}}>
+        <div style={{fontSize:13,color:C.textMuted,marginBottom:2}}>Olá, <strong style={{color:C.text}}>{primeiroNome}</strong> 👋</div>
+        <h2 style={{color:C.text,fontSize:19,fontWeight:900,margin:"0 0 5px"}}>Qual é a sua área?</h2>
+        <p style={{color:C.textMuted,fontSize:12.5,margin:"0 0 18px",lineHeight:1.45}}>
+          Escolha a área em que você trabalha. Ela define os check-lists que aparecem para você — e pode ser alterada depois em Configurações.
+        </p>
+        <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:20}}>
+          {AREAS.map(a=>{
+            const on=area===a.id;
+            return (
+              <button key={a.id} onClick={()=>setArea(a.id)}
+                style={{textAlign:"left",padding:"13px 15px",borderRadius:11,cursor:"pointer",transition:"all .15s",
+                  background:on?"linear-gradient(135deg, rgba(255,255,255,0.96), rgba(0,199,102,0.12))":C.tagBg,
+                  border:`2px solid ${on?"rgba(0,199,102,0.55)":C.border}`,
+                  boxShadow:on?"0 2px 10px rgba(0,199,102,0.20)":"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{width:16,height:16,borderRadius:"50%",flexShrink:0,border:`2px solid ${on?"#00975A":C.borderLight}`,background:on?"#00975A":"transparent",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:10,fontWeight:900}}>{on?"✓":""}</span>
+                  <span style={{color:on?"#00975A":C.text,fontWeight:800,fontSize:14}}>{a.label}</span>
+                </div>
+                <div style={{color:C.textMuted,fontSize:11,marginTop:4,marginLeft:24}}>{a.desc}</div>
+              </button>
+            );
+          })}
+        </div>
+        <button onClick={()=>area&&onConfirmar(area)} disabled={!area}
+          style={{width:"100%",padding:14,borderRadius:10,border:"none",fontSize:14,fontWeight:800,
+            cursor:area?"pointer":"not-allowed",
+            background:area?"#00A855":C.tagBg,
+            color:area?"#fff":C.textDim,
+            boxShadow:area?"0 2px 10px rgba(0,145,80,0.28)":"none"}}>
+          {area?"Continuar":"Selecione sua área"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Migração: corrige resp invertido em Consumo WFT / Consumo de Vapor ──
+// Nesses dois checklists o botao "OK" gravava "nao" e "NAO OK" gravava "sim",
+// o oposto do resto do app. Converte para ok/nok. Idempotente: so mexe em
+// registros que ainda tenham "sim"/"nao" e apenas nesses dois tipos.
+const migrarRespInvertido = (lista) => {
+  if(!Array.isArray(lista)) return null;
+  let mudou=false;
+  const novo=lista.map(r=>{
+    if(r?.tipoId!=="wft" && r?.tipoId!=="ritmo_vapor") return r;
+    if(!Array.isArray(r.items)) return r;
+    if(!r.items.some(i=>i?.resp==="sim"||i?.resp==="nao")) return r; // ja migrado
+    mudou=true;
+    const items=r.items.map(i=>i?.resp==="sim"?{...i,resp:"nok"}:i?.resp==="nao"?{...i,resp:"ok"}:i);
+    return {...r, items, noks:items.filter(i=>i?.resp==="nok").length};
+  });
+  return mudou?novo:null;
+};
+
 export default function App() {
   const { perfil, setPerfil, logout } = usePerfilAtivo();
   const [adminAberto,setAdminAberto]=useState(false);
@@ -4362,7 +4429,8 @@ export default function App() {
   const [modalChuveiroHome,setModalChuveiroHome]=useState(null); // {maq,id} registro rápido sem sair da Home
   const [modoVisao,setModoVisao]=useState("app"); const irPG=()=>{try{localStorage.setItem("vertice_modo","pg");}catch(e){}location.reload();}; // "app" | "dashboard"
   const [historico,setHistorico]=useState(()=>storageGet("historico_h2")||[]);
-  const [areaAtiva,setAreaAtiva]=useState("pu");
+  const [areaAtiva,setAreaAtiva]=useState(()=>storageGet("op_config")?.area||"pu");
+  const [areaCfg,setAreaCfg]=useState(()=>storageGet("op_config")?.area||null);
   const [ocorrencias,setOcorrencias]=useState({M2:null,M3:null});
   const [modalSinal,setModalSinal]=useState(false);
   const [modalCor,setModalCor]=useState(null);
@@ -4419,6 +4487,26 @@ export default function App() {
     });
     cloudGet("eqstate_h2").then(data=>{if(data&&data.comum)setEqState(data);eqCarregado.current=true;});
   },[]);
+  // Migracao automatica: corrige registros antigos de WFT / Consumo de Vapor
+  // que foram salvos com resp invertido. Roda ate nao haver mais nada a migrar.
+  React.useEffect(()=>{
+    const corrigido=migrarRespInvertido(historico);
+    if(!corrigido) return;
+    setHistorico(corrigido);
+    try{localStorage.setItem("historico_h2",JSON.stringify(corrigido));}catch{}
+    (async()=>{
+      try{
+        const leve=[];
+        for(const r of corrigido){
+          if(temMarcadores(r)){ leve.push(r); continue; } // ja desidratado: fotos preservadas
+          const ex=extrairFotos(r);
+          if(ex.temFotos){ await salvarGruposFotos(r.id,ex.grupos); }
+          leve.push(ex.limpo);
+        }
+        await setDoc(doc(COL,"historico_h2"),{val:leve,ts:Date.now()});
+      }catch(e){ console.error("Falha na migracao de resp:",e); }
+    })();
+  },[historico]);
   React.useEffect(()=>{
     if(!eqCarregado.current)return;
     storageSet("eqstate_h2",eqState);
@@ -4456,7 +4544,7 @@ export default function App() {
     if(tela==="checklist")return <ChecklistTela onSalvar={salvarChecklist} historico={historico} perfil={perfil}/>;
     if(tela==="equipamentos")return <EquipamentosTela eqState={eqState} setEqState={setEqState} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} historico={historico} setTela={setTela}/>;
     if(tela==="historico")return veHistorico?<HistoricoTela historico={historico} areaAtiva={areaAtiva} perfil={perfil}/>:<Dashboard eqState={eqState} setTela={setTela} historico={historico} areaAtiva={areaAtiva} setAreaAtiva={setAreaAtiva} ocorrencias={ocorrencias} setOcorrencias={setOcorrencias} perfil={perfil} modalChuveiroHome={modalChuveiroHome} setModalChuveiroHome={setModalChuveiroHome}/>;
-    if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout} onAbrirAdmin={()=>setAdminAberto(true)}/>;
+    if(tela==="configuracoes")return <ConfiguracoesTela perfil={perfil} onLogout={logout} onAbrirAdmin={()=>setAdminAberto(true)} onAreaChange={(a)=>{setAreaCfg(a);setAreaAtiva(a);}}/>;
     if(tela==="rotas")return <RotasTela historico={historico} onVoltar={()=>setTela("dashboard")}/>;
     if(tela==="mural")return <MuralOportunidades eqState={eqState} onVoltar={()=>setTela("dashboard")}/>;
     if(tela==="carrossel")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>setTela("dashboard")} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><PainelCarrossel/></div>;
@@ -4464,6 +4552,12 @@ export default function App() {
     if(tela==="chuveiros")return <div style={{padding:"16px 16px 80px"}}><button onClick={()=>{setTela("dashboard");setChuveiroAlvo(null);}} style={{background:C.tagBg,border:`1px solid ${C.border}`,color:C.textMuted,borderRadius:9,padding:"9px 14px",cursor:"pointer",fontSize:12,fontWeight:700,marginBottom:14}}>← Início</button><ChuveirosTela maquina={chuveiroAlvo?.maq||"M2"} abrirDireto={chuveiroAlvo}/></div>;
   };
   if(!perfil) return <TelaAuth onEntrar={setPerfil}/>;
+  if(!areaCfg) return <TelaEscolhaArea perfil={perfil} onConfirmar={(a)=>{
+    const cfg=storageGet("op_config")||{};
+    const novo={...cfg,area:a,nomeOperador:cfg.nomeOperador||perfil?.nome||"",matricula:cfg.matricula||perfil?.matricula||""};
+    storageSet("op_config",novo);
+    setAreaCfg(a); setAreaAtiva(a);
+  }}/>;
   if(adminAberto && perfil.funcao==="dev") return <PainelAdmin onVoltar={()=>setAdminAberto(false)}/>;
   if(modoVisao==="dashboard") return <React.Suspense fallback={<div style={{background:C.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",color:C.accentLight,fontFamily:"monospace",fontSize:14}}>Carregando dashboard…</div>}><DashboardTV setTela={(t)=>{setModoVisao("app");setTela(t);}} setModoVisao={setModoVisao}/></React.Suspense>;
   return (
@@ -4532,6 +4626,12 @@ export default function App() {
             <div style={{minWidth:0}}>
               <div style={{fontWeight:800,fontSize:15,color:"#FFFFFF",letterSpacing:"0.28em",paddingLeft:"0.28em",lineHeight:1,textShadow:"0 0 12px rgba(0,230,118,0.5)"}}>VÉRTICE</div>
               <div style={{fontFamily:"ui-monospace,Menlo,Consolas,monospace",fontSize:8,color:"#5E7A99",letterSpacing:"0.22em",marginTop:3,whiteSpace:"nowrap"}}>ANTECIPE · DECIDA · EXECUTE</div>
+              {perfil&&(
+                <div style={{display:"flex",alignItems:"center",gap:5,marginTop:5,whiteSpace:"nowrap",overflow:"hidden"}}>
+                  <span style={{fontSize:9.5,color:"#8FA6BD",overflow:"hidden",textOverflow:"ellipsis"}}>Olá, <strong style={{color:"#D8E6F2",fontWeight:700}}>{(perfil.nome||"").split(" ")[0]}</strong></span>
+                  {areaCfg&&<span style={{fontFamily:"ui-monospace,Menlo,Consolas,monospace",fontSize:8,fontWeight:800,color:"#00E676",background:"rgba(0,230,118,0.12)",border:"1px solid rgba(0,230,118,0.30)",borderRadius:5,padding:"1px 6px",letterSpacing:"0.06em"}}>{areaCfg==="pu"?"P. ÚMIDA":areaCfg==="cs"?"P. SECA/CORT":"ENFARDAMENTO"}</span>}
+                </div>
+              )}
             </div>
           </div>
           {/* Camada de radar: sinais cruzam o header e convergem no núcleo do logo */}
